@@ -1,0 +1,20 @@
+.referral-input {
+    margin-bottom: 1rem;
+}
+
+.referral-input .input-group {
+    margin-bottom: 0.5rem;
+}
+
+.referral-input .form-control.is-valid,
+.referral-input .form-control.is-invalid {
+    border-width: 2px;
+}
+
+.referral-input .spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+}
+
+

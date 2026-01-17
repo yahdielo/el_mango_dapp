@@ -1,0 +1,87 @@
+.swap-progress {
+    margin-top: 1rem;
+}
+
+.swap-progress .status-icon {
+    display: inline-flex;
+    align-items: center;
+}
+
+.swap-progress .progress-section {
+    margin-bottom: 1rem;
+}
+
+.swap-progress .progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+}
+
+.swap-progress .swap-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.swap-progress .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.swap-progress .detail-row:last-child {
+    border-bottom: none;
+}
+
+.swap-progress .deposit-address {
+    font-family: 'Courier New', monospace;
+    background-color: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    word-break: break-all;
+}
+
+.swap-progress .tx-links {
+    border-top: 1px solid #dee2e6;
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+
+.swap-progress .tx-links h6 {
+    margin-bottom: 0.5rem;
+}
+
+.swap-progress .tx-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+}
+
+.swap-progress .tx-link a {
+    color: #0056b3;
+    text-decoration: none;
+}
+
+.swap-progress .tx-link a:hover {
+    text-decoration: underline;
+}
+
+.swap-progress .error-message {
+    margin-top: 1rem;
+}
+
+.swap-progress .success-message {
+    margin-top: 1rem;
+}
+
+.swap-progress .success-message .alert {
+    display: flex;
+    align-items: center;
+}
+
+

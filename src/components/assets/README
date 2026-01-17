@@ -1,0 +1,4 @@
+@notes
+
+the Modal on the swapBox component currently get info from hardcoded list of objs
+ TODO: get a list from a apilike coinmarket cap or coin geko

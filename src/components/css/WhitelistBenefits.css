@@ -1,0 +1,124 @@
+/* WhitelistBenefits Component Styles */
+
+.whitelist-benefits-container {
+  margin-top: 1rem;
+}
+
+.whitelist-benefits-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.whitelist-benefits-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1rem;
+  border-radius: 8px 8px 0 0;
+}
+
+.whitelist-benefits-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.whitelist-benefits-body {
+  padding: 1.5rem;
+}
+
+.tier-benefits-list {
+  margin-top: 1rem;
+}
+
+.tier-benefit-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tier-benefit-item:last-child {
+  border-bottom: none;
+}
+
+.tier-benefit-icon {
+  margin-right: 0.75rem;
+  color: #28a745;
+  font-size: 1.25rem;
+}
+
+.tier-benefit-text {
+  flex: 1;
+  color: #333;
+}
+
+.fee-discount-badge {
+  background-color: #28a745;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.tax-exemption-badge {
+  background-color: #17a2b8;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.savings-calculation {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #28a745;
+}
+
+.savings-calculation-title {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.savings-calculation-amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #28a745;
+}
+
+.savings-calculation-details {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.no-whitelist-message {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.no-whitelist-message-icon {
+  font-size: 3rem;
+  color: #ccc;
+  margin-bottom: 1rem;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .whitelist-benefits-body {
+    padding: 1rem;
+  }
+
+  .savings-calculation-amount {
+    font-size: 1.25rem;
+  }
+}
+

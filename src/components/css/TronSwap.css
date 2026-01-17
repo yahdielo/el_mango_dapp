@@ -1,0 +1,26 @@
+.tron-swap {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.tron-swap .alert {
+    font-size: 0.9rem;
+}
+
+.tron-swap code {
+    background-color: #e9ecef;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    word-break: break-all;
+}
+
+.tron-swap .text-decoration-underline {
+    text-decoration: underline !important;
+}
+
+.tron-swap .text-decoration-underline:hover {
+    text-decoration: underline !important;
+    opacity: 0.8;
+}
+

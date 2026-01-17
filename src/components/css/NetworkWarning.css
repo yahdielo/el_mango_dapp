@@ -1,0 +1,70 @@
+.network-warning {
+    margin-bottom: 1rem;
+    border-left: 4px solid;
+}
+
+.network-warning.alert-warning {
+    border-left-color: #ffc107;
+}
+
+.network-warning.alert-danger {
+    border-left-color: #dc3545;
+}
+
+.network-warning.alert-success {
+    border-left-color: #198754;
+}
+
+.network-warning .network-info {
+    font-size: 0.9rem;
+}
+
+.network-warning .network-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.network-warning .network-row .label {
+    font-weight: 600;
+    color: #6c757d;
+    min-width: 120px;
+}
+
+.network-warning .error-message {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    background-color: #f8d7da;
+    border-radius: 0.25rem;
+    border: 1px solid #f5c2c7;
+}
+
+.network-warning .chain-icon {
+    display: flex;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.network-warning .chain-icon-img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .network-warning .network-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .network-warning .network-row .label {
+        margin-bottom: 0.25rem;
+    }
+
+    .network-warning .network-row .badge {
+        margin-left: 0 !important;
+    }
+}
+

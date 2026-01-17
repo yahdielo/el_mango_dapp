@@ -1,0 +1,116 @@
+.referral-display {
+    margin-bottom: 1.5rem;
+}
+
+.referral-display .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.referral-display .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.referral-display .info-row:last-child {
+    border-bottom: none;
+}
+
+.referral-display .label {
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.referral-display .value-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.referral-display .address {
+    font-family: 'Courier New', monospace;
+    background-color: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.referral-display .copy-btn {
+    padding: 0;
+    min-width: auto;
+    color: #6c757d;
+}
+
+.referral-display .copy-btn:hover {
+    color: #0056b3;
+}
+
+.referral-display .benefits-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid #e9ecef;
+}
+
+.referral-display .benefits-section h6 {
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.referral-display .benefits-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.referral-display .benefits-list li {
+    padding: 0.5rem 0;
+    padding-left: 1.5rem;
+    position: relative;
+}
+
+.referral-display .benefits-list li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #28a745;
+    font-weight: bold;
+}
+
+.referral-display .referral-link-section {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.375rem;
+}
+
+.referral-display .earnings {
+    background-color: #d4edda;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    margin: 0.5rem 0;
+}
+
+.referral-display .earnings-badge {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+}
+
+.referral-display .no-referral {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+
+.referral-display .loading-spinner,
+.referral-display .error-message {
+    text-align: center;
+    padding: 2rem;
+}
+
+.referral-display .error-message {
+    color: #dc3545;
+}
+
+

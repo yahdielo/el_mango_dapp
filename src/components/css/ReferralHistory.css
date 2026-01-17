@@ -1,0 +1,62 @@
+.referral-history {
+    margin-bottom: 1.5rem;
+}
+
+.referral-history .summary-stats {
+    display: flex;
+    gap: 2rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+}
+
+.referral-history .stat-item {
+    display: flex;
+    align-items: center;
+}
+
+.referral-history .stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.referral-history .stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #212529;
+}
+
+.referral-history .address {
+    font-family: 'Courier New', monospace;
+    background-color: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.referral-history .tx-link {
+    color: #0056b3;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.referral-history .tx-link:hover {
+    text-decoration: underline;
+}
+
+.referral-history .filters {
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .referral-history .summary-stats {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+
+

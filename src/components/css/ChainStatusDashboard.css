@@ -1,0 +1,43 @@
+.chain-status-dashboard {
+    margin-bottom: 1.5rem;
+}
+
+.chain-status-dashboard .table {
+    margin-bottom: 0;
+}
+
+.chain-status-dashboard .status-icon {
+    display: inline-flex;
+    align-items: center;
+}
+
+.chain-status-dashboard .last-sync {
+    font-size: 0.875rem;
+}
+
+.chain-status-dashboard .block-number {
+    font-family: 'Courier New', monospace;
+    background-color: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.chain-status-dashboard .dex-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.chain-status-dashboard .error-message,
+.chain-status-dashboard .no-chains {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+
+.chain-status-dashboard .error-message {
+    color: #dc3545;
+}
+
+

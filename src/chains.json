@@ -731,7 +731,7 @@
     {
         "chainName": "XRP",
         "chainId": "144",
-        "img": "https://assets.coingecko.com/coins/images/5/large/xrp.png",
+        "img": "https://assets.coingecko.com/coins/images/5/large/xrp.png?v=2",
         "type": "XRP",
         "nativeCurrency": {
             "name": "XRP",

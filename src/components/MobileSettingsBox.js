@@ -6,7 +6,6 @@ import BottomNavigation from './BottomNavigation';
 import WalletSettings from './settings/WalletSettings';
 import PreferencesSettings from './settings/PreferencesSettings';
 import SecuritySettings from './settings/SecuritySettings';
-import AboutSection from './settings/AboutSection';
 import ReferralSettings from './settings/ReferralSettings';
 import ChainManagement from './settings/ChainManagement';
 import './css/SettingsMobile.css';
@@ -51,9 +50,6 @@ const MobileSettingsBox = () => {
 
                 {/* Chain Management */}
                 <ChainManagement chainId={chainId} />
-
-                {/* About & Support */}
-                <AboutSection />
             </div>
 
             <BottomNavigation />

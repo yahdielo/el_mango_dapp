@@ -404,7 +404,7 @@
     {
         "chainName": "Avalanche",
         "chainId": "43114",
-        "img": "https://app.uniswap.org/static/media/avalanche-logo.3040f06b9201c051e630.png",
+        "img": "https://assets.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png",
         "type": "EVM",
         "nativeCurrency": {
             "name": "AVAX",
@@ -471,7 +471,7 @@
     {
         "chainName": "Tron",
         "chainId": "728126428",
-        "img": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAFoCAYAAAB65WHVAAAACXBIWXMAACE4AAAhOAFFljFgAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAABO3SURBVHgB7d0LzJ5leQfwW0PQBCRmLgOU6ZwaN06eFltgzrmWw5YIQZfFunnWRZMN2UKyzC1ucUOZYIILoSCYkHIOjgLL5NRiOJWSICilBUPLaQTaQRsSS8IpYe/9kq/5+Po97/censP1PM/vlxAQt8ws29/b63891/uGnc/tfjUBEM4bEwAhCWiAoAQ0QFACGiAoAQ0QlIAGCEpAAwQloAGCEtAAQQlogKAENEBQAhogKAENEJSABghKQAMEJaABghLQAEEJaICgBDRAUAIaICgBDRCUgAYISkADBCWgAYIS0ABBCWiAoAQ0QFACGiAoAQ0QlIAGCEpAAwQloAGCEtAAQQlogKAENEBQAhogKAENEJSABghKQAMEJaABghLQAEEJaICgBDRAUAIaICgBDRCUgAYISkADBCWgAYIS0ABBCWiAoAQ0QFACGiAoAQ0QlIAGCEpAAwQloAGCEtAAQQlogKAENEBQAhogKAENEJSABghKQAMEJaABghLQAEEJaICgBDRAUAIaICgBDRCUgAYISkADBCWgAYIS0ABBCWiAoAQ0QFACGiAoAQ0QlIAGCEpAAwQloAGCEtAAQQlogKD+H2lLwopFTDTeAAAAAElFTkSuQmCC",
+        "img": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/tron/info/logo.png",
         "type": "TRON",
         "nativeCurrency": {
             "name": "TRX",
@@ -539,7 +539,7 @@
     {
         "chainName": "Solana",
         "chainId": "501111",
-        "img": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAFoCAYAAAB65WHVAAAACXBIWXMAACE4AAAhOAFFljFgAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAABO3SURBVHgB7d0LzJ5leQfwW0PQBCRmLgOU6ZwaN06eFltgzrmWw5YIQZfFunnWRZMN2UKyzC1ucUOZYIILoSCYkHIOjgLL5NRiOJWSICilBUPLaQTaQRsSS8IpYe/9kq/5+Po97/censP1PM/vlxAQt8ws29/b63891/uGnc/tfjUBEM4bEwAhCWiAoAQ0QFACGiAoAQ0QlIAGCEpAAwQloAGCEtAAQQlogKAENEBQAhogKAENEJSABghKQAMEJaABghLQAEEJaICgBDRAUAIaICgBDRCUgAYISkADBCWgAYIS0ABBCWiAoAQ0QFACGiAoAQ0QlIAGCEpAAwQloAGCEtAAQQlogKAENEBQAhogKAENEJSABghKQAMEJaABghLQAEEJaICgBDRAUAIaICgBDRCUgAYISkADBCWgAYIS0ABBCWiAoAQ0QFACGiAoAQ0QlIAGCEpAAwQloAGCEtAAQQlogKAENEBQAhogKAENEJSABghKQAMEJaABghLQAEEJaICgBDRAUAIaICgBDRCUgAYISkADBCWgAYIS0ABBCWiAoAQ0QFACGiAoAQ0QlIAGCEpAAwQloAGCEtAAQQlogKD+H2lLwopFTDTeAAAAAElFTkSuQmCC",
+        "img": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/solana/info/logo.png",
         "type": "SOLANA",
         "nativeCurrency": {
             "name": "SOL",
@@ -604,7 +604,7 @@
     {
         "chainName": "Bitcoin",
         "chainId": "0",
-        "img": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAFoCAYAAAB65WHVAAAACXBIWXMAACE4AAAhOAFFljFgAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAABO3SURBVHgB7d0LzJ5leQfwW0PQBCRmLgOU6ZwaN06eFltgzrmWw5YIQZfFunnWRZMN2UKyzC1ucUOZYIILoSCYkHIOjgLL5NRiOJWSICilBUPLaQTaQRsSS8IpYe/9kq/5+Po97/censP1PM/vlxAQt8ws29/b63891/uGnc/tfjUBEM4bEwAhCWiAoAQ0QFACGiAoAQ0QlIAGCEpAAwQloAGCEtAAQQlogKAENEBQAhogKAENEJSABghKQAMEJaABghLQAEEJaICgBDRAUAIaICgBDRCUgAYISkADBCWgAYIS0ABBCWiAoAQ0QFACGiAoAQ0QlIAGCEpAAwQloAGCEtAAQQlogKAENEBQAhogKAENEJSABghKQAMEJaABghLQAEEJaICgBDRAUAIaICgBDRCUgAYISkADBCWgAYIS0ABBCWiAoAQ0QFACGiAoAQ0QlIAGCEpAAwQloAGCEtAAQQlogKAENEBQAhogKAENEJSABghKQAMEJaABghLQAEEJaICgBDRAUAIaICgBDRCUgAYISkADBCWgAYIS0ABBCWiAoAQ0QFACGiAoAQ0QlIAGCEpAAwQloAGCEtAAQQlogKD+H2lLwopFTDTeAAAAAElFTkSuQmCC",
+        "img": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/bitcoin/info/logo.png",
         "type": "BITCOIN",
         "nativeCurrency": {
             "name": "BTC",
@@ -652,6 +652,136 @@
             "referral": "0.000001"
         },
         "blockTime": 600,
+        "confirmationsRequired": 1,
+        "featureFlags": {
+            "directSwap": false,
+            "layerSwap": true,
+            "referralSystem": true,
+            "whitelist": false,
+            "tokenTax": false,
+            "crossChainSync": true,
+            "batchOperations": false
+        }
+    },
+    {
+        "chainName": "Sui",
+        "chainId": "101",
+        "img": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/sui/info/logo.png",
+        "type": "SUI",
+        "nativeCurrency": {
+            "name": "SUI",
+            "symbol": "SUI",
+            "decimals": 9
+        },
+        "rpcUrls": [
+            "https://fullnode.mainnet.sui.io:443",
+            "https://sui-mainnet-endpoint.blockvision.org"
+        ],
+        "blockExplorers": [
+            {
+                "name": "Sui Explorer",
+                "url": "https://suiexplorer.com"
+            }
+        ],
+        "contracts": {
+            "router": null,
+            "referral": null,
+            "token": null,
+            "manager": null,
+            "whitelist": null
+        },
+        "dexes": [
+            "LayerSwap"
+        ],
+        "bridge": "LayerSwap",
+        "status": "active",
+        "gasSettings": {
+            "gasLimit": null,
+            "maxFeePerGas": null,
+            "maxPriorityFeePerGas": null,
+            "gasPrice": null
+        },
+        "slippage": {
+            "default": 0.5,
+            "min": 0.1,
+            "max": 5.0
+        },
+        "timeouts": {
+            "transactionTimeout": 300000,
+            "rpcTimeout": 10000,
+            "retryAttempts": 3,
+            "retryDelay": 1000
+        },
+        "minimums": {
+            "swap": "0.001",
+            "referral": "0.0001"
+        },
+        "blockTime": 0.3,
+        "confirmationsRequired": 1,
+        "featureFlags": {
+            "directSwap": false,
+            "layerSwap": true,
+            "referralSystem": true,
+            "whitelist": false,
+            "tokenTax": false,
+            "crossChainSync": true,
+            "batchOperations": false
+        }
+    },
+    {
+        "chainName": "XRP",
+        "chainId": "144",
+        "img": "https://assets.coingecko.com/coins/images/5/large/xrp.png",
+        "type": "XRP",
+        "nativeCurrency": {
+            "name": "XRP",
+            "symbol": "XRP",
+            "decimals": 6
+        },
+        "rpcUrls": [
+            "https://xrplcluster.com",
+            "https://s1.ripple.com:51234"
+        ],
+        "blockExplorers": [
+            {
+                "name": "XRPScan",
+                "url": "https://xrpscan.com"
+            }
+        ],
+        "contracts": {
+            "router": null,
+            "referral": null,
+            "token": null,
+            "manager": null,
+            "whitelist": null
+        },
+        "dexes": [
+            "LayerSwap"
+        ],
+        "bridge": "LayerSwap",
+        "status": "active",
+        "gasSettings": {
+            "gasLimit": null,
+            "maxFeePerGas": null,
+            "maxPriorityFeePerGas": null,
+            "gasPrice": null
+        },
+        "slippage": {
+            "default": 0.5,
+            "min": 0.1,
+            "max": 5.0
+        },
+        "timeouts": {
+            "transactionTimeout": 300000,
+            "rpcTimeout": 10000,
+            "retryAttempts": 3,
+            "retryDelay": 1000
+        },
+        "minimums": {
+            "swap": "0.001",
+            "referral": "0.0001"
+        },
+        "blockTime": 4,
         "confirmationsRequired": 1,
         "featureFlags": {
             "directSwap": false,

@@ -87,6 +87,20 @@ class ChainConfigService {
         manager: process.env.REACT_APP_BITCOIN_MANAGER || null,
         whitelist: process.env.REACT_APP_BITCOIN_WHITELIST || null,
       },
+      250: { // Fantom
+        router: process.env.REACT_APP_FANTOM_ROUTER || null,
+        referral: process.env.REACT_APP_FANTOM_REFERRAL || null,
+        token: process.env.REACT_APP_FANTOM_TOKEN || null,
+        manager: process.env.REACT_APP_FANTOM_MANAGER || null,
+        whitelist: process.env.REACT_APP_FANTOM_WHITELIST || null,
+      },
+      324: { // zkSync Era
+        router: process.env.REACT_APP_ZKSYNC_ROUTER || null,
+        referral: process.env.REACT_APP_ZKSYNC_REFERRAL || null,
+        token: process.env.REACT_APP_ZKSYNC_TOKEN || null,
+        manager: process.env.REACT_APP_ZKSYNC_MANAGER || null,
+        whitelist: process.env.REACT_APP_ZKSYNC_WHITELIST || null,
+      },
     };
   }
 

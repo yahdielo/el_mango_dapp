@@ -1,12 +1,13 @@
 import React from 'react';
 import { useAccount } from 'wagmi';
-import ConnectWallet from './connectWallet';
+import { useAppKit } from '@reown/appkit/react';
 import './css/SwapMobile.css';
 
 const MobileSwapHeader = ({ onMenuClick, title = 'Swap' }) => {
     // Hooks must be called unconditionally at the top level
     const account = useAccount();
     const address = account?.address || null;
+    const { open } = useAppKit();
     
     const formatAddress = (addr) => {
         if (!addr) return 'Connect';
@@ -18,11 +19,22 @@ const MobileSwapHeader = ({ onMenuClick, title = 'Swap' }) => {
         return addr[0].toUpperCase();
     };
 
+    const handleWalletClick = () => {
+        if (address) {
+            // If connected, could show disconnect or account menu
+            // For now, just open the wallet modal to show account info
+            open();
+        } else {
+            // If not connected, open wallet connection modal
+            open();
+        }
+    };
+
     return (
         <div className="mobile-swap-header">
             {/* Row 1: Top bar */}
             <div className="mobile-swap-header-top">
-                <div className="mobile-swap-wallet-address" onClick={onMenuClick}>
+                <div className="mobile-swap-wallet-address" onClick={handleWalletClick}>
                     <div className="mobile-swap-wallet-icon">
                         {address ? getInitial(address) : 'C'}
                     </div>

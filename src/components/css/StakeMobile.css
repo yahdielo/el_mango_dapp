@@ -10,7 +10,7 @@
   min-height: 100vh;
   margin: 0 auto;
   background: radial-gradient(1200px 800px at 50% 0%, #2a2a2a 0%, #111111 45%, #0b0b0b 100%);
-  padding: var(--spacing-lg);
+  padding: 12px;
   padding-bottom: 70px; /* Space for bottom nav */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
@@ -24,16 +24,16 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
 
 /* Tabs */
 .stake-tabs {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   background-color: #FFFFFF;
   border-radius: 32px;
-  padding: 4px;
+  padding: 3px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -41,12 +41,12 @@
 
 .stake-tab {
   flex: 1;
-  min-width: 80px;
-  padding: 12px 16px;
+  min-width: 70px;
+  padding: 8px 12px;
   border: none;
   background: transparent;
   border-radius: 24px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #7A7A7A;
   cursor: pointer;
@@ -71,7 +71,7 @@
 .stake-card {
   background-color: #FFFFFF;
   border-radius: 32px;
-  padding: 24px;
+  padding: 16px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
   width: 100%;
   max-width: 604px;
@@ -80,11 +80,11 @@
 }
 
 .stake-card-header {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .stake-card-title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   color: #000000;
   margin: 0;
@@ -93,18 +93,18 @@
 .stake-card-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
 
 /* Token Section */
 .stake-token-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .stake-token-label {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #000000;
 }
@@ -124,14 +124,14 @@
 .stake-amount-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .stake-amount-wrapper {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: 8px;
+  padding: 10px 12px;
   background-color: #F9F9F9;
   border-radius: 12px;
 }
@@ -140,7 +140,7 @@
   flex: 1;
   border: none;
   background: transparent;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: #000000;
   outline: none;
@@ -176,7 +176,7 @@
 
 /* APY Display */
 .stake-apy {
-  padding: 16px;
+  padding: 12px;
   background-color: #F9F9F9;
   border-radius: 12px;
   display: flex;
@@ -198,16 +198,16 @@
 
 /* Rewards Preview */
 .stake-rewards-preview {
-  padding: 16px;
+  padding: 12px;
   background-color: #F9F9F9;
   border-radius: 12px;
 }
 
 .stake-rewards-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #000000;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .stake-rewards-list {
@@ -238,15 +238,15 @@
 /* Buttons */
 .stake-button-container {
   width: 100%;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .stake-button {
   width: 100%;
-  height: 78px;
-  border-radius: 39px;
+  height: 64px;
+  border-radius: 32px;
   border: none;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -277,20 +277,20 @@
 
 .stake-connect-message {
   text-align: center;
-  padding: 20px;
+  padding: 16px;
   color: #7A7A7A;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 /* Pools List */
 .stake-pools-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .stake-pools-controls {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .stake-pools-sort {
@@ -310,7 +310,7 @@
 .stake-pool-card {
   background-color: #FFFFFF;
   border-radius: 32px;
-  padding: 24px;
+  padding: 16px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
 }
 
@@ -318,8 +318,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
   border-bottom: 1px solid #E9E9E9;
 }
 
@@ -330,7 +330,7 @@
 }
 
 .stake-pool-token-symbol {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   color: #000000;
 }
@@ -350,8 +350,8 @@
 .stake-pool-details {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .stake-pool-detail-item {
@@ -399,13 +399,13 @@
 .stake-active-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .stake-active-card {
   background-color: #FFFFFF;
   border-radius: 32px;
-  padding: 24px;
+  padding: 16px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
 }
 
@@ -413,13 +413,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
   border-bottom: 1px solid #E9E9E9;
 }
 
 .stake-active-token {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   color: #000000;
 }
@@ -439,8 +439,8 @@
 .stake-active-details {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .stake-active-detail-item {
@@ -504,25 +504,25 @@
 .stake-rewards {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .stake-rewards-summary {
   text-align: center;
-  padding: 32px 24px;
+  padding: 20px 16px;
 }
 
 .stake-rewards-summary-title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   color: #000000;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .stake-rewards-summary-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 12px;
 }
 
 .stake-rewards-summary-item {
@@ -554,17 +554,17 @@
 .stake-rewards-by-token {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .stake-rewards-token-item {
-  padding: 16px;
+  padding: 12px;
   background-color: #F9F9F9;
   border-radius: 12px;
 }
 
 .stake-rewards-token-header {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .stake-rewards-token-symbol {
@@ -602,7 +602,7 @@
 .stake-history {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .stake-history-filters {

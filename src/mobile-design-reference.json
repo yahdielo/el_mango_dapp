@@ -1,0 +1,782 @@
+{
+  "designReference": {
+    "name": "Mango Swap Mobile Interface - Reference Design",
+    "version": "1.0.0",
+    "description": "Complete visual specification based on mobile app screenshot",
+    "viewport": {
+      "width": 375,
+      "height": 812,
+      "type": "mobile",
+      "orientation": "portrait"
+    },
+    "colors": {
+      "background": {
+        "primary": "#000000",
+        "secondary": "#FFFFFF",
+        "card": "#FFFFFF"
+      },
+      "text": {
+        "primary": "#000000",
+        "secondary": "#666666",
+        "tertiary": "#999999",
+        "white": "#FFFFFF"
+      },
+      "accent": {
+        "walletIcon": "#00D4FF",
+        "walletIconText": "#FFFFFF",
+        "success": "#28A745",
+        "warning": "#FFC107",
+        "error": "#DC3545"
+      },
+      "buttons": {
+        "maxButton": {
+          "background": "#000000",
+          "text": "#FFFFFF",
+          "borderRadius": "9999px"
+        },
+        "swapButton": {
+          "background": "#28A745",
+          "text": "#FFFFFF",
+          "gradient": false
+        }
+      },
+      "tokens": {
+        "bnb": {
+          "iconBackground": "#F3BA2F",
+          "iconText": "#FFFFFF",
+          "symbol": "BNB"
+        },
+        "mango": {
+          "iconBackground": "#FFD700",
+          "iconText": "#000000",
+          "symbol": "MANGO"
+        }
+      },
+      "icons": {
+        "fee": {
+          "color": "#FF6B6B",
+          "type": "flame"
+        },
+        "rate": {
+          "backgroundColor": "#FFFFFF",
+          "iconColor": "#000000",
+          "type": "circular-moon"
+        }
+      }
+    },
+    "layout": {
+      "header": {
+        "height": "auto",
+        "padding": {
+          "top": "12px",
+          "left": "16px",
+          "right": "16px",
+          "bottom": "12px"
+        },
+        "backgroundColor": "transparent",
+        "position": "sticky",
+        "top": 0,
+        "zIndex": 100
+      },
+      "content": {
+        "padding": {
+          "horizontal": "16px",
+          "vertical": "16px"
+        },
+        "maxWidth": "100%"
+      },
+      "footer": {
+        "height": "80px",
+        "position": "fixed",
+        "bottom": 0,
+        "backgroundColor": "#000000",
+        "borderTop": "1px solid rgba(255, 255, 255, 0.1)"
+      }
+    },
+    "components": {
+      "header": {
+        "topRow": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "marginBottom": "12px"
+        },
+        "walletAddress": {
+          "display": "flex",
+          "alignItems": "center",
+          "gap": "8px",
+          "position": "left",
+          "icon": {
+            "width": "32px",
+            "height": "32px",
+            "backgroundColor": "#00D4FF",
+            "borderRadius": "50%",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "color": "#FFFFFF",
+            "fontSize": "14px",
+            "fontWeight": 600,
+            "text": "C"
+          },
+          "address": {
+            "fontSize": "14px",
+            "fontWeight": 500,
+            "color": "#FFFFFF",
+            "fontFamily": "monospace",
+            "text": "0xfK07...8336"
+          },
+          "chevron": {
+            "width": "12px",
+            "height": "12px",
+            "color": "#FFFFFF",
+            "marginLeft": "4px"
+          }
+        },
+        "menuIcon": {
+          "position": "right",
+          "width": "24px",
+          "height": "24px",
+          "iconColor": "#000000",
+          "backgroundColor": "#FFFFFF",
+          "borderRadius": "8px",
+          "padding": "4px",
+          "display": "flex",
+          "alignItems": "center",
+          "justifyContent": "center",
+          "type": "document-list"
+        },
+        "title": {
+          "text": "Swap",
+          "fontSize": "28px",
+          "fontWeight": 700,
+          "color": "#FFFFFF",
+          "textAlign": "center",
+          "marginTop": "8px",
+          "marginBottom": "16px"
+        }
+      },
+      "swapCard": {
+        "youPay": {
+          "container": {
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": "16px",
+            "padding": "16px",
+            "marginBottom": "12px",
+            "boxShadow": "0 2px 8px rgba(0, 0, 0, 0.1)"
+          },
+          "label": {
+            "display": "flex",
+            "justifyContent": "space-between",
+            "alignItems": "center",
+            "marginBottom": "12px",
+            "left": {
+              "text": "You Pay",
+              "fontSize": "14px",
+              "fontWeight": 500,
+              "color": "#666666"
+            },
+            "right": {
+              "display": "flex",
+              "alignItems": "center",
+              "gap": "8px",
+              "balance": {
+                "text": "52.34 BNB",
+                "fontSize": "12px",
+                "fontWeight": 400,
+                "color": "#666666"
+              },
+              "maxButton": {
+                "padding": "4px 12px",
+                "backgroundColor": "#000000",
+                "color": "#FFFFFF",
+                "fontSize": "12px",
+                "fontWeight": 600,
+                "borderRadius": "9999px",
+                "border": "none",
+                "text": "Max"
+              }
+            }
+          },
+          "content": {
+            "display": "flex",
+            "justifyContent": "space-between",
+            "alignItems": "flex-start",
+            "gap": "12px"
+          },
+          "tokenSelector": {
+            "display": "flex",
+            "alignItems": "center",
+            "gap": "8px",
+            "padding": "8px 12px",
+            "backgroundColor": "#F8F9FA",
+            "borderRadius": "12px",
+            "minWidth": "100px",
+            "icon": {
+              "width": "32px",
+              "height": "32px",
+              "borderRadius": "50%",
+              "backgroundColor": "#F3BA2F",
+              "display": "flex",
+              "alignItems": "center",
+              "justifyContent": "center",
+              "color": "#FFFFFF",
+              "fontSize": "18px",
+              "symbol": "◆"
+            },
+            "symbol": {
+              "text": "BNB",
+              "fontSize": "16px",
+              "fontWeight": 600,
+              "color": "#000000"
+            },
+            "chevron": {
+              "width": "16px",
+              "height": "16px",
+              "color": "#666666"
+            }
+          },
+          "amountSection": {
+            "display": "flex",
+            "flexDirection": "column",
+            "alignItems": "flex-end",
+            "gap": "4px",
+            "flex": 1
+          },
+          "amount": {
+            "text": "0.01",
+            "fontSize": "28px",
+            "fontWeight": 600,
+            "color": "#000000",
+            "textAlign": "right",
+            "lineHeight": "1.2"
+          },
+          "usdValue": {
+            "text": "≈ 6,247.70 USD",
+            "fontSize": "14px",
+            "color": "#666666",
+            "textAlign": "right"
+          }
+        },
+        "youReceive": {
+          "container": {
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": "16px",
+            "padding": "16px",
+            "marginBottom": "12px",
+            "boxShadow": "0 2px 8px rgba(0, 0, 0, 0.1)"
+          },
+          "label": {
+            "display": "flex",
+            "justifyContent": "space-between",
+            "alignItems": "center",
+            "marginBottom": "12px",
+            "left": {
+              "text": "You Receive",
+              "fontSize": "14px",
+              "fontWeight": 500,
+              "color": "#666666"
+            },
+            "right": {
+              "balance": {
+                "text": "187.52 MANGO",
+                "fontSize": "12px",
+                "fontWeight": 400,
+                "color": "#666666"
+              }
+            }
+          },
+          "content": {
+            "display": "flex",
+            "justifyContent": "space-between",
+            "alignItems": "flex-start",
+            "gap": "12px"
+          },
+          "tokenSelector": {
+            "display": "flex",
+            "alignItems": "center",
+            "gap": "8px",
+            "padding": "8px 12px",
+            "backgroundColor": "#F8F9FA",
+            "borderRadius": "12px",
+            "minWidth": "100px",
+            "icon": {
+              "width": "32px",
+              "height": "32px",
+              "borderRadius": "50%",
+              "backgroundColor": "#FFD700",
+              "display": "flex",
+              "alignItems": "center",
+              "justifyContent": "center",
+              "fontSize": "20px",
+              "symbol": "🥭"
+            },
+            "symbol": {
+              "text": "MANGO",
+              "fontSize": "16px",
+              "fontWeight": 600,
+              "color": "#000000"
+            },
+            "chevron": {
+              "width": "16px",
+              "height": "16px",
+              "color": "#666666"
+            }
+          },
+          "amountSection": {
+            "display": "flex",
+            "flexDirection": "column",
+            "alignItems": "flex-end",
+            "gap": "4px",
+            "flex": 1
+          },
+          "amount": {
+            "text": "45108344.734",
+            "fontSize": "28px",
+            "fontWeight": 600,
+            "color": "#000000",
+            "textAlign": "right",
+            "lineHeight": "1.2"
+          },
+          "usdValue": {
+            "text": "≈ 28,197.64 USD",
+            "fontSize": "14px",
+            "color": "#666666",
+            "textAlign": "right"
+          }
+        },
+        "swapDirection": {
+          "container": {
+            "display": "flex",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "margin": "8px 0"
+          },
+          "button": {
+            "width": "40px",
+            "height": "40px",
+            "borderRadius": "50%",
+            "backgroundColor": "#000000",
+            "border": "none",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "icon": {
+              "width": "24px",
+              "height": "24px",
+              "color": "#FFFFFF"
+            }
+          }
+        }
+      },
+      "transactionDetails": {
+        "container": {
+          "padding": "12px 16px",
+          "backgroundColor": "transparent"
+        },
+        "fee": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "marginBottom": "8px",
+          "label": {
+            "display": "flex",
+            "alignItems": "center",
+            "gap": "4px",
+            "icon": {
+              "width": "16px",
+              "height": "16px",
+              "color": "#FF6B6B",
+              "type": "flame"
+            },
+            "text": {
+              "content": "Fee:",
+              "fontSize": "14px",
+              "color": "#FFFFFF"
+            }
+          },
+          "value": {
+            "display": "flex",
+            "alignItems": "center",
+            "gap": "4px",
+            "text": {
+              "content": "0.255851 MANGO",
+              "fontSize": "14px",
+              "color": "#FFFFFF"
+            },
+            "chevron": {
+              "width": "12px",
+              "height": "12px",
+              "color": "#FFFFFF"
+            }
+          }
+        },
+        "rate": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "text": {
+            "content": "1 BNB = 673.45108 (USD)",
+            "fontSize": "14px",
+            "color": "#FFFFFF"
+          },
+          "icon": {
+            "width": "16px",
+            "height": "16px",
+            "backgroundColor": "#FFFFFF",
+            "iconColor": "#000000",
+            "type": "circular-moon",
+            "borderRadius": "50%"
+          }
+        }
+      },
+      "swapButton": {
+        "container": {
+          "width": "100%",
+          "marginTop": "16px",
+          "marginBottom": "16px"
+        },
+        "button": {
+          "width": "100%",
+          "height": "56px",
+          "backgroundColor": "#28A745",
+          "borderRadius": "28px",
+          "border": "none",
+          "display": "flex",
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "padding": "0 24px",
+          "position": "relative",
+          "overflow": "hidden",
+          "leftIcon": {
+            "width": "32px",
+            "height": "32px",
+            "borderRadius": "50%",
+            "border": "2px solid #FFFFFF",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "icon": {
+              "width": "16px",
+              "height": "16px",
+              "color": "#FFFFFF",
+              "direction": "right"
+            }
+          },
+          "text": {
+            "content": "Slide to Swap",
+            "fontSize": "18px",
+            "fontWeight": 600,
+            "color": "#FFFFFF",
+            "textAlign": "center",
+            "flex": 1
+          },
+          "rightIcons": {
+            "display": "flex",
+            "gap": "4px",
+            "icons": [
+              {
+                "width": "16px",
+                "height": "16px",
+                "color": "#FFFFFF",
+                "direction": "right"
+              },
+              {
+                "width": "16px",
+                "height": "16px",
+                "color": "#FFFFFF",
+                "direction": "right"
+              },
+              {
+                "width": "16px",
+                "height": "16px",
+                "color": "#FFFFFF",
+                "direction": "right"
+              }
+            ]
+          },
+          "slider": {
+            "position": "absolute",
+            "left": 0,
+            "top": 0,
+            "width": "0%",
+            "height": "100%",
+            "backgroundColor": "rgba(255, 255, 255, 0.2)",
+            "transition": "width 0.3s ease"
+          }
+        }
+      },
+      "branding": {
+        "container": {
+          "display": "flex",
+          "flexDirection": "column",
+          "alignItems": "center",
+          "gap": "8px",
+          "marginTop": "24px",
+          "marginBottom": "24px"
+        },
+        "logo": {
+          "width": "120px",
+          "height": "auto",
+          "text": "MANGO SWAP",
+          "colors": {
+            "mango": "#FFD700",
+            "swap": "#28A745"
+          }
+        },
+        "poweredBy": {
+          "text": "powered by Base",
+          "fontSize": "12px",
+          "color": "#FFFFFF",
+          "textAlign": "center"
+        }
+      },
+      "bottomNavigation": {
+        "container": {
+          "height": "80px",
+          "backgroundColor": "#000000",
+          "position": "fixed",
+          "bottom": 0,
+          "left": 0,
+          "right": 0,
+          "zIndex": 100,
+          "borderTop": "1px solid rgba(255, 255, 255, 0.1)",
+          "display": "flex",
+          "justifyContent": "space-around",
+          "alignItems": "center",
+          "padding": "8px 0"
+        },
+        "items": [
+          {
+            "id": "stake",
+            "icon": {
+              "type": "circle-dot",
+              "width": "24px",
+              "height": "24px",
+              "color": "#666666"
+            },
+            "label": {
+              "text": "Stake",
+              "fontSize": "12px",
+              "color": "#666666",
+              "fontWeight": 500
+            },
+            "active": false
+          },
+          {
+            "id": "portfolio",
+            "icon": {
+              "type": "diamonds",
+              "width": "24px",
+              "height": "24px",
+              "color": "#666666"
+            },
+            "label": {
+              "text": "Portfolio",
+              "fontSize": "12px",
+              "color": "#666666",
+              "fontWeight": 500
+            },
+            "active": false
+          },
+          {
+            "id": "swap",
+            "icon": {
+              "type": "swap-arrows",
+              "width": "24px",
+              "height": "24px",
+              "color": "#00D4FF"
+            },
+            "label": {
+              "text": "Swap",
+              "fontSize": "12px",
+              "color": "#00D4FF",
+              "fontWeight": 600
+            },
+            "active": true
+          },
+          {
+            "id": "liquidity",
+            "icon": {
+              "type": "bar-chart",
+              "width": "24px",
+              "height": "24px",
+              "color": "#666666"
+            },
+            "label": {
+              "text": "Liquidity",
+              "fontSize": "12px",
+              "color": "#666666",
+              "fontWeight": 500
+            },
+            "active": false
+          },
+          {
+            "id": "settings",
+            "icon": {
+              "type": "gear",
+              "width": "24px",
+              "height": "24px",
+              "color": "#666666"
+            },
+            "label": {
+              "text": "Settings",
+              "fontSize": "12px",
+              "color": "#666666",
+              "fontWeight": 500
+            },
+            "active": false
+          }
+        ]
+      }
+    },
+    "typography": {
+      "fontFamily": {
+        "primary": "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
+        "monospace": "source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace"
+      },
+      "sizes": {
+        "xs": "10px",
+        "sm": "12px",
+        "base": "14px",
+        "md": "16px",
+        "lg": "18px",
+        "xl": "20px",
+        "2xl": "24px",
+        "3xl": "28px",
+        "4xl": "36px"
+      },
+      "weights": {
+        "normal": 400,
+        "medium": 500,
+        "semibold": 600,
+        "bold": 700
+      }
+    },
+    "spacing": {
+      "xs": "4px",
+      "sm": "8px",
+      "md": "12px",
+      "lg": "16px",
+      "xl": "20px",
+      "2xl": "24px",
+      "3xl": "32px",
+      "4xl": "40px"
+    },
+    "borderRadius": {
+      "sm": "8px",
+      "md": "12px",
+      "lg": "16px",
+      "xl": "20px",
+      "full": "9999px"
+    },
+    "shadows": {
+      "sm": "0 1px 2px rgba(0, 0, 0, 0.05)",
+      "md": "0 2px 8px rgba(0, 0, 0, 0.1)",
+      "lg": "0 10px 15px rgba(0, 0, 0, 0.1)",
+      "xl": "0 20px 25px rgba(0, 0, 0, 0.15)"
+    },
+    "specificMeasurements": {
+      "header": {
+        "walletIcon": {
+          "diameter": "32px",
+          "backgroundColor": "#00D4FF",
+          "textColor": "#FFFFFF"
+        },
+        "title": {
+          "fontSize": "28px",
+          "lineHeight": "1.2",
+          "marginTop": "8px"
+        }
+      },
+      "cards": {
+        "borderRadius": "16px",
+        "padding": "16px",
+        "marginBottom": "12px",
+        "label": {
+          "fontSize": "14px",
+          "color": "#666666",
+          "balance": {
+            "fontSize": "12px",
+            "color": "#666666"
+          }
+        },
+        "amount": {
+          "fontSize": "28px",
+          "fontWeight": 600,
+          "lineHeight": "1.2"
+        },
+        "usdValue": {
+          "fontSize": "14px",
+          "color": "#666666"
+        }
+      },
+      "tokenIcons": {
+        "size": "32px",
+        "borderRadius": "50%",
+        "bnb": {
+          "backgroundColor": "#F3BA2F",
+          "icon": "◆",
+          "iconColor": "#FFFFFF",
+          "iconSize": "18px"
+        },
+        "mango": {
+          "backgroundColor": "#FFD700",
+          "icon": "🥭",
+          "iconSize": "20px"
+        }
+      },
+      "maxButton": {
+        "padding": "4px 12px",
+        "backgroundColor": "#000000",
+        "color": "#FFFFFF",
+        "fontSize": "12px",
+        "fontWeight": 600,
+        "borderRadius": "9999px"
+      },
+      "swapButton": {
+        "height": "56px",
+        "borderRadius": "28px",
+        "backgroundColor": "#28A745",
+        "padding": "0 24px"
+      },
+      "bottomNav": {
+        "height": "80px",
+        "itemSpacing": "space-around",
+        "activeColor": "#00D4FF",
+        "inactiveColor": "#666666"
+      }
+    },
+    "interactions": {
+      "swapDirection": {
+        "buttonSize": "40px",
+        "backgroundColor": "#000000",
+        "iconColor": "#FFFFFF"
+      },
+      "slideToSwap": {
+        "animationDuration": "0.3s",
+        "sliderColor": "rgba(255, 255, 255, 0.2)",
+        "completionThreshold": 95
+      }
+    },
+    "examples": {
+      "youPay": {
+        "token": "BNB",
+        "balance": "52.34",
+        "amount": "0.01",
+        "usdValue": "6,247.70"
+      },
+      "youReceive": {
+        "token": "MANGO",
+        "balance": "187.52",
+        "amount": "45108344.734",
+        "usdValue": "28,197.64"
+      },
+      "transaction": {
+        "fee": "0.255851 MANGO",
+        "rate": "1 BNB = 673.45108 (USD)"
+      }
+    }
+  }
+}
+

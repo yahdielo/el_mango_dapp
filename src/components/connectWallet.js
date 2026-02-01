@@ -104,11 +104,13 @@ const ConnectWallet = ({ chain }) => {
                 className="w-100 mb-2"
                 onClick={open}
                 style={{
-                    padding: '1rem',
-                    fontSize: '1.5rem',
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.9rem',
                     backgroundColor: '#F26E01', // Mango orange
                     borderColor: '#FFA500', // Match the border color
                     color: '#FFFFFF', // White text for contrast
+                    borderRadius: '12px',
+                    fontWeight: 600,
                 }}
             >
                 Connect EVM Wallet

@@ -59,7 +59,7 @@
         "@babel/plugin-transform-private-property-in-object"
     ],
     "scripts": {
-        "start": "react-app-rewired start",
+        "start": "ESLINT_NO_DEV_ERRORS=true PORT=3002 BROWSER=none react-app-rewired start",
         "build": "NODE_OPTIONS='--no-deprecation' BROWSERSLIST_IGNORE_OLD_DATA=true ESLINT_NO_DEV_ERRORS=true DISABLE_ESLINT_PLUGIN=true react-app-rewired build",
         "build:analyze": "npm run build && npx webpack-bundle-analyzer build/static/js/*.js",
         "build:production": "GENERATE_SOURCEMAP=false react-app-rewired build",

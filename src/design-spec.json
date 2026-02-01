@@ -1,0 +1,641 @@
+{
+  "design": {
+    "name": "Mango Swap Mobile Design",
+    "version": "1.0.0",
+    "description": "Complete design specification for mobile-first swap interface",
+    "viewport": {
+      "width": 375,
+      "height": 812,
+      "type": "mobile"
+    },
+    "theme": {
+      "colors": {
+        "background": {
+          "primary": "#000000",
+          "secondary": "#FFFFFF",
+          "card": "#FFFFFF"
+        },
+        "text": {
+          "primary": "#000000",
+          "secondary": "#666666",
+          "tertiary": "#999999",
+          "white": "#FFFFFF"
+        },
+        "accent": {
+          "primary": "#00D4FF",
+          "secondary": "#F26E01",
+          "success": "#28A745",
+          "warning": "#FFC107",
+          "error": "#DC3545"
+        },
+        "button": {
+          "primary": "#28A745",
+          "primaryHover": "#218838",
+          "secondary": "#F26E01",
+          "disabled": "#CCCCCC"
+        },
+        "token": {
+          "bnb": "#F3BA2F",
+          "mango": "#FFD700"
+        }
+      },
+      "typography": {
+        "fontFamily": {
+          "primary": "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
+          "mono": "source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace"
+        },
+        "sizes": {
+          "xs": "10px",
+          "sm": "12px",
+          "base": "14px",
+          "md": "16px",
+          "lg": "18px",
+          "xl": "20px",
+          "2xl": "24px",
+          "3xl": "30px",
+          "4xl": "36px"
+        },
+        "weights": {
+          "normal": 400,
+          "medium": 500,
+          "semibold": 600,
+          "bold": 700
+        }
+      },
+      "spacing": {
+        "xs": "4px",
+        "sm": "8px",
+        "md": "12px",
+        "lg": "16px",
+        "xl": "20px",
+        "2xl": "24px",
+        "3xl": "32px",
+        "4xl": "40px"
+      },
+      "borderRadius": {
+        "sm": "8px",
+        "md": "12px",
+        "lg": "16px",
+        "xl": "20px",
+        "full": "9999px"
+      },
+      "shadows": {
+        "sm": "0 1px 2px rgba(0, 0, 0, 0.05)",
+        "md": "0 4px 6px rgba(0, 0, 0, 0.1)",
+        "lg": "0 10px 15px rgba(0, 0, 0, 0.1)",
+        "xl": "0 20px 25px rgba(0, 0, 0, 0.15)"
+      }
+    },
+    "layout": {
+      "container": {
+        "width": "100%",
+        "maxWidth": "100%",
+        "padding": "16px",
+        "backgroundColor": "#000000",
+        "minHeight": "100vh"
+      },
+      "header": {
+        "height": "60px",
+        "backgroundColor": "transparent",
+        "padding": "12px 16px",
+        "display": "flex",
+        "justifyContent": "space-between",
+        "alignItems": "center",
+        "position": "sticky",
+        "top": 0,
+        "zIndex": 100
+      },
+      "content": {
+        "padding": "16px",
+        "maxWidth": "100%"
+      },
+      "footer": {
+        "height": "80px",
+        "backgroundColor": "#000000",
+        "position": "fixed",
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "zIndex": 100,
+        "borderTop": "1px solid rgba(255, 255, 255, 0.1)"
+      }
+    },
+    "components": {
+      "header": {
+        "title": {
+          "text": "Swap",
+          "fontSize": "24px",
+          "fontWeight": 700,
+          "color": "#FFFFFF",
+          "textAlign": "center",
+          "flex": 1
+        },
+        "walletAddress": {
+          "display": "flex",
+          "alignItems": "center",
+          "gap": "8px",
+          "padding": "8px 12px",
+          "backgroundColor": "rgba(255, 255, 255, 0.1)",
+          "borderRadius": "20px",
+          "icon": {
+            "width": "32px",
+            "height": "32px",
+            "backgroundColor": "#00D4FF",
+            "borderRadius": "50%",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "color": "#FFFFFF",
+            "fontSize": "14px",
+            "fontWeight": 600
+          },
+          "address": {
+            "fontSize": "14px",
+            "fontWeight": 500,
+            "color": "#FFFFFF",
+            "fontFamily": "mono"
+          }
+        },
+        "menuIcon": {
+          "width": "24px",
+          "height": "24px",
+          "color": "#FFFFFF",
+          "cursor": "pointer"
+        }
+      },
+      "swapCard": {
+        "youPay": {
+          "container": {
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": "16px",
+            "padding": "16px",
+            "marginBottom": "12px",
+            "boxShadow": "0 2px 8px rgba(0, 0, 0, 0.1)"
+          },
+          "label": {
+            "text": "You Pay",
+            "fontSize": "14px",
+            "fontWeight": 500,
+            "color": "#666666",
+            "marginBottom": "12px"
+          },
+          "content": {
+            "display": "flex",
+            "justifyContent": "space-between",
+            "alignItems": "center"
+          },
+          "tokenSelector": {
+            "display": "flex",
+            "alignItems": "center",
+            "gap": "8px",
+            "padding": "8px 12px",
+            "backgroundColor": "#F8F9FA",
+            "borderRadius": "12px",
+            "cursor": "pointer",
+            "minWidth": "100px",
+            "icon": {
+              "width": "32px",
+              "height": "32px",
+              "borderRadius": "50%",
+              "backgroundColor": "#F3BA2F",
+              "display": "flex",
+              "alignItems": "center",
+              "justifyContent": "center"
+            },
+            "symbol": {
+              "fontSize": "16px",
+              "fontWeight": 600,
+              "color": "#000000"
+            },
+            "arrow": {
+              "width": "16px",
+              "height": "16px",
+              "color": "#666666"
+            }
+          },
+          "amountSection": {
+            "display": "flex",
+            "flexDirection": "column",
+            "alignItems": "flex-end",
+            "gap": "4px"
+          },
+          "balance": {
+            "display": "flex",
+            "alignItems": "center",
+            "gap": "4px",
+            "fontSize": "12px",
+            "color": "#666666",
+            "marginBottom": "4px",
+            "icon": {
+              "width": "14px",
+              "height": "14px"
+            },
+            "maxButton": {
+              "padding": "2px 8px",
+              "backgroundColor": "transparent",
+              "border": "none",
+              "color": "#00D4FF",
+              "fontSize": "12px",
+              "fontWeight": 600,
+              "cursor": "pointer",
+              "textDecoration": "underline"
+            }
+          },
+          "amount": {
+            "fontSize": "20px",
+            "fontWeight": 600,
+            "color": "#000000",
+            "textAlign": "right",
+            "border": "none",
+            "outline": "none",
+            "width": "100%",
+            "maxWidth": "200px"
+          },
+          "usdValue": {
+            "fontSize": "14px",
+            "color": "#666666",
+            "textAlign": "right"
+          }
+        },
+        "swapDirection": {
+          "container": {
+            "display": "flex",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "margin": "8px 0"
+          },
+          "button": {
+            "width": "40px",
+            "height": "40px",
+            "borderRadius": "50%",
+            "backgroundColor": "#000000",
+            "border": "none",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "cursor": "pointer",
+            "icon": {
+              "width": "24px",
+              "height": "24px",
+              "color": "#FFFFFF"
+            }
+          }
+        },
+        "youReceive": {
+          "container": {
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": "16px",
+            "padding": "16px",
+            "marginBottom": "12px",
+            "boxShadow": "0 2px 8px rgba(0, 0, 0, 0.1)"
+          },
+          "label": {
+            "text": "You Receive",
+            "fontSize": "14px",
+            "fontWeight": 500,
+            "color": "#666666",
+            "marginBottom": "12px"
+          },
+          "content": {
+            "display": "flex",
+            "justifyContent": "space-between",
+            "alignItems": "center"
+          },
+          "tokenSelector": {
+            "display": "flex",
+            "alignItems": "center",
+            "gap": "8px",
+            "padding": "8px 12px",
+            "backgroundColor": "#F8F9FA",
+            "borderRadius": "12px",
+            "cursor": "pointer",
+            "minWidth": "100px",
+            "icon": {
+              "width": "32px",
+              "height": "32px",
+              "borderRadius": "50%",
+              "backgroundColor": "#FFD700",
+              "display": "flex",
+              "alignItems": "center",
+              "justifyContent": "center",
+              "backgroundImage": "url('/path/to/mango-icon.png')",
+              "backgroundSize": "cover"
+            },
+            "symbol": {
+              "fontSize": "16px",
+              "fontWeight": 600,
+              "color": "#000000"
+            },
+            "arrow": {
+              "width": "16px",
+              "height": "16px",
+              "color": "#666666"
+            }
+          },
+          "amountSection": {
+            "display": "flex",
+            "flexDirection": "column",
+            "alignItems": "flex-end",
+            "gap": "4px"
+          },
+          "balance": {
+            "display": "flex",
+            "alignItems": "center",
+            "gap": "4px",
+            "fontSize": "12px",
+            "color": "#666666",
+            "marginBottom": "4px",
+            "icon": {
+              "width": "14px",
+              "height": "14px"
+            }
+          },
+          "amount": {
+            "fontSize": "20px",
+            "fontWeight": 600,
+            "color": "#000000",
+            "textAlign": "right"
+          },
+          "usdValue": {
+            "fontSize": "14px",
+            "color": "#666666",
+            "textAlign": "right"
+          }
+        },
+        "transactionDetails": {
+          "container": {
+            "padding": "12px 16px",
+            "backgroundColor": "transparent"
+          },
+          "fee": {
+            "display": "flex",
+            "justifyContent": "space-between",
+            "alignItems": "center",
+            "marginBottom": "8px",
+            "label": {
+              "display": "flex",
+              "alignItems": "center",
+              "gap": "4px",
+              "fontSize": "14px",
+              "color": "#FFFFFF",
+              "icon": {
+                "width": "16px",
+                "height": "16px",
+                "color": "#FFC107"
+              }
+            },
+            "value": {
+              "display": "flex",
+              "alignItems": "center",
+              "gap": "4px",
+              "fontSize": "14px",
+              "color": "#FFFFFF",
+              "arrow": {
+                "width": "12px",
+                "height": "12px"
+              }
+            }
+          },
+          "rate": {
+            "display": "flex",
+            "justifyContent": "space-between",
+            "alignItems": "center",
+            "fontSize": "14px",
+            "color": "#FFFFFF",
+            "icon": {
+              "width": "16px",
+              "height": "16px"
+            }
+          }
+        },
+        "swapButton": {
+          "container": {
+            "width": "100%",
+            "marginTop": "16px",
+            "marginBottom": "16px"
+          },
+          "button": {
+            "width": "100%",
+            "height": "56px",
+            "backgroundColor": "#28A745",
+            "borderRadius": "28px",
+            "border": "none",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "space-between",
+            "padding": "0 24px",
+            "cursor": "pointer",
+            "position": "relative",
+            "overflow": "hidden",
+            "fontSize": "18px",
+            "fontWeight": 600,
+            "color": "#FFFFFF",
+            "transition": "all 0.3s ease",
+            "boxShadow": "0 4px 12px rgba(40, 167, 69, 0.3)"
+          },
+          "leftIcon": {
+            "width": "32px",
+            "height": "32px",
+            "borderRadius": "50%",
+            "border": "2px solid #FFFFFF",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "icon": {
+              "width": "16px",
+              "height": "16px",
+              "color": "#FFFFFF"
+            }
+          },
+          "text": {
+            "flex": 1,
+            "textAlign": "center",
+            "fontSize": "18px",
+            "fontWeight": 600,
+            "color": "#FFFFFF"
+          },
+          "rightIcons": {
+            "display": "flex",
+            "gap": "4px",
+            "icon": {
+              "width": "16px",
+              "height": "16px",
+              "color": "#FFFFFF"
+            }
+          },
+          "slider": {
+            "position": "absolute",
+            "left": 0,
+            "top": 0,
+            "width": "0%",
+            "height": "100%",
+            "backgroundColor": "rgba(255, 255, 255, 0.2)",
+            "transition": "width 0.3s ease"
+          }
+        },
+        "branding": {
+          "container": {
+            "display": "flex",
+            "flexDirection": "column",
+            "alignItems": "center",
+            "gap": "8px",
+            "marginTop": "24px",
+            "marginBottom": "24px"
+          },
+          "logo": {
+            "width": "120px",
+            "height": "auto",
+            "marginBottom": "8px"
+          },
+          "poweredBy": {
+            "fontSize": "12px",
+            "color": "#999999",
+            "textAlign": "center"
+          }
+        }
+      },
+      "bottomNavigation": {
+        "container": {
+          "display": "flex",
+          "justifyContent": "space-around",
+          "alignItems": "center",
+          "height": "100%",
+          "padding": "8px 0"
+        },
+        "item": {
+          "display": "flex",
+          "flexDirection": "column",
+          "alignItems": "center",
+          "gap": "4px",
+          "cursor": "pointer",
+          "padding": "8px 16px",
+          "borderRadius": "8px",
+          "transition": "all 0.2s ease",
+          "icon": {
+            "width": "24px",
+            "height": "24px",
+            "color": "#666666"
+          },
+          "label": {
+            "fontSize": "12px",
+            "color": "#666666",
+            "fontWeight": 500
+          },
+          "active": {
+            "icon": {
+              "color": "#00D4FF"
+            },
+            "label": {
+              "color": "#00D4FF",
+              "fontWeight": 600
+            }
+          }
+        },
+        "items": [
+          {
+            "id": "stake",
+            "icon": "circle-dot",
+            "label": "Stake"
+          },
+          {
+            "id": "portfolio",
+            "icon": "diamonds",
+            "label": "Portfolio"
+          },
+          {
+            "id": "swap",
+            "icon": "swap-arrows",
+            "label": "Swap",
+            "active": true
+          },
+          {
+            "id": "liquidity",
+            "icon": "bar-chart",
+            "label": "Liquidity"
+          },
+          {
+            "id": "settings",
+            "icon": "gear",
+            "label": "Settings"
+          }
+        ]
+      }
+    },
+    "animations": {
+      "slideToSwap": {
+        "duration": "0.3s",
+        "easing": "ease-in-out",
+        "keyframes": [
+          {
+            "from": { "width": "0%" },
+            "to": { "width": "100%" }
+          }
+        ]
+      },
+      "tokenSwap": {
+        "duration": "0.5s",
+        "easing": "ease-in-out"
+      },
+      "buttonHover": {
+        "duration": "0.2s",
+        "easing": "ease-in-out",
+        "transform": "translateY(-2px)",
+        "boxShadow": "0 6px 16px rgba(40, 167, 69, 0.4)"
+      }
+    },
+    "responsive": {
+      "breakpoints": {
+        "mobile": {
+          "max": 480
+        },
+        "tablet": {
+          "min": 481,
+          "max": 768
+        },
+        "desktop": {
+          "min": 769
+        }
+      },
+      "adaptations": {
+        "mobile": {
+          "container": {
+            "padding": "16px"
+          },
+          "swapCard": {
+            "padding": "16px"
+          }
+        },
+        "tablet": {
+          "container": {
+            "maxWidth": "600px",
+            "margin": "0 auto",
+            "padding": "24px"
+          }
+        },
+        "desktop": {
+          "container": {
+            "maxWidth": "500px",
+            "margin": "0 auto",
+            "padding": "32px"
+          },
+          "bottomNavigation": {
+            "display": "none"
+          }
+        }
+      }
+    },
+    "accessibility": {
+      "contrast": {
+        "minimum": 4.5,
+        "enhanced": 7.0
+      },
+      "touchTargets": {
+        "minimum": "44px"
+      },
+      "fontSizes": {
+        "minimum": "14px"
+      }
+    }
+  }
+}
+

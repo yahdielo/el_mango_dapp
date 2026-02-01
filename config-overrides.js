@@ -27,6 +27,34 @@ module.exports = function override(config, env) {
         '@react-native-async-storage/async-storage': false // Suppress MetaMask SDK React Native import warning
     };
     
+    // Add resolve aliases for porto package to fix module resolution warnings
+    const path = require('path');
+    const fs = require('fs');
+    
+    config.resolve.alias = config.resolve.alias || {};
+    
+    // Try to resolve porto from nested node_modules (where it actually is)
+    const portoNestedPath = path.resolve(__dirname, 'node_modules/wagmi/node_modules/@wagmi/connectors/node_modules/porto');
+    if (fs.existsSync(portoNestedPath)) {
+        // Point to the package root, not the dist file, so webpack can resolve subpaths
+        config.resolve.alias['porto'] = portoNestedPath;
+        
+        // For porto/internal, point to the dist/internal directory
+        const portoInternalDir = path.join(portoNestedPath, 'dist', 'internal');
+        if (fs.existsSync(portoInternalDir)) {
+            config.resolve.alias['porto/internal'] = portoInternalDir;
+        }
+    }
+    
+    // Add the nested node_modules to resolve.modules so webpack can find porto
+    if (!config.resolve.modules) {
+        config.resolve.modules = ['node_modules'];
+    }
+    const nestedModulesPath = path.resolve(__dirname, 'node_modules/wagmi/node_modules/@wagmi/connectors/node_modules');
+    if (fs.existsSync(nestedModulesPath) && !config.resolve.modules.includes(nestedModulesPath)) {
+        config.resolve.modules.push(nestedModulesPath);
+    }
+    
     // Add rule to transform import attributes syntax before Babel processes it
     // This fixes the issue with @coinbase/wallet-sdk using "import ... with type: 'json'"
     if (config.module && config.module.rules) {

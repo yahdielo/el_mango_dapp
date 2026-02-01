@@ -1,0 +1,769 @@
+/**
+ * Stake Mobile Styles
+ * iPhone-style UI/UX with exact project colors from Swap interface
+ */
+
+/* Container */
+.mobile-stake-container {
+  width: 100%;
+  max-width: 500px;
+  min-height: 100vh;
+  margin: 0 auto;
+  background: radial-gradient(1200px 800px at 50% 0%, #2a2a2a 0%, #111111 45%, #0b0b0b 100%);
+  padding: var(--spacing-lg);
+  padding-bottom: 70px; /* Space for bottom nav */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.mobile-stake-content {
+  width: 100%;
+  max-width: 604px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Tabs */
+.stake-tabs {
+  display: flex;
+  gap: 8px;
+  background-color: #FFFFFF;
+  border-radius: 32px;
+  padding: 4px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.stake-tab {
+  flex: 1;
+  min-width: 80px;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 24px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #7A7A7A;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.stake-tab:hover {
+  color: #000000;
+}
+
+.stake-tab.active {
+  background-color: #000000;
+  color: #FFFFFF;
+}
+
+.stake-tab:active {
+  transform: scale(0.98);
+}
+
+/* Card */
+.stake-card {
+  background-color: #FFFFFF;
+  border-radius: 32px;
+  padding: 24px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 604px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.stake-card-header {
+  margin-bottom: 20px;
+}
+
+.stake-card-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #000000;
+  margin: 0;
+}
+
+.stake-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Token Section */
+.stake-token-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stake-token-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.stake-token-selector-wrapper {
+  width: 100%;
+}
+
+.stake-balance {
+  font-size: 14px;
+  font-weight: 400;
+  color: #7A7A7A;
+  text-align: right;
+}
+
+/* Amount Section */
+.stake-amount-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stake-amount-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: #F9F9F9;
+  border-radius: 12px;
+}
+
+.stake-amount-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 28px;
+  font-weight: 700;
+  color: #000000;
+  outline: none;
+  font-family: inherit;
+  text-align: right;
+}
+
+.stake-amount-input::placeholder {
+  color: #999999;
+}
+
+.stake-max-button {
+  height: 34px;
+  padding: 0 14px;
+  background-color: #000000;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.stake-max-button:hover {
+  opacity: 0.8;
+}
+
+.stake-max-button:active {
+  opacity: 0.6;
+  transform: scale(0.98);
+}
+
+/* APY Display */
+.stake-apy {
+  padding: 16px;
+  background-color: #F9F9F9;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stake-apy-label {
+  font-size: 16px;
+  font-weight: 400;
+  color: #7A7A7A;
+}
+
+.stake-apy-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #3FF804;
+}
+
+/* Rewards Preview */
+.stake-rewards-preview {
+  padding: 16px;
+  background-color: #F9F9F9;
+  border-radius: 12px;
+}
+
+.stake-rewards-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000000;
+  margin-bottom: 12px;
+}
+
+.stake-rewards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stake-rewards-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stake-rewards-label {
+  font-size: 14px;
+  font-weight: 400;
+  color: #7A7A7A;
+}
+
+.stake-rewards-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000000;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Buttons */
+.stake-button-container {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.stake-button {
+  width: 100%;
+  height: 78px;
+  border-radius: 39px;
+  border: none;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stake-button-primary {
+  background-color: #7cd85e;
+  color: #000000;
+  opacity: 0.7;
+  box-shadow: 0 0 18px rgba(63, 248, 4, 0.55);
+}
+
+.stake-button-primary:hover:not(:disabled) {
+  opacity: 1;
+}
+
+.stake-button-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.stake-button-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stake-connect-message {
+  text-align: center;
+  padding: 20px;
+  color: #7A7A7A;
+  font-size: 16px;
+}
+
+/* Pools List */
+.stake-pools-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stake-pools-controls {
+  margin-bottom: 8px;
+}
+
+.stake-pools-sort {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #E9E9E9;
+  border-radius: 12px;
+  background-color: #FFFFFF;
+  font-size: 16px;
+  font-weight: 400;
+  color: #000000;
+  cursor: pointer;
+  outline: none;
+}
+
+.stake-pool-card {
+  background-color: #FFFFFF;
+  border-radius: 32px;
+  padding: 24px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+}
+
+.stake-pool-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #E9E9E9;
+}
+
+.stake-pool-token {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stake-pool-token-symbol {
+  font-size: 20px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.stake-pool-token-name {
+  font-size: 14px;
+  font-weight: 400;
+  color: #7A7A7A;
+}
+
+.stake-pool-apy {
+  font-size: 24px;
+  font-weight: 700;
+  color: #3FF804;
+}
+
+.stake-pool-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stake-pool-detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stake-pool-label {
+  font-size: 14px;
+  font-weight: 400;
+  color: #7A7A7A;
+}
+
+.stake-pool-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.stake-pool-button {
+  width: 100%;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid #E9E9E9;
+  background-color: #F9F9F9;
+  color: #000000;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stake-pool-button:hover {
+  background-color: #000000;
+  color: #FFFFFF;
+  border-color: #000000;
+}
+
+.stake-pool-button:active {
+  transform: scale(0.98);
+}
+
+/* Active Stakes */
+.stake-active-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stake-active-card {
+  background-color: #FFFFFF;
+  border-radius: 32px;
+  padding: 24px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+}
+
+.stake-active-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #E9E9E9;
+}
+
+.stake-active-token {
+  font-size: 20px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.stake-active-status {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.stake-active-status-active {
+  background-color: #E8F5E9;
+  color: #2E7D32;
+}
+
+.stake-active-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stake-active-detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stake-active-label {
+  font-size: 14px;
+  font-weight: 400;
+  color: #7A7A7A;
+}
+
+.stake-active-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.stake-active-rewards {
+  color: #3FF804;
+}
+
+.stake-active-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.stake-active-button {
+  flex: 1;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stake-active-button-primary {
+  background-color: #000000;
+  color: #FFFFFF;
+}
+
+.stake-active-button-secondary {
+  background-color: #F9F9F9;
+  color: #000000;
+  border: 1px solid #E9E9E9;
+}
+
+.stake-active-button:hover {
+  opacity: 0.8;
+}
+
+.stake-active-button:active {
+  transform: scale(0.98);
+}
+
+/* Rewards */
+.stake-rewards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stake-rewards-summary {
+  text-align: center;
+  padding: 32px 24px;
+}
+
+.stake-rewards-summary-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #000000;
+  margin-bottom: 20px;
+}
+
+.stake-rewards-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.stake-rewards-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stake-rewards-summary-label {
+  font-size: 14px;
+  font-weight: 400;
+  color: #7A7A7A;
+}
+
+.stake-rewards-summary-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #000000;
+}
+
+.stake-rewards-pending {
+  color: #3FF804;
+}
+
+.stake-rewards-claimed {
+  color: #7A7A7A;
+}
+
+.stake-rewards-by-token {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stake-rewards-token-item {
+  padding: 16px;
+  background-color: #F9F9F9;
+  border-radius: 12px;
+}
+
+.stake-rewards-token-header {
+  margin-bottom: 12px;
+}
+
+.stake-rewards-token-symbol {
+  font-size: 18px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.stake-rewards-token-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stake-rewards-token-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stake-rewards-token-label {
+  font-size: 14px;
+  font-weight: 400;
+  color: #7A7A7A;
+}
+
+.stake-rewards-token-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000000;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* History */
+.stake-history {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stake-history-filters {
+  display: flex;
+  gap: 8px;
+  background-color: #FFFFFF;
+  border-radius: 32px;
+  padding: 4px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+  overflow-x: auto;
+}
+
+.stake-history-filter {
+  flex: 1;
+  min-width: 80px;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #7A7A7A;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.stake-history-filter:hover {
+  color: #000000;
+}
+
+.stake-history-filter.active {
+  background-color: #000000;
+  color: #FFFFFF;
+}
+
+.stake-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stake-history-item {
+  background-color: #FFFFFF;
+  border-radius: 32px;
+  padding: 20px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+}
+
+.stake-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.stake-history-type {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.stake-history-type-stake {
+  background-color: #E8F5E9;
+  color: #2E7D32;
+}
+
+.stake-history-type-unstake {
+  background-color: #FFEBEE;
+  color: #C62828;
+}
+
+.stake-history-type-claim {
+  background-color: #E3F2FD;
+  color: #1565C0;
+}
+
+.stake-history-status {
+  font-size: 18px;
+  color: #28A745;
+}
+
+.stake-history-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.stake-history-description {
+  font-size: 16px;
+  font-weight: 400;
+  color: #000000;
+}
+
+.stake-history-time {
+  font-size: 14px;
+  font-weight: 400;
+  color: #7A7A7A;
+}
+
+.stake-history-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1E6BFF;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.stake-history-link:hover {
+  text-decoration: underline;
+}
+
+/* Empty State */
+.stake-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #7A7A7A;
+  font-size: 16px;
+}
+
+/* Loading */
+.stake-loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #7A7A7A;
+  font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .mobile-stake-container {
+    padding: var(--spacing-md);
+    padding-bottom: 70px;
+  }
+
+  .stake-card {
+    padding: 20px;
+    border-radius: 24px;
+  }
+
+  .stake-tabs,
+  .stake-history-filters {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .stake-tab,
+  .stake-history-filter {
+    min-width: 70px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+}
+
+/* Safe Area Support */
+@supports (padding: max(0px)) {
+  .mobile-stake-container {
+    padding-bottom: max(70px, env(safe-area-inset-bottom));
+  }
+}
+

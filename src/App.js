@@ -2,6 +2,9 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import AboutUs from './components/aboutUs.js';
 import SwapBox from './components/swapBox.js';
 import MobileSwapBox from './components/MobileSwapBox.js';
+import MobileLiquidityBox from './components/MobileLiquidityBox.js';
+import MobilePortfolioBox from './components/MobilePortfolioBox.js';
+import MobileStakeBox from './components/MobileStakeBox.js';
 import Header from './components/header.js';
 import Tokenomics from './components/tokenomics.js';
 import ReferralHistory from './components/ReferralHistory.js';
@@ -9,6 +12,7 @@ import RewardDashboard from './components/RewardDashboard.js';
 import SwapHistory from './components/SwapHistory.js';
 import ChainStatusDashboard from './components/ChainStatusDashboard.js';
 import CrossChainSwap from './components/CrossChainSwap.js';
+import MobileSettingsBox from './components/MobileSettingsBox.js';
 //import mangoMiniLogo from "./imgs/mangoMiniLogo.png"
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
@@ -34,6 +38,10 @@ function App() {
                         <Route path="/swaps" element={<SwapHistory />} />
                         <Route path="/cross-chain" element={<CrossChainSwap />} />
                         <Route path="/chains" element={<ChainStatusDashboard />} />
+                        <Route path="/settings" element={<MobileSettingsBox />} />
+                        <Route path="/liquidity" element={<MobileLiquidityBox />} />
+                        <Route path="/portfolio" element={<MobilePortfolioBox />} />
+                        <Route path="/stake" element={<MobileStakeBox />} />
                     </Routes>
                 ) : (
                     // Original Desktop Layout
@@ -54,8 +62,11 @@ function App() {
                                 <Route path="/rewards" element={<RewardDashboard />} />
                                 <Route path="/swaps" element={<SwapHistory />} />
                                 <Route path="/cross-chain" element={<CrossChainSwap />} />
-                                <Route path="/chains" element={<ChainStatusDashboard />} />
-                            </Routes>
+                        <Route path="/chains" element={<ChainStatusDashboard />} />
+                        <Route path="/liquidity" element={<MobileLiquidityBox />} />
+                        <Route path="/portfolio" element={<MobilePortfolioBox />} />
+                        <Route path="/stake" element={<MobileStakeBox />} />
+                    </Routes>
                         </div>
                     </>
                 )}

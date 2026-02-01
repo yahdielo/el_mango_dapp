@@ -1,0 +1,450 @@
+/**
+ * Settings Mobile Styles
+ * iPhone-style UI/UX with exact project colors from Swap interface
+ */
+
+/* Container */
+.mobile-settings-container {
+  width: 100%;
+  max-width: 500px;
+  min-height: 100vh;
+  margin: 0 auto;
+  background: radial-gradient(1200px 800px at 50% 0%, #2a2a2a 0%, #111111 45%, #0b0b0b 100%);
+  padding: var(--spacing-lg);
+  padding-bottom: 70px; /* Space for bottom nav */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.mobile-settings-content {
+  width: 100%;
+  max-width: 604px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Settings Section */
+.settings-section {
+  background-color: #FFFFFF;
+  border-radius: 32px;
+  padding: 24px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 604px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.settings-section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #000000;
+  margin-bottom: 16px;
+}
+
+.settings-section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Settings Item */
+.settings-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid #E9E9E9;
+}
+
+.settings-item:last-child {
+  border-bottom: none;
+}
+
+.settings-item-clickable {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 12px 0;
+  transition: opacity 0.2s ease;
+}
+
+.settings-item-clickable:hover {
+  opacity: 0.7;
+}
+
+.settings-item-clickable:active {
+  opacity: 0.5;
+}
+
+.settings-item-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.settings-item-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.settings-item-value {
+  font-size: 16px;
+  font-weight: 400;
+  color: #7A7A7A;
+  word-break: break-all;
+}
+
+.settings-item-description {
+  font-size: 14px;
+  font-weight: 400;
+  color: #8A8A8A;
+  line-height: 1.4;
+}
+
+.settings-address {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+.settings-earnings {
+  color: #000000;
+  font-weight: 600;
+}
+
+/* Settings Actions */
+.settings-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.settings-button {
+  flex: 1;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-button-secondary {
+  background-color: #000000;
+  color: #FFFFFF;
+}
+
+.settings-button-secondary:hover {
+  opacity: 0.8;
+}
+
+.settings-button-secondary:active {
+  opacity: 0.6;
+  transform: scale(0.98);
+}
+
+.settings-button-destructive {
+  background-color: #DC3545;
+  color: #FFFFFF;
+}
+
+.settings-button-destructive:hover {
+  opacity: 0.8;
+}
+
+.settings-button-destructive:active {
+  opacity: 0.6;
+  transform: scale(0.98);
+}
+
+/* Copy Button */
+.settings-copy-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7A7A7A;
+  transition: color 0.2s ease;
+}
+
+.settings-copy-button:hover {
+  color: #000000;
+}
+
+.settings-copy-button:active {
+  transform: scale(0.95);
+}
+
+/* Settings Toggle */
+.settings-toggle {
+  position: relative;
+  display: inline-block;
+  width: 51px;
+  height: 31px;
+  cursor: pointer;
+}
+
+.settings-toggle-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.settings-toggle-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #E9E9E9;
+  transition: 0.3s;
+  border-radius: 31px;
+}
+
+.settings-toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 27px;
+  width: 27px;
+  left: 2px;
+  bottom: 2px;
+  background-color: #FFFFFF;
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.settings-toggle-input:checked + .settings-toggle-slider {
+  background-color: #3FF804;
+}
+
+.settings-toggle-input:checked + .settings-toggle-slider:before {
+  transform: translateX(20px);
+}
+
+.settings-toggle-input:focus + .settings-toggle-slider {
+  box-shadow: 0 0 1px #3FF804;
+}
+
+/* Settings Input */
+.settings-input-wrapper {
+  display: flex;
+  align-items: center;
+  background-color: transparent;
+  border: 1px solid #E9E9E9;
+  border-radius: 12px;
+  padding: 0 12px;
+  height: 44px;
+  gap: 8px;
+}
+
+.settings-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 400;
+  color: #000000;
+  outline: none;
+  font-family: inherit;
+}
+
+.settings-input::placeholder {
+  color: #999999;
+}
+
+.settings-input-suffix {
+  font-size: 16px;
+  font-weight: 400;
+  color: #7A7A7A;
+}
+
+.settings-select {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #E9E9E9;
+  border-radius: 12px;
+  background-color: #FFFFFF;
+  font-size: 16px;
+  font-weight: 400;
+  color: #000000;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+}
+
+.settings-select:focus {
+  border-color: #1E6BFF;
+}
+
+/* Referral Link */
+.settings-referral-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-referral-input {
+  flex: 1;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #E9E9E9;
+  border-radius: 12px;
+  background-color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 400;
+  color: #000000;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  outline: none;
+}
+
+.settings-referral-input:focus {
+  border-color: #1E6BFF;
+}
+
+/* Wallet Connect */
+.settings-wallet-connect {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  padding: 20px 0;
+}
+
+/* Chains List */
+.settings-chains-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-chain-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-radius: 12px;
+  background-color: #F9F9F9;
+  transition: background-color 0.2s ease;
+}
+
+.settings-chain-item.settings-chain-active {
+  background-color: #E8F5E9;
+  border: 1px solid #3FF804;
+}
+
+.settings-chain-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-chain-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.settings-chain-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.settings-chain-id {
+  font-size: 14px;
+  font-weight: 400;
+  color: #7A7A7A;
+}
+
+/* Social Buttons */
+.settings-social {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+.settings-social-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid #E9E9E9;
+  background-color: #FFFFFF;
+  color: #000000;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.settings-social-button:hover {
+  background-color: #F9F9F9;
+  transform: scale(1.05);
+}
+
+.settings-social-button:active {
+  transform: scale(0.95);
+}
+
+/* Chevron */
+.settings-chevron {
+  color: #7A7A7A;
+  flex-shrink: 0;
+}
+
+/* Loading */
+.settings-loading {
+  text-align: center;
+  padding: 20px;
+  color: #7A7A7A;
+  font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .mobile-settings-container {
+    padding: var(--spacing-md);
+    padding-bottom: 70px;
+  }
+
+  .settings-section {
+    padding: 20px;
+    border-radius: 24px;
+  }
+
+  .settings-actions {
+    flex-direction: column;
+  }
+
+  .settings-button {
+    width: 100%;
+  }
+}
+
+/* Safe Area Support */
+@supports (padding: max(0px)) {
+  .mobile-settings-container {
+    padding-bottom: max(70px, env(safe-area-inset-bottom));
+  }
+}
+

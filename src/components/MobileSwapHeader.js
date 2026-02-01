@@ -3,7 +3,7 @@ import { useAccount } from 'wagmi';
 import ConnectWallet from './connectWallet';
 import './css/SwapMobile.css';
 
-const MobileSwapHeader = ({ onMenuClick }) => {
+const MobileSwapHeader = ({ onMenuClick, title = 'Swap' }) => {
     // Hooks must be called unconditionally at the top level
     const account = useAccount();
     const address = account?.address || null;
@@ -42,7 +42,7 @@ const MobileSwapHeader = ({ onMenuClick }) => {
                 </div>
             </div>
             {/* Row 2: Title */}
-            <div className="mobile-swap-header-title">Swap</div>
+            <div className="mobile-swap-header-title">{title}</div>
         </div>
     );
 };

@@ -7,7 +7,6 @@ import PreferencesSettings from './settings/PreferencesSettings';
 import SecuritySettings from './settings/SecuritySettings';
 import ReferralSettings from './settings/ReferralSettings';
 import ChainManagement from './settings/ChainManagement';
-import AboutSection from './settings/AboutSection';
 import './css/SettingsMobile.css';
 
 const MobileSettingsBox = () => {
@@ -36,8 +35,6 @@ const MobileSettingsBox = () => {
                 )}
 
                 <ChainManagement chainId={chainId} />
-
-                <AboutSection />
             </div>
 
             <BottomNavigation />

@@ -24,6 +24,11 @@ import { formatErrorForDisplay } from '../utils/chainErrors';
 import useGetEthBalance from './hooks/getEthBalance';
 import useTokenBalance from './hooks/getTokenBalance';
 import mangoSwapLogo from '../imgs/mangoSwapLogo.png';
+import { getTokenPrice, calculatePriceImpact } from '../services/priceOracle';
+import { getFeeBreakdown, formatFeeForDisplay } from '../services/feeService';
+import { saveSwapTransaction } from '../services/transactionHistory';
+import { validateSlippage, validatePriceImpact, getRecommendedSlippage } from '../utils/slippageValidation';
+import { getSlippageToleranceInBasisPoints } from '../utils/slippageUtils';
 
 import './css/SwapMobile.css';
 
@@ -72,6 +77,10 @@ const MobileSwapBox = () => {
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
     const [minimumAmountError, setMinimumAmountError] = useState(null);
+    const [feeBreakdown, setFeeBreakdown] = useState(null);
+    const [priceImpact, setPriceImpact] = useState(0);
+    const [slippageWarning, setSlippageWarning] = useState(null);
+    const [realToken1Price, setRealToken1Price] = useState(0);
 
     // Hooks must be called unconditionally at the top level
     const account = useAccount();
@@ -249,7 +258,21 @@ const MobileSwapBox = () => {
     const settingToken1Price = useCallback(async () => {
         if (selectedToken1.symbol === "BUSDT" || selectedToken1.symbol === 'USDC' || selectedToken1.symbol === 'USDT') {
             setToken1Price(1);
+            setRealToken1Price(1);
         } else {
+            // Try to get price from CoinGecko first
+            try {
+                const coingeckoPrice = await getTokenPrice(selectedToken1.symbol);
+                if (coingeckoPrice) {
+                    setRealToken1Price(coingeckoPrice);
+                    setToken1Price(coingeckoPrice);
+                    return;
+                }
+            } catch (error) {
+                console.warn('Failed to fetch price from CoinGecko, falling back to DEX:', error);
+            }
+
+            // Fallback to DEX price calculation
             if (!chainInfo || !tokenParams) return;
 
             const wethAddress = chainId !== 56 && chainInfo.weth?.address;
@@ -267,6 +290,7 @@ const MobileSwapBox = () => {
             
             if (!resp || !resp.buyAmount) {
                 setToken1Price(0);
+                setRealToken1Price(0);
                 return;
             }
             
@@ -276,6 +300,7 @@ const MobileSwapBox = () => {
             const index = stringAmount.indexOf('.');
             const amount = stringAmount.slice(0, index + 3);
             setToken1Price(amount);
+            setRealToken1Price(parseFloat(amount));
         }
     }, [selectedToken1, chainInfo, tokenParams, chainId, fetchAmountOut]);
 
@@ -314,6 +339,8 @@ const MobileSwapBox = () => {
     const handleBlur = useCallback(async () => {
         if (!amount1) {
             setMinimumAmountError(null);
+            setPriceImpact(0);
+            setFeeBreakdown(null);
             return;
         }
         
@@ -336,6 +363,37 @@ const MobileSwapBox = () => {
                     const stringAmount = amountBack.toString();
                     const index = stringAmount.indexOf('.');
                     setOutputAmount(stringAmount.slice(0, index + 3));
+                    
+                    // Calculate price impact
+                    const token1Price = realToken1Price || token1Price;
+                    const token2Price = await getTokenPrice(selectedToken2.symbol) || 1;
+                    const impact = calculatePriceImpact(
+                        parseFloat(amount1),
+                        parseFloat(amountBack),
+                        token1Price,
+                        token2Price
+                    );
+                    setPriceImpact(impact);
+                    
+                    // Validate price impact
+                    const impactValidation = validatePriceImpact(impact);
+                    if (impactValidation.severity === 'danger') {
+                        setError({
+                            message: impactValidation.message,
+                            severity: 'error',
+                        });
+                    } else if (impactValidation.severity === 'warning') {
+                        setError({
+                            message: impactValidation.message,
+                            severity: 'warning',
+                        });
+                    }
+                    
+                    // Calculate fee breakdown
+                    if (address && amount1) {
+                        const feeData = await getFeeBreakdown(parseFloat(amount1), address, chainId);
+                        setFeeBreakdown(feeData);
+                    }
                 }
             } catch (e) {
                 console.error('Error in handleBlur:', e);
@@ -348,7 +406,7 @@ const MobileSwapBox = () => {
                 });
             }
         }
-    }, [amount1, selectedToken1, selectedToken2, fetchAmountOut, tokenParams, chainId]);
+    }, [amount1, selectedToken1, selectedToken2, fetchAmountOut, tokenParams, chainId, address, realToken1Price, token1Price]);
 
     const handleTokenSelect = useCallback((token) => {
         const setter = isSelectingToken1 ? setSelectedToken1 : setSelectedToken2;
@@ -375,13 +433,26 @@ const MobileSwapBox = () => {
 
     // Swap logic is handled by PickButton component via SlideToSwapButton
 
-    // Calculate fee (placeholder - should come from API or contract)
+    // Calculate fee using fee service
     const fee = useMemo(() => {
-        if (!outputAmount || !selectedToken2) return null;
-        // Example: 0.1% fee
-        const feeAmount = parseFloat(outputAmount) * 0.001;
-        return feeAmount.toFixed(6);
-    }, [outputAmount, selectedToken2]);
+        if (!feeBreakdown || !selectedToken2) return null;
+        return feeBreakdown.total.toFixed(6);
+    }, [feeBreakdown, selectedToken2]);
+    
+    // Get slippage tolerance and validate
+    useEffect(() => {
+        if (chainId && amount1) {
+            const slippageSettings = chainConfig.getSlippageTolerance(chainId);
+            const slippagePercent = slippageSettings?.default || 0.5;
+            const validation = validateSlippage(slippagePercent, chainId);
+            
+            if (validation.severity === 'danger' || validation.severity === 'warning') {
+                setSlippageWarning(validation);
+            } else {
+                setSlippageWarning(null);
+            }
+        }
+    }, [chainId, amount1]);
 
     // Calculate rate
     const rate = useMemo(() => {
@@ -466,6 +537,9 @@ const MobileSwapBox = () => {
                         rate={rate}
                         rateToken={selectedToken1?.symbol}
                         rateUSD={rateUSD}
+                        feeBreakdown={feeBreakdown ? formatFeeForDisplay(feeBreakdown, selectedToken2?.symbol) : null}
+                        priceImpact={priceImpact}
+                        slippageWarning={slippageWarning}
                     />
                 </div>
 

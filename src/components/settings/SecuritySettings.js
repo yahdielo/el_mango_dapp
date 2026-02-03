@@ -102,14 +102,9 @@ const SecuritySettings = () => {
 
     return (
         <SettingsSection title="Security">
-            <div className="settings-item">
+            <div className="settings-item settings-item-compact-toggle">
                 <div className="settings-item-content">
-                    <div>
-                        <div className="settings-item-label">Auto-Approve Token Spending</div>
-                        <div className="settings-item-description">
-                            Automatically approve token spending without confirmation
-                        </div>
-                    </div>
+                    <div className="settings-item-label">Auto-Approve Token Spending</div>
                     <SettingsToggle
                         checked={autoApprove}
                         onChange={handleAutoApproveChange}

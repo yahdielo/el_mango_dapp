@@ -1,73 +1,99 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAccount } from 'wagmi';
+import chainConfig from '../../services/chainConfig';
 import '../css/PortfolioMobile.css';
 
 const TransactionHistoryList = ({ address, isConnected, selectedChain }) => {
+    const { address: accountAddress, isConnected: accountConnected } = useAccount();
+    const finalAddress = address || accountAddress;
+    const finalIsConnected = isConnected || accountConnected;
+    
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // 'all', 'swap', 'stake', 'liquidity', 'transfer'
 
-    useEffect(() => {
-        if (isConnected && address) {
-            // TODO: Fetch actual transaction history from API
-            setLoading(true);
-            setTimeout(() => {
-                // Mock data
-                setTransactions([
-                    {
-                        id: 1,
-                        type: 'swap',
-                        fromToken: 'BNB',
-                        toToken: 'MANGO',
-                        amount: '10.00',
-                        timestamp: new Date(Date.now() - 3600000).toISOString(),
-                        chainId: 8453,
-                        chainName: 'Base',
-                        txHash: '0x123...abc',
-                        status: 'success'
-                    },
-                    {
-                        id: 2,
-                        type: 'stake',
-                        token: 'MANGO',
-                        amount: '100.00',
-                        timestamp: new Date(Date.now() - 86400000).toISOString(),
-                        chainId: 56,
-                        chainName: 'BNB Smart Chain',
-                        txHash: '0x456...def',
-                        status: 'success'
-                    },
-                    {
-                        id: 3,
-                        type: 'liquidity',
-                        action: 'add',
-                        tokenPair: 'BNB/MANGO',
-                        amount: '50.25',
-                        timestamp: new Date(Date.now() - 172800000).toISOString(),
-                        chainId: 8453,
-                        chainName: 'Base',
-                        txHash: '0x789...ghi',
-                        status: 'success'
-                    },
-                    {
-                        id: 4,
-                        type: 'transfer',
-                        token: 'ETH',
-                        amount: '1.5',
-                        to: '0xabc...xyz',
-                        timestamp: new Date(Date.now() - 259200000).toISOString(),
-                        chainId: 42161,
-                        chainName: 'Arbitrum One',
-                        txHash: '0xdef...jkl',
-                        status: 'success'
-                    }
-                ]);
-                setLoading(false);
-            }, 1000);
-        } else {
+    const fetchTransactions = useCallback(async () => {
+        if (!finalIsConnected || !finalAddress) {
             setTransactions([]);
             setLoading(false);
+            return;
         }
-    }, [isConnected, address, selectedChain]);
+
+        setLoading(true);
+        try {
+            // TODO: Fetch actual transaction history from API/blockchain
+            // This would query:
+            // 1. Swap transactions from DEX contracts
+            // 2. Stake/unstake transactions from staking contracts
+            // 3. Liquidity add/remove transactions from LP contracts
+            // 4. Transfer transactions from token contracts
+            // 5. Aggregate and format for display
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Enhanced mock data
+            const mockTransactions = [
+                {
+                    id: 1,
+                    type: 'swap',
+                    fromToken: 'BNB',
+                    toToken: 'MANGO',
+                    amount: '10.00',
+                    timestamp: new Date(Date.now() - 3600000).toISOString(),
+                    chainId: 8453,
+                    chainName: 'Base',
+                    txHash: '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join(''),
+                    status: 'success'
+                },
+                {
+                    id: 2,
+                    type: 'stake',
+                    token: 'MANGO',
+                    amount: '100.00',
+                    timestamp: new Date(Date.now() - 86400000).toISOString(),
+                    chainId: 56,
+                    chainName: 'BNB Smart Chain',
+                    txHash: '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join(''),
+                    status: 'success'
+                },
+                {
+                    id: 3,
+                    type: 'liquidity',
+                    action: 'add',
+                    tokenPair: 'BNB/MANGO',
+                    amount: '50.25',
+                    timestamp: new Date(Date.now() - 172800000).toISOString(),
+                    chainId: 8453,
+                    chainName: 'Base',
+                    txHash: '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join(''),
+                    status: 'success'
+                },
+                {
+                    id: 4,
+                    type: 'transfer',
+                    token: 'ETH',
+                    amount: '1.5',
+                    to: '0xabc...xyz',
+                    timestamp: new Date(Date.now() - 259200000).toISOString(),
+                    chainId: 42161,
+                    chainName: 'Arbitrum One',
+                    txHash: '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join(''),
+                    status: 'success'
+                }
+            ];
+            
+            setTransactions(mockTransactions);
+        } catch (error) {
+            console.error('Error fetching transactions:', error);
+            setTransactions([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [finalIsConnected, finalAddress, selectedChain]);
+
+    useEffect(() => {
+        fetchTransactions();
+    }, [fetchTransactions]);
 
     const formatDate = (timestamp) => {
         const date = new Date(timestamp);
@@ -112,7 +138,7 @@ const TransactionHistoryList = ({ address, isConnected, selectedChain }) => {
         }
     };
 
-    if (!isConnected) {
+    if (!finalIsConnected) {
         return (
             <div className="portfolio-card">
                 <div className="portfolio-empty-state">
@@ -196,16 +222,20 @@ const TransactionHistoryList = ({ address, isConnected, selectedChain }) => {
                                 </div>
                             </div>
 
-                            {tx.txHash && (
-                                <a
-                                    href={`https://basescan.org/tx/${tx.txHash}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="portfolio-history-link"
-                                >
-                                    View on Explorer
-                                </a>
-                            )}
+                            {tx.txHash && (() => {
+                                const chain = chainConfig.getChain(tx.chainId);
+                                const explorerUrl = chain?.blockExplorers?.[0]?.url || 'https://basescan.org';
+                                return (
+                                    <a
+                                        href={`${explorerUrl}/tx/${tx.txHash}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="portfolio-history-link"
+                                    >
+                                        View on Explorer
+                                    </a>
+                                );
+                            })()}
                         </div>
                     ))}
                 </div>

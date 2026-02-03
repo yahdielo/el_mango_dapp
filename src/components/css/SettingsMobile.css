@@ -3,6 +3,15 @@
  * iPhone-style UI/UX with exact project colors from Swap interface
  */
 
+/* Root Variables */
+:root {
+  --mango-orange: #F26E01;
+  --mango-orange-light: #FF8C00;
+  --mango-orange-dark: #E65100;
+  --mango-orange-glow: rgba(242, 110, 1, 0.3);
+  --mango-orange-bg: rgba(242, 110, 1, 0.1);
+}
+
 /* Container */
 .mobile-settings-container {
   width: 100%;
@@ -10,12 +19,35 @@
   min-height: 100vh;
   margin: 0 auto;
   background: radial-gradient(1200px 800px at 50% 0%, #2a2a2a 0%, #111111 45%, #0b0b0b 100%);
-  padding: var(--spacing-lg);
+  padding: 0;
   padding-bottom: 70px; /* Space for bottom nav */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   position: relative;
   box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Sticky Header for Settings */
+.mobile-settings-container .mobile-swap-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: radial-gradient(1200px 800px at 50% 0%, #2a2a2a 0%, #111111 45%, #0b0b0b 100%);
+  padding: 12px 16px;
+  margin-bottom: 0;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.mobile-settings-container .mobile-swap-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
 }
 
 .mobile-settings-content {
@@ -25,6 +57,8 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding: 20px 16px;
+  padding-top: 12px;
 }
 
 /* Settings Section */
@@ -52,6 +86,15 @@
   gap: 16px;
 }
 
+/* Settings Preferences Row */
+.settings-preferences-row {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
 /* Settings Item */
 .settings-item {
   display: flex;
@@ -63,6 +106,13 @@
 
 .settings-item:last-child {
   border-bottom: none;
+}
+
+.settings-item-compact {
+  flex: 1;
+  padding: 0;
+  border-bottom: none;
+  min-width: 0;
 }
 
 .settings-item-clickable {
@@ -90,9 +140,15 @@
 }
 
 .settings-item-label {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #000000;
+  margin-bottom: 6px;
+}
+
+.settings-item-compact .settings-item-label {
+  font-size: 12px;
+  margin-bottom: 4px;
 }
 
 .settings-item-value {
@@ -249,20 +305,30 @@
   background-color: transparent;
   border: 1px solid #E9E9E9;
   border-radius: 12px;
-  padding: 0 12px;
-  height: 44px;
-  gap: 8px;
+  padding: 0 10px;
+  height: 40px;
+  gap: 6px;
+}
+
+.settings-item-compact .settings-input-wrapper {
+  height: 36px;
+  padding: 0 8px;
 }
 
 .settings-input {
   flex: 1;
   border: none;
   background: transparent;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 400;
   color: #000000;
   outline: none;
   font-family: inherit;
+  min-width: 0;
+}
+
+.settings-item-compact .settings-input {
+  font-size: 13px;
 }
 
 .settings-input::placeholder {
@@ -270,9 +336,14 @@
 }
 
 .settings-input-suffix {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 400;
   color: #7A7A7A;
+  white-space: nowrap;
+}
+
+.settings-item-compact .settings-input-suffix {
+  font-size: 12px;
 }
 
 .settings-select {
@@ -288,6 +359,12 @@
   cursor: pointer;
   outline: none;
   font-family: inherit;
+}
+
+.settings-item-compact .settings-select {
+  height: 36px;
+  padding: 0 8px;
+  font-size: 13px;
 }
 
 .settings-select:focus {
@@ -359,6 +436,11 @@
   box-shadow: 0 0 0 1px rgba(63, 248, 4, 0.1);
 }
 
+.settings-chain-item.settings-chain-switching {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 .settings-chain-info {
   display: flex;
   align-items: center;
@@ -418,6 +500,50 @@
   font-weight: 400;
   color: #7A7A7A;
   line-height: 1.2;
+}
+
+.settings-chain-status {
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* Preset Buttons */
+.settings-presets {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.settings-preset-button {
+  padding: 2px 6px;
+  font-size: 10px;
+  border: 1px solid #E9E9E9;
+  border-radius: 4px;
+  background: transparent;
+  color: #000000;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-preset-button:hover {
+  border-color: var(--mango-orange);
+  background: rgba(242, 110, 1, 0.1);
+}
+
+.settings-preset-button.active {
+  background: var(--mango-orange);
+  color: #FFFFFF;
+  border-color: var(--mango-orange);
+}
+
+/* Error Messages */
+.settings-error {
+  font-size: 11px;
+  color: #FF3B30;
+  margin-top: 4px;
+  line-height: 1.3;
 }
 
 /* Chain Status Badge in Settings */

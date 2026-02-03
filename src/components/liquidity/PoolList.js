@@ -7,39 +7,74 @@ const PoolList = ({ chainId }) => {
     const [sortBy, setSortBy] = useState('tvl'); // 'tvl', 'volume', 'apr'
     const [filter, setFilter] = useState('all');
 
+    const handleViewPool = (poolId) => {
+        // Navigate to add liquidity with pre-filled pool data
+        // In production, this would navigate to add liquidity tab with pool tokens
+        const pool = pools.find(p => p.id === poolId);
+        if (pool) {
+            console.log('Viewing pool:', pool);
+            alert(`Navigate to add liquidity for ${pool.tokenPair}`);
+        }
+    };
+
     useEffect(() => {
-        // TODO: Fetch actual pools from API
-        setLoading(true);
-        setTimeout(() => {
-            // Mock data
-            setPools([
-                {
-                    id: 1,
-                    tokenPair: 'BNB/MANGO',
-                    tvl: '500000',
-                    volume24h: '125000',
-                    apr: '12.5',
-                    fee: '0.3'
-                },
-                {
-                    id: 2,
-                    tokenPair: 'ETH/USDC',
-                    tvl: '2500000',
-                    volume24h: '500000',
-                    apr: '15.2',
-                    fee: '0.3'
-                },
-                {
-                    id: 3,
-                    tokenPair: 'USDT/USDC',
-                    tvl: '1000000',
-                    volume24h: '250000',
-                    apr: '8.5',
-                    fee: '0.05'
-                }
-            ]);
-            setLoading(false);
-        }, 1000);
+        const fetchPools = async () => {
+            setLoading(true);
+            try {
+                // TODO: Fetch actual pools from DEX subgraph or contracts
+                // This would involve:
+                // 1. Querying DEX subgraph for all pools
+                // 2. For each pool, get:
+                //    - Token pair information
+                //    - Total value locked (TVL)
+                //    - 24h volume
+                //    - Current APR (calculated from fees)
+                //    - Pool fee percentage
+                // 3. Sort and filter based on user preferences
+                
+                // Mock data for now
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                setPools([
+                    {
+                        id: 1,
+                        tokenPair: 'BNB/MANGO',
+                        tvl: '500000',
+                        volume24h: '125000',
+                        apr: '12.5',
+                        fee: '0.3',
+                        tokenA: { symbol: 'BNB', address: 'native' },
+                        tokenB: { symbol: 'MANGO', address: '0x...' }
+                    },
+                    {
+                        id: 2,
+                        tokenPair: 'ETH/USDC',
+                        tvl: '2500000',
+                        volume24h: '500000',
+                        apr: '15.2',
+                        fee: '0.3',
+                        tokenA: { symbol: 'ETH', address: 'native' },
+                        tokenB: { symbol: 'USDC', address: '0x...' }
+                    },
+                    {
+                        id: 3,
+                        tokenPair: 'USDT/USDC',
+                        tvl: '1000000',
+                        volume24h: '250000',
+                        apr: '8.5',
+                        fee: '0.05',
+                        tokenA: { symbol: 'USDT', address: '0x...' },
+                        tokenB: { symbol: 'USDC', address: '0x...' }
+                    }
+                ]);
+            } catch (error) {
+                console.error('Error fetching pools:', error);
+                setPools([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPools();
     }, [chainId]);
 
     const formatNumber = (num) => {
@@ -108,7 +143,10 @@ const PoolList = ({ chainId }) => {
                         </div>
                     </div>
 
-                    <button className="liquidity-pool-button">
+                    <button 
+                        className="liquidity-pool-button"
+                        onClick={() => handleViewPool(pool.id)}
+                    >
                         View Details
                     </button>
                 </div>

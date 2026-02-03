@@ -7,11 +7,24 @@ const LiquidityHistory = ({ address, chainId }) => {
     const [filter, setFilter] = useState('all'); // 'all', 'add', 'remove', 'claim'
 
     useEffect(() => {
-        if (address) {
-            // TODO: Fetch actual history from API
+        const fetchHistory = async () => {
+            if (!address) {
+                setHistory([]);
+                setLoading(false);
+                return;
+            }
+
             setLoading(true);
-            setTimeout(() => {
-                // Mock data
+            try {
+                // TODO: Fetch actual history from blockchain events or subgraph
+                // This would involve:
+                // 1. Querying DEX subgraph for user's liquidity events
+                // 2. Filtering by event type (AddLiquidity, RemoveLiquidity, Collect)
+                // 3. Formatting data with token pairs, amounts, timestamps, tx hashes
+                // 4. Sorting by timestamp (newest first)
+                
+                // Mock data for now
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 setHistory([
                     {
                         id: 1,
@@ -40,9 +53,15 @@ const LiquidityHistory = ({ address, chainId }) => {
                         txHash: '0x789...ghi'
                     }
                 ]);
+            } catch (error) {
+                console.error('Error fetching history:', error);
+                setHistory([]);
+            } finally {
                 setLoading(false);
-            }, 1000);
-        }
+            }
+        };
+
+        fetchHistory();
     }, [address, chainId]);
 
     const formatDate = (timestamp) => {

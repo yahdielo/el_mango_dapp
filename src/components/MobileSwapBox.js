@@ -33,11 +33,18 @@ dotenv.config();
 axios.interceptors.response.use(
     (response) => response,
     (error) => {
-        // Suppress CORS and 404 errors - they're expected when API is unavailable
-        if (error.code === 'ERR_NETWORK' || 
+        // Suppress CORS, connection refused, and 404 errors - they're expected when API is unavailable
+        const isExpectedError = 
+            error.code === 'ERR_NETWORK' || 
+            error.code === 'ERR_CONNECTION_REFUSED' ||
+            error.code === 'ERR_CONNECTION_RESET' ||
             error.message?.includes('CORS') || 
             error.response?.status === 404 ||
-            error.message?.includes('Network Error')) {
+            error.message?.includes('Network Error') ||
+            error.message?.includes('CONNECTION_REFUSED') ||
+            error.message?.includes('CONNECTION_RESET');
+        
+        if (isExpectedError) {
             // Return a rejected promise but don't log - let the calling code handle it
             return Promise.reject(error);
         }
@@ -88,6 +95,53 @@ const MobileSwapBox = () => {
             setChain(chainId === 56 ? bsc : chainId === 8453 ? base : chainId === 42161 ? arbitrum : base);
         }
     }, [address, chainId]);
+
+    // Hide the orange "Connected" button from PickButton
+    useEffect(() => {
+        const hideConnectedButton = () => {
+            // Find all buttons with orange background (#F26E01)
+            const buttons = document.querySelectorAll('.mobile-swap-container button, .mobile-swap-pick-button-wrapper button');
+            buttons.forEach(button => {
+                const style = window.getComputedStyle(button);
+                const bgColor = style.backgroundColor;
+                const buttonText = button.textContent?.trim();
+                
+                // Check if button has orange background or contains "Connected" text
+                if (
+                    (bgColor.includes('242, 110, 1') || bgColor.includes('rgb(242, 110, 1)') || bgColor.includes('#f26e01') || bgColor.includes('#F26E01')) ||
+                    buttonText === 'Connected'
+                ) {
+                    button.style.display = 'none';
+                    button.style.visibility = 'hidden';
+                    button.style.opacity = '0';
+                    button.style.height = '0';
+                    button.style.width = '0';
+                    button.style.margin = '0';
+                    button.style.padding = '0';
+                    button.style.position = 'absolute';
+                    button.style.left = '-9999px';
+                    button.style.zIndex = '-1';
+                    button.style.pointerEvents = 'none';
+                }
+            });
+        };
+
+        // Run immediately and on any DOM changes
+        hideConnectedButton();
+        const interval = setInterval(hideConnectedButton, 100);
+        
+        // Also use MutationObserver to catch dynamic changes
+        const observer = new MutationObserver(hideConnectedButton);
+        const container = document.querySelector('.mobile-swap-container');
+        if (container) {
+            observer.observe(container, { childList: true, subtree: true });
+        }
+
+        return () => {
+            clearInterval(interval);
+            observer.disconnect();
+        };
+    }, [address, selectedToken1, selectedToken2, amount1]);
 
     const tokenAddresses = useMemo(() => ({
         56: {
@@ -418,17 +472,20 @@ const MobileSwapBox = () => {
                 {/* Swap Button - Always visible */}
                 <div style={{ position: 'static', marginTop: '0', marginBottom: '0', paddingTop: '0', paddingBottom: '0' }}>
                     {address && (
-                        <div ref={(el) => {
-                            if (el) {
-                                // Store reference for swap trigger
-                                window.mobileSwapTrigger = () => {
-                                    const swapBtn = el.querySelector('button');
-                                    if (swapBtn && !swapBtn.disabled) {
-                                        swapBtn.click();
-                                    }
-                                };
-                            }
-                        }}>
+                        <div 
+                            className="mobile-swap-pick-button-wrapper"
+                            ref={(el) => {
+                                if (el) {
+                                    // Store reference for swap trigger
+                                    window.mobileSwapTrigger = () => {
+                                        const swapBtn = el.querySelector('button:not(.mobile-swap-hidden-button)');
+                                        if (swapBtn && !swapBtn.disabled) {
+                                            swapBtn.click();
+                                        }
+                                    };
+                                }
+                            }}
+                        >
                             <PickButton 
                                 token0={selectedToken1} 
                                 token1={selectedToken2} 
@@ -440,28 +497,7 @@ const MobileSwapBox = () => {
                             />
                         </div>
                     )}
-                    {/* Overlay slide button - Always visible */}
-                    <div style={{ 
-                        position: 'static',
-                        top: 'auto',
-                        left: 'auto',
-                        right: 'auto',
-                        pointerEvents: address && selectedToken1.address && selectedToken2.address && amount1 && parseFloat(amount1) > 0 && !minimumAmountError ? 'auto' : 'none'
-                    }}>
-                        <SlideToSwapButton
-                            onSwap={() => {
-                                if (address && window.mobileSwapTrigger) {
-                                    window.mobileSwapTrigger();
-                                }
-                            }}
-                            disabled={!address || !selectedToken1.address || !selectedToken2.address || !amount1 || parseFloat(amount1) <= 0 || !!minimumAmountError}
-                            loading={false}
-                            token0={selectedToken1}
-                            token1={selectedToken2}
-                            amount={amount1}
-                            isConnected={!!address}
-                        />
-                    </div>
+                    {/* Slide to Swap button hidden - not shown in design */}
                 </div>
 
                 {/* Branding */}

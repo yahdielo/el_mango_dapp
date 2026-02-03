@@ -43,6 +43,29 @@ export const apiClient = axios.create({
     timeout: 10000,
 });
 
+// Add interceptor to suppress connection errors in development
+apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        // Suppress connection refused/reset errors in development - expected when API is not running
+        const isConnectionError = 
+            error.code === 'ERR_CONNECTION_REFUSED' ||
+            error.code === 'ERR_CONNECTION_RESET' ||
+            error.code === 'ERR_NETWORK' ||
+            error.message?.includes('CONNECTION_REFUSED') ||
+            error.message?.includes('CONNECTION_RESET');
+        
+        if (isConnectionError && (process.env.NODE_ENV === 'development' || 
+            (typeof window !== 'undefined' && window.location.hostname === 'localhost'))) {
+            // Silently reject - don't log to console
+            return Promise.reject(error);
+        }
+        
+        // For other errors, let them through normally
+        return Promise.reject(error);
+    }
+);
+
 /**
  * Get timeout for API request based on chain
  * @param {number|null} chainId - Chain ID (optional)
@@ -103,7 +126,20 @@ const handleError = (error, chainId = null) => {
         const networkError = chainId 
             ? chainConfig.getErrorMessage(chainId, 'networkError')
             : 'Network error: Could not connect to API';
-        console.error('Network Error:', error.request);
+        
+        // Suppress console errors for connection refused in development (expected when API is not running)
+        const isConnectionRefused = error.code === 'ERR_CONNECTION_REFUSED' || 
+                                   error.code === 'ERR_CONNECTION_RESET' ||
+                                   error.message?.includes('CONNECTION_REFUSED') ||
+                                   error.message?.includes('CONNECTION_RESET');
+        
+        if (isConnectionRefused && (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost')) {
+            // Silently handle connection refused errors in development
+            // Don't log to console as these are expected when backend is not running
+        } else {
+            console.error('Network Error:', error.request);
+        }
+        
         throw new Error(networkError);
     } else {
         // Something else happened

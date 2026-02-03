@@ -17,6 +17,27 @@ const ReferralSettings = ({ address, chainId }) => {
         }
     };
 
+    const handleShareLink = async () => {
+        if (!referralLink) return;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Join Mango DeFi',
+                    text: 'Use my referral link to get started!',
+                    url: referralLink
+                });
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    console.error('Error sharing:', error);
+                    handleCopyLink();
+                }
+            }
+        } else {
+            handleCopyLink();
+        }
+    };
+
     const formatAddress = (addr) => {
         if (!addr) return 'None';
         return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -59,6 +80,13 @@ const ReferralSettings = ({ address, chainId }) => {
                             )}
                         </button>
                     </div>
+                    <button 
+                        className="settings-button settings-button-secondary"
+                        onClick={handleShareLink}
+                        style={{ marginTop: '8px', width: '100%' }}
+                    >
+                        Share Link
+                    </button>
                 </div>
             )}
 

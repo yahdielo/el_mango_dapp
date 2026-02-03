@@ -5,12 +5,59 @@ const LiquidityPositionsList = ({ address, isConnected, chainId }) => {
     const [positions, setPositions] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const handleClaimFees = async (positionId) => {
+        try {
+            const position = positions.find(p => p.id === positionId);
+            if (!position || parseFloat(position.unclaimedFees) <= 0) {
+                return;
+            }
+
+            // TODO: Implement actual fee claiming
+            // This would involve calling claimFees on the pool contract
+            console.log('Claiming fees for position:', positionId);
+            
+            // Simulate transaction
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            alert(`Successfully claimed ${position.unclaimedFees} in fees!`);
+            
+            // Refresh positions
+            // In production, refetch from contracts
+        } catch (error) {
+            console.error('Error claiming fees:', error);
+            alert('Failed to claim fees: ' + error.message);
+        }
+    };
+
+    const handleManagePosition = (positionId) => {
+        // Navigate to remove liquidity with pre-filled data
+        // In production, this would navigate to remove liquidity tab with position data
+        console.log('Managing position:', positionId);
+        alert('Navigate to remove liquidity with this position');
+    };
+
     useEffect(() => {
-        if (isConnected && address) {
-            // TODO: Fetch actual LP positions from API
+        const fetchPositions = async () => {
+            if (!isConnected || !address) {
+                setPositions([]);
+                setLoading(false);
+                return;
+            }
+
             setLoading(true);
-            setTimeout(() => {
-                // Mock data
+            try {
+                // TODO: Fetch actual LP positions from contracts/API
+                // This would involve:
+                // 1. Getting all LP token contracts user has balance in
+                // 2. For each LP token, get:
+                //    - LP token balance
+                //    - Pool reserves (token0, token1)
+                //    - Total LP supply
+                //    - Calculate share percentage
+                //    - Get unclaimed fees
+                //    - Calculate USD value
+                
+                // Mock data for now
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 setPositions([
                     {
                         id: 1,
@@ -19,7 +66,9 @@ const LiquidityPositionsList = ({ address, isConnected, chainId }) => {
                         usdValue: '1250.50',
                         sharePercent: '2.5',
                         apr: '12.5',
-                        unclaimedFees: '5.25'
+                        unclaimedFees: '5.25',
+                        tokenA: { symbol: 'BNB', amount: '25.125' },
+                        tokenB: { symbol: 'MANGO', amount: '5000' }
                     },
                     {
                         id: 2,
@@ -28,15 +77,20 @@ const LiquidityPositionsList = ({ address, isConnected, chainId }) => {
                         usdValue: '2500.00',
                         sharePercent: '5.0',
                         apr: '15.2',
-                        unclaimedFees: '10.50'
+                        unclaimedFees: '10.50',
+                        tokenA: { symbol: 'ETH', amount: '1.0' },
+                        tokenB: { symbol: 'USDC', amount: '2500' }
                     }
                 ]);
+            } catch (error) {
+                console.error('Error fetching positions:', error);
+                setPositions([]);
+            } finally {
                 setLoading(false);
-            }, 1000);
-        } else {
-            setPositions([]);
-            setLoading(false);
-        }
+            }
+        };
+
+        fetchPositions();
     }, [isConnected, address, chainId]);
 
     if (!isConnected) {
@@ -96,10 +150,17 @@ const LiquidityPositionsList = ({ address, isConnected, chainId }) => {
                     </div>
 
                     <div className="liquidity-position-actions">
-                        <button className="liquidity-position-button liquidity-position-button-secondary">
+                        <button 
+                            className="liquidity-position-button liquidity-position-button-secondary"
+                            onClick={() => handleClaimFees(position.id)}
+                            disabled={parseFloat(position.unclaimedFees) <= 0}
+                        >
                             Claim Fees
                         </button>
-                        <button className="liquidity-position-button liquidity-position-button-primary">
+                        <button 
+                            className="liquidity-position-button liquidity-position-button-primary"
+                            onClick={() => handleManagePosition(position.id)}
+                        >
                             Manage
                         </button>
                     </div>

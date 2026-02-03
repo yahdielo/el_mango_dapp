@@ -120,7 +120,16 @@ const StakePoolList = ({ chainId }) => {
                         </div>
                     </div>
 
-                    <button className="stake-pool-button">
+                    <button 
+                        className="stake-pool-button"
+                        onClick={() => {
+                            // Navigate to stake tab with pre-selected token
+                            // This would require passing a callback or using navigation
+                            console.log('Navigate to stake with token:', pool.token);
+                            // In production, this would navigate to stake tab with token pre-selected
+                            alert(`Navigate to stake ${pool.token}`);
+                        }}
+                    >
                         Stake {pool.token}
                     </button>
                 </div>

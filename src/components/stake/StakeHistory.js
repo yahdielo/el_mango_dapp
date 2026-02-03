@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import chainConfig from '../../services/chainConfig';
 import '../css/StakeMobile.css';
 
 const StakeHistory = ({ address, chainId }) => {
@@ -165,16 +166,20 @@ const StakeHistory = ({ address, chainId }) => {
                             <div className="stake-history-time">{formatDate(tx.timestamp)}</div>
                         </div>
 
-                        {tx.txHash && (
-                            <a
-                                href={`https://basescan.org/tx/${tx.txHash}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="stake-history-link"
-                            >
-                                View on Explorer
-                            </a>
-                        )}
+                        {tx.txHash && (() => {
+                            const chainInfo = chainConfig.getChain(chainId);
+                            const explorerUrl = chainInfo?.blockExplorers?.[0]?.url || 'https://basescan.org';
+                            return (
+                                <a
+                                    href={`${explorerUrl}/tx/${tx.txHash}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="stake-history-link"
+                                >
+                                    View on Explorer
+                                </a>
+                            );
+                        })()}
                     </div>
                 ))}
             </div>

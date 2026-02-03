@@ -56,22 +56,49 @@
   min-height: 100vh;
   margin: 0 auto;
   background: radial-gradient(1200px 800px at 50% 0%, #2a2a2a 0%, #111111 45%, #0b0b0b 100%);
-  padding: var(--spacing-lg);
+  padding: 0;
   padding-bottom: 70px; /* Space for bottom nav */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   position: relative;
   box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Ensure header is sticky on Swap page */
+.mobile-swap-container .mobile-swap-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+/* Content wrapper padding for sticky header */
+.mobile-swap-container > div[style*="maxWidth"] {
+  padding: 16px;
+  padding-top: 12px;
 }
 
 /* Header */
 .mobile-swap-header {
-  background-color: transparent;
+  background: radial-gradient(1200px 800px at 50% 0%, #2a2a2a 0%, #111111 45%, #0b0b0b 100%);
   padding: 12px 16px 12px 16px;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
   margin-bottom: var(--spacing-lg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.mobile-swap-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  pointer-events: none;
 }
 
 .mobile-swap-header-top {
@@ -509,49 +536,31 @@
   line-height: 1.4;
 }
 
-/* Swap Button */
+/* Swap Button - Hidden */
 .mobile-swap-button-container {
-  width: 604px !important;
-  max-width: 100% !important;
-  margin-top: 0 !important;
-  margin-bottom: 0px !important;
-  padding-left: 4px; /* Allow circle to overlap left edge */
-  display: flex;
-  justify-content: center;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
   position: absolute !important;
-  bottom: 200px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  z-index: 10 !important;
+  left: -9999px !important;
+  z-index: -1 !important;
 }
 
 .mobile-swap-button {
-  width: 604px;
-  max-width: 100%;
-  height: 78px;
-  background-color: #7cd85e !important; /* Neon green as in image */
-  border-radius: 39px; /* Very rounded, almost semicircular */
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--spacing-lg) 0 0; /* No left padding to allow circle to overlap */
-  cursor: pointer;
-  position: relative;
-  overflow: visible; /* Allow circle to overlap edge */
-  font-size: 22px;
-  font-weight: 700;
-  color: #000000;
-  opacity: 1;
-  transition: all 0.3s ease;
-  box-shadow: 0 0 18px rgba(63, 248, 4, 0.55) !important; /* Glow shadow */
-  margin: 0 auto;
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+  z-index: -1 !important;
 }
 
 .mobile-swap-button:hover:not(:disabled) {
@@ -873,5 +882,31 @@
 
 .mobile-swap-hidden {
   display: none;
+}
+
+/* Hide the orange "Connected" button from PickButton/ConnectionButton in mobile swap */
+.mobile-swap-pick-button-wrapper button[style*="F26E01"],
+.mobile-swap-pick-button-wrapper button[style*="#F26E01"],
+.mobile-swap-pick-button-wrapper button[style*="f26e01"],
+.mobile-swap-pick-button-wrapper .btn[style*="F26E01"],
+.mobile-swap-pick-button-wrapper .btn[style*="#F26E01"],
+.mobile-swap-pick-button-wrapper .btn[style*="f26e01"],
+.mobile-swap-container button[style*="F26E01"],
+.mobile-swap-container button[style*="#F26E01"],
+.mobile-swap-container button[style*="f26e01"],
+.mobile-swap-container .btn[style*="F26E01"],
+.mobile-swap-container .btn[style*="#F26E01"],
+.mobile-swap-container .btn[style*="f26e01"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+  z-index: -1 !important;
+  pointer-events: none !important;
 }
 

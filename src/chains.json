@@ -539,7 +539,7 @@
     {
         "chainName": "Solana",
         "chainId": "501111",
-        "img": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/solana/info/logo.png",
+        "img": "https://assets.coingecko.com/coins/images/4128/large/solana.png",
         "type": "SOLANA",
         "nativeCurrency": {
             "name": "SOL",
@@ -731,7 +731,7 @@
     {
         "chainName": "XRP",
         "chainId": "144",
-        "img": "https://assets.coingecko.com/coins/images/5/large/xrp.png?v=2",
+        "img": "https://cryptologos.cc/logos/xrp-xrp-logo.png",
         "type": "XRP",
         "nativeCurrency": {
             "name": "XRP",

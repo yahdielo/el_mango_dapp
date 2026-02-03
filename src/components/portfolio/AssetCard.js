@@ -1,5 +1,6 @@
 import React from 'react';
 import '../css/PortfolioMobile.css';
+import chainConfig from '../../services/chainConfig';
 
 const AssetCard = ({ asset }) => {
     const formatCurrency = (value) => {
@@ -21,22 +22,50 @@ const AssetCard = ({ asset }) => {
         });
     };
 
-    const getTokenIcon = (symbol) => {
-        // Use the same icon logic as MobileTokenSelector
-        if (symbol === 'BNB') {
-            return <div className="asset-icon asset-icon-bnb">◆</div>;
-        } else if (symbol === 'MANGO') {
-            return <div className="asset-icon asset-icon-mango">🥭</div>;
-        } else {
-            return <div className="asset-icon asset-icon-default">{symbol[0]}</div>;
+    const getTokenIcon = (asset) => {
+        // High-quality token icons by symbol
+        const TOKEN_ICONS = {
+            BNB: 'https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png',
+            ETH: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
+            USDC: 'https://assets.coingecko.com/coins/images/6319/large/usdc.png',
+            // Use local Mango app logo as the Mango token icon
+            MANGO: '/logo192.png',
+        };
+
+        const tokenIconUrl = TOKEN_ICONS[asset.symbol];
+
+        if (tokenIconUrl) {
+            return (
+                <div className="asset-icon">
+                    <img src={tokenIconUrl} alt={asset.symbol} />
+                </div>
+            );
         }
+
+        // Fallback to chain logo if available
+        const chain = chainConfig.getChain(asset.chainId);
+        const chainImg = chain?.img;
+        if (chainImg) {
+            return (
+                <div className="asset-icon">
+                    <img src={chainImg} alt={chain?.chainName || asset.symbol} />
+                </div>
+            );
+        }
+
+        // Generic fallback
+        return (
+            <div className="asset-icon asset-icon-default">
+                {asset.symbol?.[0] || '?'}
+            </div>
+        );
     };
 
     return (
         <div className="portfolio-asset-card">
             <div className="portfolio-asset-header">
                 <div className="portfolio-asset-info">
-                    {getTokenIcon(asset.symbol)}
+                    {getTokenIcon(asset)}
                     <div className="portfolio-asset-details">
                         <div className="portfolio-asset-symbol">{asset.symbol}</div>
                         <div className="portfolio-asset-name">{asset.name}</div>

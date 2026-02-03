@@ -1,53 +1,76 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAccount } from 'wagmi';
 import '../css/PortfolioMobile.css';
 
 const PortfolioChart = ({ address, isConnected, selectedChain }) => {
+    const { address: accountAddress, isConnected: accountConnected } = useAccount();
+    const finalAddress = address || accountAddress;
+    const finalIsConnected = isConnected || accountConnected;
+    
     const [chartData, setChartData] = useState([]);
     const [timeRange, setTimeRange] = useState('7d'); // '7d', '30d', 'all'
     const [loading, setLoading] = useState(true);
     const [topAssets, setTopAssets] = useState([]);
     const [recentActivity, setRecentActivity] = useState([]);
 
-    useEffect(() => {
-        if (isConnected && address) {
-            // TODO: Fetch actual chart data from API
-            setLoading(true);
-            setTimeout(() => {
-                // Mock chart data
-                const mockData = [];
-                const now = Date.now();
-                for (let i = 6; i >= 0; i--) {
-                    const date = new Date(now - i * 24 * 60 * 60 * 1000);
-                    mockData.push({
-                        date: date.toISOString().split('T')[0],
-                        value: 10000 + Math.random() * 5000
-                    });
-                }
-                setChartData(mockData);
-
-                // Mock top assets
-                setTopAssets([
-                    { symbol: 'BNB', change: 5.2 },
-                    { symbol: 'ETH', change: 3.8 },
-                    { symbol: 'MANGO', change: 2.1 }
-                ]);
-
-                // Mock recent activity
-                setRecentActivity([
-                    { type: 'Swap', description: 'Swapped 10 BNB for MANGO', time: '2 hours ago' },
-                    { type: 'Stake', description: 'Staked 100 MANGO', time: '1 day ago' },
-                    { type: 'Liquidity', description: 'Added liquidity to BNB/MANGO', time: '2 days ago' }
-                ]);
-
-                setLoading(false);
-            }, 1000);
-        } else {
+    const fetchChartData = useCallback(async () => {
+        if (!finalIsConnected || !finalAddress) {
             setChartData([]);
             setTopAssets([]);
             setRecentActivity([]);
             setLoading(false);
+            return;
         }
-    }, [isConnected, address, selectedChain, timeRange]);
+
+        setLoading(true);
+        try {
+            // TODO: Fetch actual chart data from API
+            // This would:
+            // 1. Get historical portfolio values for the selected time range
+            // 2. Calculate top performing assets
+            // 3. Get recent activity summary
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Generate chart data based on time range
+            const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+            const mockData = [];
+            const now = Date.now();
+            for (let i = days - 1; i >= 0; i--) {
+                const date = new Date(now - i * 24 * 60 * 60 * 1000);
+                mockData.push({
+                    date: date.toISOString().split('T')[0],
+                    value: 10000 + Math.random() * 5000 + (days - i) * 50 // Trending upward
+                });
+            }
+            setChartData(mockData);
+
+            // Mock top assets
+            setTopAssets([
+                { symbol: 'BNB', change: 5.2 },
+                { symbol: 'ETH', change: 3.8 },
+                { symbol: 'MANGO', change: 2.1 }
+            ]);
+
+            // Mock recent activity
+            setRecentActivity([
+                { type: 'Swap', description: 'Swapped 10 BNB for MANGO', time: '2 hours ago' },
+                { type: 'Stake', description: 'Staked 100 MANGO', time: '1 day ago' },
+                { type: 'Liquidity', description: 'Added liquidity to BNB/MANGO', time: '2 days ago' }
+            ]);
+        } catch (error) {
+            console.error('Error fetching chart data:', error);
+            setChartData([]);
+            setTopAssets([]);
+            setRecentActivity([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [finalIsConnected, finalAddress, selectedChain, timeRange]);
+
+    useEffect(() => {
+        fetchChartData();
+    }, [fetchChartData]);
 
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('en-US', {
@@ -58,7 +81,7 @@ const PortfolioChart = ({ address, isConnected, selectedChain }) => {
         }).format(value);
     };
 
-    if (!isConnected) {
+    if (!finalIsConnected) {
         return (
             <div className="portfolio-card">
                 <div className="portfolio-empty-state">

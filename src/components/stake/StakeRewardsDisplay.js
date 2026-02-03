@@ -1,39 +1,82 @@
 import React, { useState, useEffect } from 'react';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import chainConfig from '../../services/chainConfig';
 import '../css/StakeMobile.css';
 
 const StakeRewardsDisplay = ({ address, chainId }) => {
+    const { address: accountAddress } = useAccount();
+    const finalAddress = address || accountAddress;
+    
     const [rewards, setRewards] = useState({
         totalPending: 0,
         totalClaimed: 0,
         byToken: []
     });
     const [loading, setLoading] = useState(true);
+    const [claiming, setClaiming] = useState(false);
+    const [txHash, setTxHash] = useState(null);
+    
+    const stakingAddress = chainConfig.getContractAddress(chainId, 'manager');
+    const gasSettings = chainConfig.getGasSettings(chainId);
+    const { writeContract } = useWriteContract();
+    
+    // Transaction receipt
+    const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+        hash: txHash,
+        query: {
+            enabled: !!txHash,
+        },
+    });
 
+    // Handle transaction confirmation
     useEffect(() => {
-        if (address) {
-            // TODO: Fetch actual rewards from API
-            setLoading(true);
-            setTimeout(() => {
-                // Mock data
-                setRewards({
-                    totalPending: 15.25,
-                    totalClaimed: 50.75,
-                    byToken: [
-                        { token: 'MANGO', pending: 12.50, claimed: 40.00 },
-                        { token: 'BNB', pending: 2.75, claimed: 10.75 }
-                    ]
-                });
-                setLoading(false);
-            }, 1000);
-        } else {
+        if (isConfirmed && txHash) {
+            alert('All rewards claimed successfully!');
+            setClaiming(false);
+            setTxHash(null);
+            fetchRewards();
+        }
+    }, [isConfirmed, txHash]);
+
+    const fetchRewards = async () => {
+        if (!finalAddress) {
             setRewards({
                 totalPending: 0,
                 totalClaimed: 0,
                 byToken: []
             });
             setLoading(false);
+            return;
         }
-    }, [address, chainId]);
+
+        setLoading(true);
+        try {
+            // TODO: Fetch actual rewards from API/contract
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Mock data
+            setRewards({
+                totalPending: 15.25,
+                totalClaimed: 50.75,
+                byToken: [
+                    { token: 'MANGO', pending: 12.50, claimed: 40.00 },
+                    { token: 'BNB', pending: 2.75, claimed: 10.75 }
+                ]
+            });
+        } catch (error) {
+            console.error('Error fetching rewards:', error);
+            setRewards({
+                totalPending: 0,
+                totalClaimed: 0,
+                byToken: []
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchRewards();
+    }, [finalAddress, chainId]);
 
     const handleClaimAll = async () => {
         if (rewards.totalPending === 0) {
@@ -41,9 +84,25 @@ const StakeRewardsDisplay = ({ address, chainId }) => {
             return;
         }
 
-        // TODO: Implement claim all rewards logic
-        console.log('Claiming all rewards:', rewards.totalPending);
-        alert(`Claimed ${rewards.totalPending} tokens!`);
+        setClaiming(true);
+        try {
+            // TODO: Implement actual contract interaction
+            // const stakingAbi = parseAbi(['function claimAllRewards()']);
+            // writeContract({
+            //     address: stakingAddress,
+            //     abi: stakingAbi,
+            //     functionName: 'claimAllRewards',
+            // });
+
+            // Simulate transaction
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const mockTxHash = '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+            setTxHash(mockTxHash);
+        } catch (error) {
+            console.error('Error claiming rewards:', error);
+            alert('Failed to claim rewards: ' + (error.message || 'Unknown error'));
+            setClaiming(false);
+        }
     };
 
     if (loading) {
@@ -111,9 +170,15 @@ const StakeRewardsDisplay = ({ address, chainId }) => {
                     <button
                         className="stake-button stake-button-primary"
                         onClick={handleClaimAll}
+                        disabled={claiming || isConfirming}
                     >
-                        Claim All Rewards
+                        {claiming || isConfirming ? (isConfirming ? 'Confirming...' : 'Claiming...') : 'Claim All Rewards'}
                     </button>
+                    {txHash && (
+                        <div style={{ marginTop: '8px', fontSize: '12px', color: '#7A7A7A', textAlign: 'center' }}>
+                            Transaction: {txHash.substring(0, 10)}...{txHash.substring(txHash.length - 8)}
+                        </div>
+                    )}
                 </div>
             )}
         </div>

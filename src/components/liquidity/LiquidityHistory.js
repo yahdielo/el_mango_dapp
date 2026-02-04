@@ -1,77 +1,114 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useAccount, usePublicClient } from 'wagmi';
+import { parseAbi } from 'viem';
+import chainConfig from '../../services/chainConfig';
+import { getSwapHistory } from '../../services/transactionHistory';
 import '../css/LiquidityMobile.css';
 
 const LiquidityHistory = ({ address, chainId }) => {
+    const { address: accountAddress } = useAccount();
+    const publicClient = usePublicClient();
+    const finalAddress = address || accountAddress;
+    
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // 'all', 'add', 'remove', 'claim'
 
+    const fetchHistory = useCallback(async () => {
+        if (!finalAddress) {
+            setHistory([]);
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Fetch from transaction history (localStorage)
+            const swapHistory = getSwapHistory(finalAddress, chainId);
+            
+            // Filter for liquidity-related transactions
+            const liquidityHistory = swapHistory.filter(tx => 
+                tx.type === 'addLiquidity' || 
+                tx.type === 'removeLiquidity' || 
+                tx.type === 'claimFees'
+            ).map(tx => {
+                // Map transaction types to history format
+                let type = 'add';
+                if (tx.type === 'removeLiquidity') type = 'remove';
+                if (tx.type === 'claimFees') type = 'claim';
+
+                // Extract token pair from tokenOut or tokenIn
+                let tokenPair = 'Unknown';
+                if (tx.tokenOut) {
+                    // tokenOut might be "TOKENA/TOKENB" or just a symbol
+                    tokenPair = tx.tokenOut;
+                } else if (tx.tokenIn && tx.tokenIn !== 'LP') {
+                    tokenPair = tx.tokenIn;
+                }
+
+                return {
+                    id: tx.txHash,
+                    type: type,
+                    tokenPair: tokenPair,
+                    amount: tx.amountIn || '0',
+                    lpTokens: tx.type === 'addLiquidity' ? tx.amountIn : (tx.type === 'removeLiquidity' ? tx.amountIn : '0'),
+                    tokensReceived: tx.type === 'removeLiquidity' && tx.amountOut ? {
+                        tokenA: tx.amountOut.split('/')[0] || '0',
+                        tokenB: tx.amountOut.split('/')[1] || '0',
+                    } : undefined,
+                    fees: tx.type === 'claimFees' ? tx.amountOut : undefined,
+                    timestamp: tx.timestamp || tx.createdAt || new Date().toISOString(),
+                    txHash: tx.txHash,
+                    status: tx.status || 'completed',
+                };
+            });
+
+            // Sort by timestamp (newest first)
+            liquidityHistory.sort((a, b) => {
+                const dateA = new Date(a.timestamp);
+                const dateB = new Date(b.timestamp);
+                return dateB - dateA;
+            });
+
+            setHistory(liquidityHistory);
+
+            // TODO: Also fetch from blockchain events for more complete history
+            // This would involve:
+            // 1. Querying contract events (PairCreated, Mint, Burn, Swap)
+            // 2. Filtering by user address
+            // 3. Parsing event data
+            // 4. Merging with localStorage history
+            // 
+            // Example:
+            // const events = await publicClient.getLogs({
+            //     address: pairAddress,
+            //     event: parseAbiItem('event Mint(address indexed sender, uint amount0, uint amount1)'),
+            //     args: { sender: finalAddress },
+            //     fromBlock: 'earliest',
+            // });
+            
+        } catch (error) {
+            console.error('Error fetching history:', error);
+            setHistory([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [finalAddress, chainId]);
+
     useEffect(() => {
-        const fetchHistory = async () => {
-            if (!address) {
-                setHistory([]);
-                setLoading(false);
-                return;
-            }
-
-            setLoading(true);
-            try {
-                // TODO: Fetch actual history from blockchain events or subgraph
-                // This would involve:
-                // 1. Querying DEX subgraph for user's liquidity events
-                // 2. Filtering by event type (AddLiquidity, RemoveLiquidity, Collect)
-                // 3. Formatting data with token pairs, amounts, timestamps, tx hashes
-                // 4. Sorting by timestamp (newest first)
-                
-                // Mock data for now
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                setHistory([
-                    {
-                        id: 1,
-                        type: 'add',
-                        tokenPair: 'BNB/MANGO',
-                        amount: '50.25',
-                        lpTokens: '50.25',
-                        timestamp: new Date(Date.now() - 86400000).toISOString(),
-                        txHash: '0x123...abc'
-                    },
-                    {
-                        id: 2,
-                        type: 'remove',
-                        tokenPair: 'ETH/USDC',
-                        amount: '25.00',
-                        tokensReceived: { tokenA: '12.5', tokenB: '12.5' },
-                        timestamp: new Date(Date.now() - 172800000).toISOString(),
-                        txHash: '0x456...def'
-                    },
-                    {
-                        id: 3,
-                        type: 'claim',
-                        tokenPair: 'BNB/MANGO',
-                        fees: '5.25',
-                        timestamp: new Date(Date.now() - 259200000).toISOString(),
-                        txHash: '0x789...ghi'
-                    }
-                ]);
-            } catch (error) {
-                console.error('Error fetching history:', error);
-                setHistory([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchHistory();
-    }, [address, chainId]);
+    }, [fetchHistory]);
 
     const formatDate = (timestamp) => {
         const date = new Date(timestamp);
         return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
-    const filteredHistory = filter === 'all' 
-        ? history 
-        : history.filter(item => item.type === filter);
+    const filteredHistory = useMemo(() => {
+        return filter === 'all' 
+            ? history 
+            : history.filter(item => item.type === filter);
+    }, [history, filter]);
 
     if (loading) {
         return (
@@ -153,13 +190,24 @@ const LiquidityHistory = ({ address, chainId }) => {
 
                         {item.txHash && (
                             <a 
-                                href={`https://basescan.org/tx/${item.txHash}`}
+                                href={chainConfig.getChain(chainId)?.blockExplorers?.[0]?.url 
+                                    ? `${chainConfig.getChain(chainId).blockExplorers[0].url}/tx/${item.txHash}`
+                                    : `https://basescan.org/tx/${item.txHash}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="liquidity-history-link"
                             >
                                 View on Explorer
                             </a>
+                        )}
+                        {item.status && item.status !== 'completed' && (
+                            <div className="liquidity-history-status" style={{
+                                fontSize: '11px',
+                                color: item.status === 'pending' ? '#FF9800' : '#F44336',
+                                marginTop: '4px'
+                            }}>
+                                Status: {item.status}
+                            </div>
                         )}
                     </div>
                 ))}

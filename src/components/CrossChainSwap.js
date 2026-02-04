@@ -15,6 +15,7 @@ import chainConfig from '../services/chainConfig';
 import { checkMinimumAmount } from '../utils/chainValidation';
 import { supportsDirectSwap, requiresLayerSwap, supportsWhitelist, getFeatureMessage, FEATURE_FLAGS } from '../utils/featureFlags';
 import { formatErrorForDisplay } from '../utils/chainErrors';
+import { fetchMultipleRoutes, getBestRoute, compareRoutes, formatTimeEstimate, formatCostEstimate } from '../services/routeOptimization';
 import ChainStatusBadge from './ChainStatusBadge';
 import WhitelistBadge from './WhitelistBadge';
 import SwapProgress from './SwapProgress';
@@ -40,13 +41,18 @@ const CrossChainSwap = ({ className = '' }) => {
     const [selectedTokenIn, setSelectedTokenIn] = useState(null);
     const [selectedTokenOut, setSelectedTokenOut] = useState(null);
     
-    // Route discovery
-    const { routes, loading: routesLoading, error: routesError } = useSwapRoutes(
+    // Route discovery with optimization
+    const { routes: basicRoutes, loading: routesLoading, error: routesError } = useSwapRoutes(
         sourceChainId,
         destChainId,
         tokenIn || null,
         tokenOut || null
     );
+    
+    const [optimizedRoutes, setOptimizedRoutes] = useState([]);
+    const [routesComparison, setRoutesComparison] = useState(null);
+    const [selectedRoute, setSelectedRoute] = useState(null);
+    const [loadingOptimizedRoutes, setLoadingOptimizedRoutes] = useState(false);
     
     // Fee estimation
     const estimateParams = sourceChainId && destChainId && tokenIn && tokenOut && amountIn
@@ -55,7 +61,7 @@ const CrossChainSwap = ({ className = '' }) => {
     const { estimate, loading: estimateLoading, error: estimateError } = useSwapEstimate(estimateParams);
     
     // Swap execution
-    const { initiateSwap, swapStatus, loading: swapLoading, error: swapError, cancelSwap } = useCrossChainSwap();
+    const { initiateSwap, swapStatus, loading: swapLoading, error: swapError, cancelSwap, requestRefund, getRefundStatus } = useCrossChainSwap();
     
     // Token balance hooks
     // For tokenIn balance (source chain)
@@ -125,6 +131,7 @@ const CrossChainSwap = ({ className = '' }) => {
                 tokenOut,
                 amountIn,
                 recipient: address,
+                routeId: selectedRoute?.id, // Include selected route ID if available
             });
             setShowConfirmation(false);
         } catch (error) {
@@ -132,6 +139,26 @@ const CrossChainSwap = ({ className = '' }) => {
             // Format error using ChainConfigService
             const formattedError = formatErrorForDisplay(error, sourceChainId);
             alert(`${formattedError.title}\n${formattedError.message}\n${formattedError.suggestion}`);
+        }
+    };
+
+    const handleRequestRefund = async () => {
+        if (!swapStatus?.swapId) {
+            alert('No swap ID available for refund request');
+            return;
+        }
+
+        const reason = window.prompt('Please provide a reason for the refund request:');
+        if (!reason) {
+            return; // User cancelled
+        }
+
+        try {
+            await requestRefund(swapStatus.swapId, reason);
+            alert('Refund request submitted successfully. You will be notified once it is processed.');
+        } catch (error) {
+            console.error('Refund request failed:', error);
+            alert('Failed to request refund: ' + (error.message || 'Unknown error'));
         }
     };
 
@@ -161,6 +188,50 @@ const CrossChainSwap = ({ className = '' }) => {
             setDestChainId(token.chainId);
         }
     };
+
+    // Fetch optimized routes when parameters change
+    useEffect(() => {
+        const fetchOptimized = async () => {
+            if (!sourceChainId || !destChainId || !tokenIn || !tokenOut || !amountIn) {
+                setOptimizedRoutes([]);
+                setRoutesComparison(null);
+                setSelectedRoute(null);
+                return;
+            }
+
+            setLoadingOptimizedRoutes(true);
+            try {
+                const routes = await fetchMultipleRoutes(
+                    sourceChainId,
+                    destChainId,
+                    tokenIn,
+                    tokenOut,
+                    amountIn
+                );
+                
+                setOptimizedRoutes(routes);
+                
+                if (routes.length > 0) {
+                    const comparison = compareRoutes(routes);
+                    setRoutesComparison(comparison);
+                    // Auto-select best route
+                    setSelectedRoute(comparison.bestRoute);
+                } else {
+                    setRoutesComparison(null);
+                    setSelectedRoute(null);
+                }
+            } catch (error) {
+                console.error('Error fetching optimized routes:', error);
+                setOptimizedRoutes([]);
+                setRoutesComparison(null);
+                setSelectedRoute(null);
+            } finally {
+                setLoadingOptimizedRoutes(false);
+            }
+        };
+
+        fetchOptimized();
+    }, [sourceChainId, destChainId, tokenIn, tokenOut, amountIn]);
 
     // Get chainInfo for token list component
     const chainInfo = useMemo(() => {
@@ -401,10 +472,111 @@ const CrossChainSwap = ({ className = '' }) => {
                         </Alert>
                     )}
 
-                    {routes && routes.length > 0 && (
+                    {/* Optimized Routes Comparison */}
+                    {loadingOptimizedRoutes && (
+                        <div className="text-center mt-3">
+                            <Spinner size="sm" /> Finding best routes...
+                        </div>
+                    )}
+
+                    {optimizedRoutes && optimizedRoutes.length > 0 && routesComparison && (
+                        <div className="routes-comparison mt-3">
+                            <h6>Available Routes (Best First)</h6>
+                            <div className="routes-list">
+                                {optimizedRoutes.map((route, index) => {
+                                    const isSelected = selectedRoute?.id === route.id;
+                                    const isBest = index === 0;
+                                    const totalCost = parseFloat(route.totalFee || 0) + parseFloat(route.gasCost || 0);
+                                    
+                                    return (
+                                        <div 
+                                            key={route.id} 
+                                            className={`route-item ${isSelected ? 'route-selected' : ''} ${isBest ? 'route-best' : ''}`}
+                                            onClick={() => setSelectedRoute(route)}
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            <div className="route-header">
+                                                <div className="d-flex align-items-center gap-2">
+                                                    {isBest && <Badge bg="success">Best</Badge>}
+                                                    {isSelected && <Badge bg="primary">Selected</Badge>}
+                                                    <Badge bg={route.type === 'layerswap' ? 'info' : 'secondary'}>
+                                                        {route.bridge || route.type}
+                                                    </Badge>
+                                                    <span className="route-name">
+                                                        {route.source} → {route.destination}
+                                                    </span>
+                                                </div>
+                                                <div className="route-score">
+                                                    Score: {route.score?.toFixed(1) || 'N/A'}
+                                                </div>
+                                            </div>
+                                            <div className="route-details">
+                                                <div className="route-detail-item">
+                                                    <span>Total Cost:</span>
+                                                    <span className="route-value">{formatCostEstimate(totalCost)}</span>
+                                                </div>
+                                                <div className="route-detail-item">
+                                                    <span><Clock size={14} /> Estimated Time:</span>
+                                                    <span className="route-value">{formatTimeEstimate(route.estimatedTime)}</span>
+                                                </div>
+                                                <div className="route-detail-item">
+                                                    <span>Reliability:</span>
+                                                    <span className="route-value">{(route.reliability * 100).toFixed(1)}%</span>
+                                                </div>
+                                                {route.layerSwapFee && parseFloat(route.layerSwapFee) > 0 && (
+                                                    <div className="route-detail-item">
+                                                        <span>LayerSwap Fee:</span>
+                                                        <span className="route-value">{formatCostEstimate(route.layerSwapFee)}</span>
+                                                    </div>
+                                                )}
+                                                {route.mangoFee && parseFloat(route.mangoFee) > 0 && (
+                                                    <div className="route-detail-item">
+                                                        <span>Mango Fee:</span>
+                                                        <span className="route-value">{formatCostEstimate(route.mangoFee)}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            
+                            {/* Route Comparison Summary */}
+                            {routesComparison && optimizedRoutes.length > 1 && (
+                                <div className="route-comparison-summary mt-3">
+                                    <h6>Route Comparison</h6>
+                                    <div className="comparison-grid">
+                                        <div className="comparison-item">
+                                            <span className="comparison-label">Cheapest:</span>
+                                            <span className="comparison-value">
+                                                {routesComparison.cheapestRoute?.bridge || 'N/A'}
+                                            </span>
+                                        </div>
+                                        <div className="comparison-item">
+                                            <span className="comparison-label">Fastest:</span>
+                                            <span className="comparison-value">
+                                                {routesComparison.fastestRoute?.bridge || 'N/A'} 
+                                                ({formatTimeEstimate(routesComparison.fastestRoute?.estimatedTime)})
+                                            </span>
+                                        </div>
+                                        <div className="comparison-item">
+                                            <span className="comparison-label">Most Reliable:</span>
+                                            <span className="comparison-value">
+                                                {routesComparison.mostReliableRoute?.bridge || 'N/A'}
+                                                ({(routesComparison.mostReliableRoute?.reliability * 100).toFixed(1)}%)
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Fallback to basic routes if optimization fails */}
+                    {(!optimizedRoutes || optimizedRoutes.length === 0) && basicRoutes && basicRoutes.length > 0 && (
                         <div className="routes-info mt-3">
                             <h6>Available Routes</h6>
-                            {routes.map((route, index) => (
+                            {basicRoutes.map((route, index) => (
                                 <div key={index} className="route-item">
                                     <div className="route-details">
                                         <Badge bg="info">{route.source} → {route.destination}</Badge>
@@ -596,7 +768,11 @@ const CrossChainSwap = ({ className = '' }) => {
                     {/* Swap Status/Progress */}
                     {swapStatus && (
                         <div className="mt-3">
-                            <SwapProgress swapStatus={swapStatus} onCancel={cancelSwap} />
+                            <SwapProgress 
+                                swapStatus={swapStatus} 
+                                onCancel={cancelSwap}
+                                onRequestRefund={swapStatus.status === 'failed' ? handleRequestRefund : null}
+                            />
                         </div>
                     )}
 

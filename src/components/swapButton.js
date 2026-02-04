@@ -8,10 +8,13 @@ import chainConfig from '../services/chainConfig';
 import { estimateGas, TRANSACTION_TYPES, handleGasEstimationError } from '../utils/gasEstimation';
 import { formatErrorForDisplay } from '../utils/chainErrors';
 import { getSlippageToleranceInBasisPoints } from '../utils/slippageUtils';
-import { usePublicClient } from 'wagmi';
+import { usePublicClient, useAccount, useChainId } from 'wagmi';
+import { saveSwapTransaction } from '../services/transactionHistory';
 dotenv.config();
 
 const SwapButton = ({ token0, token1, amount, chatId, referrer, chainInfo }) => {
+    const { address } = useAccount();
+    const chainId = useChainId();
     const [showAlert, setShowAlert] = useState(false);
     const [txHash, setTxHash] = useState(null);
     const [isSwapping, setIsSwapping] = useState(false);
@@ -59,6 +62,23 @@ const SwapButton = ({ token0, token1, amount, chatId, referrer, chainInfo }) => 
 
     useEffect(() => {
         if (isSuccess && txHash) {
+            // Save transaction to history
+            try {
+                saveSwapTransaction({
+                    txHash: txHash,
+                    userAddress: address,
+                    chainId: chainId,
+                    tokenIn: token0.symbol,
+                    tokenOut: token1.symbol,
+                    amountIn: amount,
+                    amountOut: null, // Will be updated when transaction is confirmed
+                    status: 'pending',
+                    timestamp: Date.now(),
+                });
+            } catch (error) {
+                console.error('Failed to save swap transaction:', error);
+            }
+            
             if (token0.symbol === 'ETH') {
                 // Send receipt after successful transaction
                 const data = {

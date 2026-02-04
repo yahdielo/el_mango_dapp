@@ -219,6 +219,53 @@ export const referralApi = {
             handleError(error, sourceChainId);
         }
     },
+
+    /**
+     * Get referral rewards for an address
+     * @param {string} address - User wallet address
+     * @param {number|null} chainId - Optional chain ID (if null, returns all chains)
+     * @returns {Promise<Object>} Rewards information
+     */
+    getReferralRewards: async (address, chainId = null) => {
+        try {
+            return await makeRequestWithRetry(async (timeout) => {
+                const params = {};
+                if (chainId) params.chainId = chainId;
+                
+                const response = await apiClient.get(`/api/v1/referral-chain/${address}/rewards`, {
+                    params,
+                    timeout,
+                });
+                return response.data;
+            }, chainId);
+        } catch (error) {
+            handleError(error, chainId);
+        }
+    },
+
+    /**
+     * Get rewards for a specific referral
+     * @param {string} address - User wallet address
+     * @param {string} referrerAddress - Referrer address
+     * @param {number|null} chainId - Optional chain ID
+     * @returns {Promise<Object>} Rewards for the referral
+     */
+    getReferralRewardsByReferrer: async (address, referrerAddress, chainId = null) => {
+        try {
+            return await makeRequestWithRetry(async (timeout) => {
+                const params = { referrerAddress };
+                if (chainId) params.chainId = chainId;
+                
+                const response = await apiClient.get(`/api/v1/referral-chain/${address}/rewards/by-referrer`, {
+                    params,
+                    timeout,
+                });
+                return response.data;
+            }, chainId);
+        } catch (error) {
+            handleError(error, chainId);
+        }
+    },
 };
 
 /**
@@ -330,6 +377,48 @@ export const chainApi = {
     },
 
     /**
+     * Get chain health metrics
+     * @param {number} chainId - Chain ID
+     * @param {Object} options - Query options (startDate, endDate)
+     * @returns {Promise<Object>} Health metrics
+     */
+    getChainHealthMetrics: async (chainId, options = {}) => {
+        try {
+            return await makeRequestWithRetry(async (timeout) => {
+                const params = { ...options };
+                const response = await apiClient.get(`/api/v1/chains/${chainId}/health`, {
+                    params,
+                    timeout,
+                });
+                return response.data;
+            }, chainId);
+        } catch (error) {
+            handleError(error, chainId);
+        }
+    },
+
+    /**
+     * Get historical chain status
+     * @param {number} chainId - Chain ID
+     * @param {Object} options - Query options (startDate, endDate, interval)
+     * @returns {Promise<Array>} Historical status data
+     */
+    getChainStatusHistory: async (chainId, options = {}) => {
+        try {
+            return await makeRequestWithRetry(async (timeout) => {
+                const params = { ...options };
+                const response = await apiClient.get(`/api/v1/chains/${chainId}/status/history`, {
+                    params,
+                    timeout,
+                });
+                return response.data.history || [];
+            }, chainId);
+        } catch (error) {
+            handleError(error, chainId);
+        }
+    },
+
+    /**
      * Get contract address for a chain and contract type
      * Helper method using ChainConfigService
      * @param {number} chainId - Chain ID
@@ -409,6 +498,32 @@ export const swapApi = {
     },
 
     /**
+     * Get swap history for an address
+     * @param {string} address - User wallet address
+     * @param {Object} options - Query options (chainId, page, limit, startDate, endDate, tokenPair, minAmount, maxAmount, search)
+     * @returns {Promise<Object>} Swap history with pagination
+     */
+    getSwapHistory: async (address, options = {}) => {
+        try {
+            return await makeRequestWithRetry(async (timeout) => {
+                const params = {
+                    page: options.page || 1,
+                    limit: options.limit || 50,
+                    ...options,
+                };
+                
+                const response = await apiClient.get(`/api/v1/swap/history/${address}`, {
+                    params,
+                    timeout,
+                });
+                return response.data;
+            }, options.chainId);
+        } catch (error) {
+            handleError(error, options.chainId);
+        }
+    },
+
+    /**
      * Get available cross-chain routes
      * Uses ChainConfigService to check if LayerSwap is required
      * @param {number} sourceChainId - Source chain ID
@@ -475,6 +590,44 @@ export const swapApi = {
         try {
             return await makeRequestWithRetry(async (timeout) => {
                 const response = await apiClient.post('/api/v1/swap/cancel', { swapId }, { timeout });
+                return response.data;
+            }, chainId);
+        } catch (error) {
+            handleError(error, chainId);
+        }
+    },
+
+    /**
+     * Request refund for a failed swap
+     * @param {string} swapId - Swap ID
+     * @param {string} reason - Reason for refund request
+     * @param {number} [chainId] - Optional chain ID for error messages
+     * @returns {Promise<Object>} Refund request result
+     */
+    requestRefund: async (swapId, reason = 'Swap failed', chainId = null) => {
+        try {
+            return await makeRequestWithRetry(async (timeout) => {
+                const response = await apiClient.post('/api/v1/swap/refund', {
+                    swapId,
+                    reason,
+                }, { timeout });
+                return response.data;
+            }, chainId);
+        } catch (error) {
+            handleError(error, chainId);
+        }
+    },
+
+    /**
+     * Get refund status for a swap
+     * @param {string} swapId - Swap ID
+     * @param {number} [chainId] - Optional chain ID for error messages
+     * @returns {Promise<Object>} Refund status
+     */
+    getRefundStatus: async (swapId, chainId = null) => {
+        try {
+            return await makeRequestWithRetry(async (timeout) => {
+                const response = await apiClient.get(`/api/v1/swap/${swapId}/refund`, { timeout });
                 return response.data;
             }, chainId);
         } catch (error) {
@@ -799,6 +952,41 @@ export const layerSwapApi = {
             throw new Error('Failed to get LayerSwap order status');
         }
     },
+
+    /**
+     * Request refund for a failed LayerSwap order
+     * @param {string} orderId - LayerSwap order ID
+     * @param {string} reason - Reason for refund request
+     * @returns {Promise<Object>} Refund request result
+     */
+    requestRefund: async (orderId, reason = 'Swap failed') => {
+        try {
+            const client = layerSwapApi.getClient();
+            const response = await client.post(`/api/orders/${orderId}/refund`, {
+                reason,
+            });
+            return response.data;
+        } catch (error) {
+            console.error('LayerSwap Refund Error:', error);
+            throw new Error('Failed to request refund');
+        }
+    },
+
+    /**
+     * Get refund status for a LayerSwap order
+     * @param {string} orderId - LayerSwap order ID
+     * @returns {Promise<Object>} Refund status
+     */
+    getRefundStatus: async (orderId) => {
+        try {
+            const client = layerSwapApi.getClient();
+            const response = await client.get(`/api/orders/${orderId}/refund`);
+            return response.data;
+        } catch (error) {
+            console.error('LayerSwap Refund Status Error:', error);
+            throw new Error('Failed to get refund status');
+        }
+    },
 };
 
 /**
@@ -883,6 +1071,118 @@ export const contractHelpers = {
     },
 };
 
+/**
+ * Reward API
+ * Handles reward fetching, claiming, and history
+ */
+export const rewardApi = {
+    /**
+     * Get all rewards for an address
+     * @param {string} address - User wallet address
+     * @param {number|null} chainId - Optional chain ID (if null, returns all chains)
+     * @returns {Promise<Array>} Array of reward objects
+     */
+    getRewards: async (address, chainId = null) => {
+        try {
+            return await makeRequestWithRetry(async (timeout) => {
+                const params = {};
+                if (chainId) params.chainId = chainId;
+                
+                const response = await apiClient.get(`/api/v1/rewards/${address}`, {
+                    params,
+                    timeout,
+                });
+                return response.data.rewards || [];
+            }, chainId);
+        } catch (error) {
+            handleError(error, chainId);
+        }
+    },
+
+    /**
+     * Get claimable rewards for an address
+     * @param {string} address - User wallet address
+     * @param {number|null} chainId - Optional chain ID
+     * @returns {Promise<Object>} Claimable rewards information
+     */
+    getClaimableRewards: async (address, chainId = null) => {
+        try {
+            return await makeRequestWithRetry(async (timeout) => {
+                const params = {};
+                if (chainId) params.chainId = chainId;
+                
+                const response = await apiClient.get(`/api/v1/rewards/${address}/claimable`, {
+                    params,
+                    timeout,
+                });
+                return response.data;
+            }, chainId);
+        } catch (error) {
+            handleError(error, chainId);
+        }
+    },
+
+    /**
+     * Claim rewards for a specific chain
+     * @param {string} address - User wallet address
+     * @param {number} chainId - Chain ID
+     * @returns {Promise<Object>} Claim transaction result
+     */
+    claimRewards: async (address, chainId) => {
+        try {
+            return await makeRequestWithRetry(async (timeout) => {
+                const response = await apiClient.post(`/api/v1/rewards/${address}/claim`, {
+                    chainId,
+                }, { timeout });
+                return response.data;
+            }, chainId);
+        } catch (error) {
+            handleError(error, chainId);
+        }
+    },
+
+    /**
+     * Batch claim rewards across multiple chains
+     * @param {string} address - User wallet address
+     * @param {Array<number>} chainIds - Array of chain IDs
+     * @returns {Promise<Object>} Batch claim result
+     */
+    batchClaimRewards: async (address, chainIds) => {
+        try {
+            return await makeRequestWithRetry(async (timeout) => {
+                const response = await apiClient.post(`/api/v1/rewards/${address}/batch-claim`, {
+                    chainIds,
+                }, { timeout });
+                return response.data;
+            }, chainIds[0]);
+        } catch (error) {
+            handleError(error, chainIds[0]);
+        }
+    },
+
+    /**
+     * Get reward history for an address
+     * @param {string} address - User wallet address
+     * @param {Object} filters - Filter options (chainId, startDate, endDate, status)
+     * @returns {Promise<Array>} Array of reward history items
+     */
+    getRewardHistory: async (address, filters = {}) => {
+        try {
+            return await makeRequestWithRetry(async (timeout) => {
+                const params = { ...filters };
+                
+                const response = await apiClient.get(`/api/v1/rewards/${address}/history`, {
+                    params,
+                    timeout,
+                });
+                return response.data.history || [];
+            }, filters.chainId);
+        } catch (error) {
+            handleError(error, filters.chainId);
+        }
+    },
+};
+
 // Export default object with all APIs
 export default {
     referral: referralApi,
@@ -891,6 +1191,7 @@ export default {
     swap: swapApi,
     tron: tronApi,
     layerSwap: layerSwapApi,
+    reward: rewardApi,
     healthCheck,
     contracts: contractHelpers,
 };

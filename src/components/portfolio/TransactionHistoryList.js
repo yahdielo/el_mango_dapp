@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAccount } from 'wagmi';
 import chainConfig from '../../services/chainConfig';
+import { getSwapHistory } from '../../services/transactionHistory';
 import '../css/PortfolioMobile.css';
 
 const TransactionHistoryList = ({ address, isConnected, selectedChain }) => {
@@ -11,6 +12,7 @@ const TransactionHistoryList = ({ address, isConnected, selectedChain }) => {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // 'all', 'swap', 'stake', 'liquidity', 'transfer'
+    const [searchQuery, setSearchQuery] = useState('');
 
     const fetchTransactions = useCallback(async () => {
         if (!finalIsConnected || !finalAddress) {
@@ -21,68 +23,111 @@ const TransactionHistoryList = ({ address, isConnected, selectedChain }) => {
 
         setLoading(true);
         try {
-            // TODO: Fetch actual transaction history from API/blockchain
-            // This would query:
-            // 1. Swap transactions from DEX contracts
-            // 2. Stake/unstake transactions from staking contracts
-            // 3. Liquidity add/remove transactions from LP contracts
-            // 4. Transfer transactions from token contracts
-            // 5. Aggregate and format for display
+            // Fetch from transaction history service (localStorage)
+            const swapHistory = getSwapHistory(finalAddress, selectedChain);
             
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Enhanced mock data
-            const mockTransactions = [
-                {
-                    id: 1,
-                    type: 'swap',
-                    fromToken: 'BNB',
-                    toToken: 'MANGO',
-                    amount: '10.00',
-                    timestamp: new Date(Date.now() - 3600000).toISOString(),
-                    chainId: 8453,
-                    chainName: 'Base',
-                    txHash: '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join(''),
-                    status: 'success'
-                },
-                {
-                    id: 2,
-                    type: 'stake',
-                    token: 'MANGO',
-                    amount: '100.00',
-                    timestamp: new Date(Date.now() - 86400000).toISOString(),
-                    chainId: 56,
-                    chainName: 'BNB Smart Chain',
-                    txHash: '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join(''),
-                    status: 'success'
-                },
-                {
-                    id: 3,
-                    type: 'liquidity',
-                    action: 'add',
-                    tokenPair: 'BNB/MANGO',
-                    amount: '50.25',
-                    timestamp: new Date(Date.now() - 172800000).toISOString(),
-                    chainId: 8453,
-                    chainName: 'Base',
-                    txHash: '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join(''),
-                    status: 'success'
-                },
-                {
-                    id: 4,
-                    type: 'transfer',
-                    token: 'ETH',
-                    amount: '1.5',
-                    to: '0xabc...xyz',
-                    timestamp: new Date(Date.now() - 259200000).toISOString(),
-                    chainId: 42161,
-                    chainName: 'Arbitrum One',
-                    txHash: '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join(''),
-                    status: 'success'
+            // Also check for liquidity history
+            let liquidityHistory = [];
+            try {
+                const liquidityHistoryJson = localStorage.getItem('liquidityHistory');
+                if (liquidityHistoryJson) {
+                    liquidityHistory = JSON.parse(liquidityHistoryJson);
+                    if (finalAddress) {
+                        liquidityHistory = liquidityHistory.filter(tx => 
+                            tx.userAddress?.toLowerCase() === finalAddress.toLowerCase()
+                        );
+                    }
+                    if (selectedChain) {
+                        liquidityHistory = liquidityHistory.filter(tx => tx.chainId === selectedChain);
+                    }
                 }
-            ];
-            
-            setTransactions(mockTransactions);
+            } catch (error) {
+                console.warn('Error reading liquidity history:', error);
+            }
+
+            // Check for staking history
+            let stakingHistory = [];
+            try {
+                const stakingHistoryJson = localStorage.getItem('stakingHistory');
+                if (stakingHistoryJson) {
+                    stakingHistory = JSON.parse(stakingHistoryJson);
+                    if (finalAddress) {
+                        stakingHistory = stakingHistory.filter(tx => 
+                            tx.userAddress?.toLowerCase() === finalAddress.toLowerCase()
+                        );
+                    }
+                    if (selectedChain) {
+                        stakingHistory = stakingHistory.filter(tx => tx.chainId === selectedChain);
+                    }
+                }
+            } catch (error) {
+                console.warn('Error reading staking history:', error);
+            }
+
+            // Combine and format all transactions
+            const allTransactions = [];
+
+            // Format swap transactions
+            swapHistory.forEach(tx => {
+                if (tx.type === 'swap' || !tx.type) {
+                    allTransactions.push({
+                        id: tx.txHash,
+                        type: 'swap',
+                        fromToken: tx.tokenInSymbol || tx.tokenIn || 'Unknown',
+                        toToken: tx.tokenOutSymbol || tx.tokenOut || 'Unknown',
+                        amount: tx.amountIn || '0',
+                        timestamp: tx.timestamp || tx.createdAt || new Date().toISOString(),
+                        chainId: tx.chainId,
+                        chainName: chainConfig.getChain(tx.chainId)?.chainName || `Chain ${tx.chainId}`,
+                        txHash: tx.txHash,
+                        status: tx.status || 'completed',
+                    });
+                }
+            });
+
+            // Format liquidity transactions
+            [...swapHistory.filter(tx => tx.type === 'addLiquidity' || tx.type === 'removeLiquidity'), ...liquidityHistory].forEach(tx => {
+                const isAdd = tx.type === 'addLiquidity' || tx.action === 'add';
+                const tokenPair = tx.tokenOut || tx.tokenPair || 'Unknown';
+                allTransactions.push({
+                    id: tx.txHash || `liquidity-${Date.now()}-${Math.random()}`,
+                    type: 'liquidity',
+                    action: isAdd ? 'add' : 'remove',
+                    tokenPair: tokenPair,
+                    amount: tx.amountIn || tx.amount || '0',
+                    timestamp: tx.timestamp || tx.createdAt || new Date().toISOString(),
+                    chainId: tx.chainId,
+                    chainName: chainConfig.getChain(tx.chainId)?.chainName || `Chain ${tx.chainId}`,
+                    txHash: tx.txHash,
+                    status: tx.status || 'completed',
+                });
+            });
+
+            // Format staking transactions
+            stakingHistory.forEach(tx => {
+                const isStake = tx.type === 'stake' || tx.action === 'stake';
+                allTransactions.push({
+                    id: tx.txHash || `stake-${Date.now()}-${Math.random()}`,
+                    type: 'stake',
+                    token: tx.tokenSymbol || tx.token || 'Unknown',
+                    amount: tx.amount || tx.amountIn || '0',
+                    action: isStake ? 'stake' : 'unstake',
+                    timestamp: tx.timestamp || tx.createdAt || new Date().toISOString(),
+                    chainId: tx.chainId,
+                    chainName: chainConfig.getChain(tx.chainId)?.chainName || `Chain ${tx.chainId}`,
+                    txHash: tx.txHash,
+                    status: tx.status || 'completed',
+                });
+            });
+
+            // Sort by timestamp (newest first)
+            allTransactions.sort((a, b) => {
+                const dateA = new Date(a.timestamp);
+                const dateB = new Date(b.timestamp);
+                return dateB - dateA;
+            });
+
+            setTransactions(allTransactions);
         } catch (error) {
             console.error('Error fetching transactions:', error);
             setTransactions([]);
@@ -117,22 +162,45 @@ const TransactionHistoryList = ({ address, isConnected, selectedChain }) => {
         }
     };
 
-    const filteredTransactions = filter === 'all'
-        ? transactions.filter(tx => !selectedChain || tx.chainId === selectedChain)
-        : transactions.filter(tx => 
-            tx.type === filter && (!selectedChain || tx.chainId === selectedChain)
-        );
+    const filteredTransactions = useMemo(() => {
+        let filtered = transactions;
+
+        // Apply type filter
+        if (filter !== 'all') {
+            filtered = filtered.filter(tx => tx.type === filter);
+        }
+
+        // Apply chain filter (already applied in fetchTransactions, but double-check)
+        if (selectedChain) {
+            filtered = filtered.filter(tx => tx.chainId === selectedChain);
+        }
+
+        // Apply search filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase().trim();
+            filtered = filtered.filter(tx => 
+                tx.txHash?.toLowerCase().includes(query) ||
+                tx.fromToken?.toLowerCase().includes(query) ||
+                tx.toToken?.toLowerCase().includes(query) ||
+                tx.token?.toLowerCase().includes(query) ||
+                tx.tokenPair?.toLowerCase().includes(query) ||
+                tx.chainName?.toLowerCase().includes(query)
+            );
+        }
+
+        return filtered;
+    }, [transactions, filter, selectedChain, searchQuery]);
 
     const getTransactionDescription = (tx) => {
         switch (tx.type) {
             case 'swap':
-                return `Swapped ${tx.amount} ${tx.fromToken} for ${tx.toToken}`;
+                return `Swapped ${parseFloat(tx.amount || '0').toFixed(4)} ${tx.fromToken} → ${tx.toToken}`;
             case 'stake':
-                return `Staked ${tx.amount} ${tx.token}`;
+                return `${tx.action === 'unstake' ? 'Unstaked' : 'Staked'} ${parseFloat(tx.amount || '0').toFixed(4)} ${tx.token}`;
             case 'liquidity':
-                return `${tx.action === 'add' ? 'Added' : 'Removed'} ${tx.amount} LP (${tx.tokenPair})`;
+                return `${tx.action === 'add' ? 'Added' : 'Removed'} ${parseFloat(tx.amount || '0').toFixed(4)} LP (${tx.tokenPair})`;
             case 'transfer':
-                return `Transferred ${tx.amount} ${tx.token}`;
+                return `Transferred ${parseFloat(tx.amount || '0').toFixed(4)} ${tx.token}`;
             default:
                 return 'Transaction';
         }
@@ -158,6 +226,23 @@ const TransactionHistoryList = ({ address, isConnected, selectedChain }) => {
 
     return (
         <div className="portfolio-history">
+            {/* Search */}
+            <div style={{ marginBottom: '12px' }}>
+                <input
+                    type="text"
+                    placeholder="Search transactions..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                        width: '100%',
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: '1px solid #E9E9E9',
+                        fontSize: '14px',
+                    }}
+                />
+            </div>
+
             {/* Filter */}
             <div className="portfolio-history-filters">
                 <button

@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
 import chainConfig from '../../services/chainConfig';
+import { getUserRewards, calculateReferralRewards, fetchClaimableRewardsFromContract, STAKING_ABI } from '../../services/stakingService';
+import { saveSwapTransaction, updateSwapTransaction } from '../../services/transactionHistory';
 import '../css/StakeMobile.css';
 
 const StakeRewardsDisplay = ({ address, chainId }) => {
@@ -18,6 +20,7 @@ const StakeRewardsDisplay = ({ address, chainId }) => {
     
     const stakingAddress = chainConfig.getContractAddress(chainId, 'manager');
     const gasSettings = chainConfig.getGasSettings(chainId);
+    const publicClient = usePublicClient();
     const { writeContract } = useWriteContract();
     
     // Transaction receipt
@@ -30,15 +33,24 @@ const StakeRewardsDisplay = ({ address, chainId }) => {
 
     // Handle transaction confirmation
     useEffect(() => {
-        if (isConfirmed && txHash) {
+        if (isConfirmed && txHash && finalAddress && chainId) {
+            // Update transaction status in history
+            try {
+                updateSwapTransaction(txHash, 'completed', {
+                    confirmedAt: new Date().toISOString(),
+                });
+            } catch (error) {
+                console.error('Failed to update transaction status:', error);
+            }
+
             alert('All rewards claimed successfully!');
             setClaiming(false);
             setTxHash(null);
             fetchRewards();
         }
-    }, [isConfirmed, txHash]);
+    }, [isConfirmed, txHash, finalAddress, chainId, fetchRewards]);
 
-    const fetchRewards = async () => {
+    const fetchRewards = useCallback(async () => {
         if (!finalAddress) {
             setRewards({
                 totalPending: 0,
@@ -51,16 +63,19 @@ const StakeRewardsDisplay = ({ address, chainId }) => {
 
         setLoading(true);
         try {
-            // TODO: Fetch actual rewards from API/contract
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            // Mock data
+            // Fetch rewards from contract/API
+            const rewardsData = await getUserRewards(publicClient, stakingAddress, finalAddress, chainId);
+            
+            // Calculate referral rewards if applicable
+            const referralRewards = await calculateReferralRewards(finalAddress, chainId);
+            
+            // Add referral rewards to total pending if any
+            const totalPending = rewardsData.totalPending + referralRewards;
+            
             setRewards({
-                totalPending: 15.25,
-                totalClaimed: 50.75,
-                byToken: [
-                    { token: 'MANGO', pending: 12.50, claimed: 40.00 },
-                    { token: 'BNB', pending: 2.75, claimed: 10.75 }
-                ]
+                totalPending: totalPending,
+                totalClaimed: rewardsData.totalClaimed,
+                byToken: rewardsData.byToken || []
             });
         } catch (error) {
             console.error('Error fetching rewards:', error);
@@ -72,32 +87,80 @@ const StakeRewardsDisplay = ({ address, chainId }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [finalAddress, publicClient, stakingAddress, chainId]);
 
     useEffect(() => {
         fetchRewards();
-    }, [finalAddress, chainId]);
+        
+        // Auto-refresh every 30 seconds
+        const interval = setInterval(fetchRewards, 30000);
+        return () => clearInterval(interval);
+    }, [fetchRewards]);
 
     const handleClaimAll = async () => {
-        if (rewards.totalPending === 0) {
+        if (rewards.totalPending === 0 || !stakingAddress) {
             alert('No pending rewards to claim');
+            return;
+        }
+
+        // Get claimable rewards to calculate total amount
+        let totalClaimable = rewards.totalPending;
+        if (publicClient && finalAddress) {
+            try {
+                const claimable = await fetchClaimableRewardsFromContract(publicClient, stakingAddress, finalAddress);
+                if (claimable.amounts && claimable.amounts.length > 0) {
+                    totalClaimable = claimable.amounts.reduce((sum, amt) => sum + amt, 0);
+                }
+            } catch (error) {
+                console.warn('Failed to fetch claimable rewards:', error);
+            }
+        }
+
+        if (totalClaimable === 0) {
+            alert('No claimable rewards available');
             return;
         }
 
         setClaiming(true);
         try {
-            // TODO: Implement actual contract interaction
-            // const stakingAbi = parseAbi(['function claimAllRewards()']);
-            // writeContract({
-            //     address: stakingAddress,
-            //     abi: stakingAbi,
-            //     functionName: 'claimAllRewards',
-            // });
-
-            // Simulate transaction
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            const mockTxHash = '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-            setTxHash(mockTxHash);
+            writeContract(
+                {
+                    address: stakingAddress,
+                    abi: STAKING_ABI,
+                    functionName: 'claimAllRewards',
+                    gas: gasSettings?.gasLimit ? BigInt(gasSettings.gasLimit) : undefined,
+                },
+                {
+                    onSuccess: (hash) => {
+                        setTxHash(hash);
+                        console.log('Claim all rewards transaction submitted:', hash);
+                        
+                        // Save to transaction history
+                        if (finalAddress && chainId) {
+                            try {
+                                saveSwapTransaction({
+                                    txHash: hash,
+                                    userAddress: finalAddress,
+                                    chainId: chainId,
+                                    type: 'claimAllRewards',
+                                    tokenInSymbol: 'Rewards',
+                                    amountIn: totalClaimable.toFixed(4),
+                                    tokenOutSymbol: 'Multiple',
+                                    amountOut: totalClaimable.toFixed(4),
+                                    status: 'pending',
+                                });
+                            } catch (error) {
+                                console.error('Failed to save transaction to history:', error);
+                            }
+                        }
+                    },
+                    onError: (error) => {
+                        console.error('Claim all rewards failed:', error);
+                        alert('Failed to claim rewards: ' + (error.message || 'Unknown error'));
+                        setClaiming(false);
+                    },
+                }
+            );
         } catch (error) {
             console.error('Error claiming rewards:', error);
             alert('Failed to claim rewards: ' + (error.message || 'Unknown error'));

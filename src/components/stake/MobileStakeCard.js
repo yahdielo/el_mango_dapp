@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { useAccount, useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAccount, useWriteContract, useReadContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
 import { parseUnits, formatUnits, parseAbi } from 'viem';
 import MobileTokenSelector from '../MobileTokenSelector';
 import useTokenBalance from '../hooks/getTokenBalance';
 import useGetEthBalance from '../hooks/getEthBalance';
 import chainConfig from '../../services/chainConfig';
+import { getTokenPrice } from '../../services/priceOracle';
+import { getAPY, getLockPeriodsFromContract, LOCK_PERIODS, LOCK_PERIOD_LABELS, STAKING_ABI } from '../../services/stakingService';
+import { saveSwapTransaction, updateSwapTransaction } from '../../services/transactionHistory';
 import '../css/StakeMobile.css';
 
 const MobileStakeCard = ({ address, isConnected, chainId }) => {
@@ -15,6 +18,8 @@ const MobileStakeCard = ({ address, isConnected, chainId }) => {
     const [selectedToken, setSelectedToken] = useState(null);
     const [amount, setAmount] = useState('');
     const [apy, setApy] = useState(null);
+    const [lockPeriod, setLockPeriod] = useState('30'); // Default 30 days
+    const [availableLockPeriods, setAvailableLockPeriods] = useState(Object.keys(LOCK_PERIODS));
     const [estimatedRewards, setEstimatedRewards] = useState(null);
     const [loading, setLoading] = useState(false);
     const [txHash, setTxHash] = useState(null);
@@ -26,6 +31,7 @@ const MobileStakeCard = ({ address, isConnected, chainId }) => {
     const tokenList = chainInfo?.tokens || [];
     const stakingAddress = chainConfig.getContractAddress(chainId, 'manager'); // Assuming manager contract handles staking
     const gasSettings = chainConfig.getGasSettings(chainId);
+    const publicClient = usePublicClient();
     const { writeContract } = useWriteContract();
 
     // Get balances - hooks return strings directly
@@ -79,38 +85,132 @@ const MobileStakeCard = ({ address, isConnected, chainId }) => {
         setApprovalNeeded(allowance < requiredAmount);
     }, [selectedToken, amount, allowance, stakingAddress]);
 
-    // Calculate USD value
-    useEffect(() => {
-        if (selectedToken && amount && parseFloat(amount) > 0) {
-            // TODO: Fetch real token prices from API
+    // Fetch token price and calculate USD value
+    const fetchTokenPrice = useCallback(async () => {
+        if (!selectedToken || !amount || parseFloat(amount) <= 0) {
+            setUsdValue(null);
+            return;
+        }
+
+        try {
+            const tokenSymbol = selectedToken.symbol;
+            const price = await getTokenPrice(tokenSymbol);
+            
+            if (price && price > 0) {
+                const usdValue = parseFloat(amount) * price;
+                setUsdValue(usdValue);
+            } else {
+                // Fallback to mock price if API fails
+                const mockPrice = tokenSymbol === 'ETH' ? 3000 : tokenSymbol === 'BNB' ? 500 : tokenSymbol === 'MANGO' ? 5 : 1;
+                setUsdValue(parseFloat(amount) * mockPrice);
+            }
+        } catch (error) {
+            console.warn('Error fetching token price:', error);
+            // Fallback to mock price on error
             const mockPrice = selectedToken.symbol === 'ETH' ? 3000 : selectedToken.symbol === 'BNB' ? 500 : selectedToken.symbol === 'MANGO' ? 5 : 1;
             setUsdValue(parseFloat(amount) * mockPrice);
-        } else {
-            setUsdValue(null);
         }
     }, [selectedToken, amount]);
 
-    // Fetch APY when token is selected
     useEffect(() => {
-        if (selectedToken) {
-            // TODO: Fetch actual APY from API
-            // Mock APY based on token
+        fetchTokenPrice();
+        
+        // Auto-refresh price every 30 seconds
+        const interval = setInterval(() => {
+            if (selectedToken && amount && parseFloat(amount) > 0) {
+                fetchTokenPrice();
+            }
+        }, 30000);
+        
+        return () => clearInterval(interval);
+    }, [fetchTokenPrice]);
+
+    // Fetch available lock periods from contract
+    useEffect(() => {
+        const fetchLockPeriods = async () => {
+            if (publicClient && stakingAddress) {
+                try {
+                    const periods = await getLockPeriodsFromContract(publicClient, stakingAddress);
+                    if (periods && periods.length > 0) {
+                        // Convert seconds to days and match with our LOCK_PERIODS
+                        const periodKeys = periods.map(seconds => {
+                            const days = Math.floor(seconds / (24 * 60 * 60));
+                            return Object.keys(LOCK_PERIODS).find(key => LOCK_PERIODS[key] === seconds) || days.toString();
+                        }).filter(key => LOCK_PERIODS[key]);
+                        if (periodKeys.length > 0) {
+                            setAvailableLockPeriods(periodKeys);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Failed to fetch lock periods:', error);
+                }
+            }
+        };
+        fetchLockPeriods();
+    }, [publicClient, stakingAddress]);
+
+    // Fetch APY when token or lock period changes
+    const fetchAPY = useCallback(async () => {
+        if (!selectedToken || !chainId) {
+            setApy(null);
+            return;
+        }
+
+        try {
+            const lockPeriodSeconds = LOCK_PERIODS[lockPeriod] || LOCK_PERIODS['30'];
+            const tokenAddress = selectedToken.address === 'native' 
+                ? 'native' 
+                : selectedToken.address;
+            
+            const apyValue = await getAPY(
+                publicClient,
+                stakingAddress,
+                tokenAddress,
+                selectedToken.symbol,
+                chainId,
+                lockPeriodSeconds
+            );
+            
+            setApy(apyValue);
+        } catch (error) {
+            console.error('Error fetching APY:', error);
+            // Fallback to mock APY
             const mockApy = selectedToken.symbol === 'MANGO' ? 12.5 : selectedToken.symbol === 'BNB' ? 8.5 : 6.2;
             setApy(mockApy);
-        } else {
-            setApy(null);
         }
-    }, [selectedToken]);
+    }, [selectedToken, lockPeriod, chainId, publicClient, stakingAddress]);
+
+    useEffect(() => {
+        fetchAPY();
+        
+        // Auto-refresh APY every 60 seconds
+        const interval = setInterval(() => {
+            if (selectedToken) {
+                fetchAPY();
+            }
+        }, 60000);
+        
+        return () => clearInterval(interval);
+    }, [fetchAPY]);
 
     // Handle transaction confirmation
     useEffect(() => {
-        if (isConfirmed && txHash) {
+        if (isConfirmed && txHash && finalAddress && chainId) {
+            // Update transaction status in history
+            try {
+                updateSwapTransaction(txHash, 'completed', {
+                    confirmedAt: new Date().toISOString(),
+                });
+            } catch (error) {
+                console.error('Failed to update transaction status:', error);
+            }
+            
             alert('Tokens staked successfully!');
             setAmount('');
             setTxHash(null);
             setLoading(false);
         }
-    }, [isConfirmed, txHash]);
+    }, [isConfirmed, txHash, finalAddress, chainId]);
 
     // Calculate estimated rewards
     useEffect(() => {
@@ -183,7 +283,7 @@ const MobileStakeCard = ({ address, isConnected, chainId }) => {
     };
 
     const handleStake = async () => {
-        if (!finalIsConnected || !selectedToken || !amount) {
+        if (!finalIsConnected || !selectedToken || !amount || !stakingAddress) {
             return;
         }
 
@@ -204,35 +304,75 @@ const MobileStakeCard = ({ address, isConnected, chainId }) => {
         }
 
         // Check if approval is needed
-        if (approvalNeeded) {
+        if (approvalNeeded && selectedToken.address !== 'native') {
             alert('Please approve token first');
             return;
         }
 
         setLoading(true);
         try {
-            console.log('Staking:', { token: selectedToken, amount, apy });
-            
-            // TODO: Implement actual contract interaction when staking contract is available
-            // For now, simulate the transaction
-            // In production, this would be:
-            // const stakingAbi = parseAbi(['function stake(uint256 amount)']);
-            // writeContract({
-            //     address: stakingAddress,
-            //     abi: stakingAbi,
-            //     functionName: 'stake',
-            //     args: [parseUnits(amount, selectedToken.decimals || 18)],
-            //     value: selectedToken.address === 'native' ? parseUnits(amount, 18) : 0n,
-            // });
+            const lockPeriodSeconds = LOCK_PERIODS[lockPeriod] || LOCK_PERIODS['30'];
+            const decimals = selectedToken.decimals || 18;
+            const amountWei = parseUnits(amount, decimals);
 
-            // Simulate transaction
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // In production, this would be set from the actual transaction hash
-            const mockTxHash = '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-            setTxHash(mockTxHash);
-            
-            // The useEffect will handle the success message when transaction is confirmed
+            // Prepare transaction config
+            let txConfig = {
+                address: stakingAddress,
+                abi: STAKING_ABI,
+                functionName: '',
+                args: [],
+                value: 0n,
+                gas: gasSettings?.gasLimit ? BigInt(gasSettings.gasLimit) : undefined,
+            };
+
+            if (selectedToken.address === 'native') {
+                // Stake native token (ETH/BNB)
+                txConfig.functionName = 'stakeETH';
+                txConfig.args = [BigInt(lockPeriodSeconds)];
+                txConfig.value = amountWei;
+            } else {
+                // Stake ERC20 token
+                txConfig.functionName = 'stake';
+                txConfig.args = [
+                    selectedToken.address,
+                    amountWei,
+                    BigInt(lockPeriodSeconds)
+                ];
+            }
+
+            writeContract(txConfig, {
+                onSuccess: (hash) => {
+                    setTxHash(hash);
+                    console.log('Stake transaction submitted:', hash);
+                    
+                    // Save to transaction history
+                    if (finalAddress && chainId) {
+                        try {
+                            saveSwapTransaction({
+                                txHash: hash,
+                                userAddress: finalAddress,
+                                chainId: chainId,
+                                type: 'stake',
+                                tokenInSymbol: selectedToken.symbol,
+                                tokenInAddress: selectedToken.address === 'native' ? 'native' : selectedToken.address,
+                                amountIn: amount,
+                                tokenOutSymbol: 'Staked',
+                                amountOut: amount,
+                                status: 'pending',
+                                lockPeriod: lockPeriodSeconds,
+                                lockPeriodDays: lockPeriod,
+                            });
+                        } catch (error) {
+                            console.error('Failed to save transaction to history:', error);
+                        }
+                    }
+                },
+                onError: (error) => {
+                    console.error('Stake failed:', error);
+                    alert('Failed to stake tokens: ' + (error.message || 'Unknown error'));
+                    setLoading(false);
+                },
+            });
         } catch (error) {
             console.error('Error staking:', error);
             alert('Failed to stake tokens: ' + (error.message || 'Unknown error'));
@@ -319,10 +459,26 @@ const MobileStakeCard = ({ address, isConnected, chainId }) => {
                     </div>
                 </div>
 
+                {/* Lock Period Selection */}
+                <div className="stake-lock-period-section">
+                    <div className="stake-token-label">Lock Period</div>
+                    <select
+                        className="stake-lock-period-select"
+                        value={lockPeriod}
+                        onChange={(e) => setLockPeriod(e.target.value)}
+                    >
+                        {availableLockPeriods.map((period) => (
+                            <option key={period} value={period}>
+                                {LOCK_PERIOD_LABELS[period] || `${period} days`}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
                 {/* APY Display */}
                 {apy && (
                     <div className="stake-apy">
-                        <div className="stake-apy-label">APY</div>
+                        <div className="stake-apy-label">APY ({LOCK_PERIOD_LABELS[lockPeriod] || `${lockPeriod} days`})</div>
                         <div className="stake-apy-value">{apy.toFixed(2)}%</div>
                     </div>
                 )}

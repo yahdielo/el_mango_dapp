@@ -7,6 +7,9 @@ import SlippageSettings from './SlippageSettings';
 import useTokenBalance from '../hooks/getTokenBalance';
 import useGetEthBalance from '../hooks/getEthBalance';
 import chainConfig from '../../services/chainConfig';
+import { getTokenPrice } from '../../services/priceOracle';
+import { getPoolInfo, calculateLPTokens, calculatePoolShare } from '../../services/liquidityPool';
+import { saveSwapTransaction, updateSwapTransaction } from '../../services/transactionHistory';
 import '../css/LiquidityMobile.css';
 
 const AddLiquidityCard = ({ address, isConnected, chainId }) => {
@@ -122,28 +125,55 @@ const AddLiquidityCard = ({ address, isConnected, chainId }) => {
         }
     }, [tokenA, tokenB, amountA, amountB, allowanceA, allowanceB, routerAddress]);
 
-    // Calculate USD values (mock for now)
+    // Calculate USD values using price oracle
     useEffect(() => {
-        if (tokenA && amountA && parseFloat(amountA) > 0) {
-            // TODO: Fetch real token prices from API
-            const mockPriceA = tokenA.symbol === 'ETH' ? 3000 : tokenA.symbol === 'BNB' ? 500 : tokenA.symbol === 'USDC' ? 1 : 5;
-            setUsdValueA(parseFloat(amountA) * mockPriceA);
-        } else {
-            setUsdValueA(null);
-        }
+        const fetchPrices = async () => {
+            if (tokenA && amountA && parseFloat(amountA) > 0) {
+                try {
+                    const priceA = await getTokenPrice(tokenA.symbol);
+                    if (priceA) {
+                        setUsdValueA(parseFloat(amountA) * priceA);
+                    } else {
+                        // Fallback to mock price if oracle fails
+                        const mockPriceA = tokenA.symbol === 'ETH' ? 3000 : tokenA.symbol === 'BNB' ? 500 : tokenA.symbol === 'USDC' ? 1 : 5;
+                        setUsdValueA(parseFloat(amountA) * mockPriceA);
+                    }
+                } catch (error) {
+                    console.warn('Failed to fetch price for tokenA:', error);
+                    const mockPriceA = tokenA.symbol === 'ETH' ? 3000 : tokenA.symbol === 'BNB' ? 500 : tokenA.symbol === 'USDC' ? 1 : 5;
+                    setUsdValueA(parseFloat(amountA) * mockPriceA);
+                }
+            } else {
+                setUsdValueA(null);
+            }
 
-        if (tokenB && amountB && parseFloat(amountB) > 0) {
-            const mockPriceB = tokenB.symbol === 'ETH' ? 3000 : tokenB.symbol === 'BNB' ? 500 : tokenB.symbol === 'USDC' ? 1 : 5;
-            setUsdValueB(parseFloat(amountB) * mockPriceB);
-        } else {
-            setUsdValueB(null);
-        }
+            if (tokenB && amountB && parseFloat(amountB) > 0) {
+                try {
+                    const priceB = await getTokenPrice(tokenB.symbol);
+                    if (priceB) {
+                        setUsdValueB(parseFloat(amountB) * priceB);
+                    } else {
+                        // Fallback to mock price if oracle fails
+                        const mockPriceB = tokenB.symbol === 'ETH' ? 3000 : tokenB.symbol === 'BNB' ? 500 : tokenB.symbol === 'USDC' ? 1 : 5;
+                        setUsdValueB(parseFloat(amountB) * mockPriceB);
+                    }
+                } catch (error) {
+                    console.warn('Failed to fetch price for tokenB:', error);
+                    const mockPriceB = tokenB.symbol === 'ETH' ? 3000 : tokenB.symbol === 'BNB' ? 500 : tokenB.symbol === 'USDC' ? 1 : 5;
+                    setUsdValueB(parseFloat(amountB) * mockPriceB);
+                }
+            } else {
+                setUsdValueB(null);
+            }
+        };
+
+        fetchPrices();
     }, [tokenA, tokenB, amountA, amountB]);
 
-    // Fetch token prices and calculate price ratio
+    // Fetch pool info and calculate price ratio, LP tokens, and pool share
     useEffect(() => {
-        const fetchPriceRatio = async () => {
-            if (!tokenA || !tokenB) {
+        const fetchPoolData = async () => {
+            if (!tokenA || !tokenB || !publicClient || !chainId) {
                 setPriceRatio(null);
                 setShareOfPool(null);
                 setLpTokens(null);
@@ -151,54 +181,158 @@ const AddLiquidityCard = ({ address, isConnected, chainId }) => {
             }
 
             try {
-                // If both amounts are provided, calculate ratio from amounts
-                if (amountA && amountB && parseFloat(amountA) > 0 && parseFloat(amountB) > 0) {
-                    const ratio = parseFloat(amountA) / parseFloat(amountB);
-                    setPriceRatio(ratio);
-                    
-                    // Calculate LP tokens using constant product formula: LP = sqrt(amountA * amountB)
-                    // This is the standard AMM formula for liquidity provision
-                    const amountAValue = parseFloat(amountA);
-                    const amountBValue = parseFloat(amountB);
-                    const calculatedLpTokens = Math.sqrt(amountAValue * amountBValue);
-                    setLpTokens(calculatedLpTokens);
-                    
-                    // Mock total supply - in production, fetch from pool contract
-                    // Total supply = total LP tokens in circulation
-                    const mockTotalSupply = 1000000;
-                    const share = (calculatedLpTokens / mockTotalSupply) * 100;
-                    setShareOfPool(share > 0.01 ? share : null);
-                } else if (tokenA && tokenB) {
-                    // Try to fetch prices from API if amounts not provided
-                    // TODO: Implement price fetching from DEX or price oracle
-                    // For now, we'll wait for user to input amounts
-                    setPriceRatio(null);
-                    setShareOfPool(null);
-                    setLpTokens(null);
+                // Get token addresses (handle native tokens)
+                const tokenAAddress = tokenA.address === 'native' 
+                    ? (chainId === 56 ? null : chainInfo?.weth?.address) // BSC doesn't use WETH
+                    : tokenA.address;
+                const tokenBAddress = tokenB.address === 'native'
+                    ? (chainId === 56 ? null : chainInfo?.weth?.address)
+                    : tokenB.address;
+
+                if (!tokenAAddress || !tokenBAddress) {
+                    // If amounts provided, calculate from amounts
+                    if (amountA && amountB && parseFloat(amountA) > 0 && parseFloat(amountB) > 0) {
+                        const ratio = parseFloat(amountA) / parseFloat(amountB);
+                        setPriceRatio(ratio);
+                        setShareOfPool(null);
+                        setLpTokens(null);
+                    } else {
+                        setPriceRatio(null);
+                        setShareOfPool(null);
+                        setLpTokens(null);
+                    }
+                    return;
+                }
+
+                // Try to get factory address (Uniswap V2 style)
+                // For now, we'll use a common factory address or get from chain config
+                // Note: This should be added to chainConfig in production
+                const factoryAddress = null; // TODO: Add factory address to chainConfig
+                
+                if (factoryAddress) {
+                    // Fetch pool info from contract
+                    const poolInfo = await getPoolInfo(
+                        publicClient,
+                        factoryAddress,
+                        tokenAAddress,
+                        tokenBAddress,
+                        tokenA.decimals || 18,
+                        tokenB.decimals || 18
+                    );
+
+                    if (poolInfo && poolInfo.exists && poolInfo.priceRatio) {
+                        setPriceRatio(poolInfo.priceRatio);
+                    } else if (amountA && amountB && parseFloat(amountA) > 0 && parseFloat(amountB) > 0) {
+                        // Fallback to calculating from amounts
+                        setPriceRatio(parseFloat(amountA) / parseFloat(amountB));
+                    } else {
+                        // Try to get prices from oracle
+                        const [priceA, priceB] = await Promise.all([
+                            getTokenPrice(tokenA.symbol),
+                            getTokenPrice(tokenB.symbol),
+                        ]);
+                        if (priceA && priceB) {
+                            setPriceRatio(priceA / priceB);
+                        } else {
+                            setPriceRatio(null);
+                        }
+                    }
+
+                    // Calculate LP tokens and pool share if amounts provided
+                    if (amountA && amountB && parseFloat(amountA) > 0 && parseFloat(amountB) > 0 && poolInfo) {
+                        const amountAWei = parseUnits(amountA, tokenA.decimals || 18);
+                        const amountBWei = parseUnits(amountB, tokenB.decimals || 18);
+                        
+                        let lpTokensWei = 0n;
+                        if (poolInfo.reserves && poolInfo.totalSupply) {
+                            // Determine which reserve corresponds to which token
+                            const isTokenAFirst = poolInfo.reserves.token0.toLowerCase() === tokenAAddress.toLowerCase();
+                            const reserveA = isTokenAFirst ? poolInfo.reserves.reserve0 : poolInfo.reserves.reserve1;
+                            const reserveB = isTokenAFirst ? poolInfo.reserves.reserve1 : poolInfo.reserves.reserve0;
+                            
+                            lpTokensWei = calculateLPTokens(
+                                amountAWei,
+                                amountBWei,
+                                reserveA,
+                                reserveB,
+                                poolInfo.totalSupply
+                            );
+                        } else {
+                            // New pool - use constant product formula
+                            lpTokensWei = calculateLPTokens(amountAWei, amountBWei, null, null, null);
+                        }
+                        
+                        const lpTokensFormatted = formatUnits(lpTokensWei, 18); // LP tokens typically have 18 decimals
+                        setLpTokens(parseFloat(lpTokensFormatted));
+                        
+                        // Calculate pool share
+                        if (poolInfo.totalSupply && poolInfo.totalSupply > 0n) {
+                            const share = calculatePoolShare(lpTokensWei, poolInfo.totalSupply);
+                            setShareOfPool(share > 0.01 ? share : null);
+                        } else {
+                            setShareOfPool(null);
+                        }
+                    } else {
+                        setLpTokens(null);
+                        setShareOfPool(null);
+                    }
                 } else {
-                    setPriceRatio(null);
-                    setShareOfPool(null);
+                    // No factory address - calculate from amounts or prices
+                    if (amountA && amountB && parseFloat(amountA) > 0 && parseFloat(amountB) > 0) {
+                        const ratio = parseFloat(amountA) / parseFloat(amountB);
+                        setPriceRatio(ratio);
+                    } else {
+                        // Try to get prices from oracle
+                        const [priceA, priceB] = await Promise.all([
+                            getTokenPrice(tokenA.symbol),
+                            getTokenPrice(tokenB.symbol),
+                        ]);
+                        if (priceA && priceB) {
+                            setPriceRatio(priceA / priceB);
+                        } else {
+                            setPriceRatio(null);
+                        }
+                    }
                     setLpTokens(null);
+                    setShareOfPool(null);
                 }
             } catch (error) {
-                console.error('Error calculating price ratio:', error);
-                setPriceRatio(null);
+                console.error('Error fetching pool data:', error);
+                // Fallback to calculating from amounts
+                if (amountA && amountB && parseFloat(amountA) > 0 && parseFloat(amountB) > 0) {
+                    setPriceRatio(parseFloat(amountA) / parseFloat(amountB));
+                } else {
+                    setPriceRatio(null);
+                }
+                setShareOfPool(null);
+                setLpTokens(null);
             }
         };
 
-        fetchPriceRatio();
-    }, [tokenA, tokenB, amountA, amountB]);
+        fetchPoolData();
+    }, [tokenA, tokenB, amountA, amountB, publicClient, chainId, chainInfo]);
 
     // Handle transaction confirmation
     useEffect(() => {
         if (isConfirmed && txHash) {
+            // Update transaction status in history
+            if (finalAddress && chainId) {
+                try {
+                    updateSwapTransaction(txHash, 'completed', {
+                        confirmedAt: new Date().toISOString(),
+                    });
+                } catch (error) {
+                    console.error('Failed to update transaction status:', error);
+                }
+            }
+            
             alert('Liquidity added successfully!');
             setAmountA('');
             setAmountB('');
             setTxHash(null);
             setLoading(false);
         }
-    }, [isConfirmed, txHash]);
+    }, [isConfirmed, txHash, finalAddress, chainId]);
 
     const handleMaxA = () => {
         if (!tokenA || !finalAddress) return;
@@ -403,26 +537,136 @@ const AddLiquidityCard = ({ address, isConnected, chainId }) => {
                 slippage: slippagePercent
             });
 
-            // TODO: Implement actual contract interaction when router supports addLiquidity
-            // For now, simulate the transaction
-            // In production, this would be:
-            // const routerAbi = parseAbi(['function addLiquidity(...)']);
-            // writeContract({
-            //     address: routerAddress,
-            //     abi: routerAbi,
-            //     functionName: 'addLiquidity',
-            //     args: [tokenA.address, tokenB.address, amountA, amountB, minAmountA, minAmountB, ...],
-            //     value: tokenA.address === 'native' ? parseUnits(amountA, 18) : 0n,
-            // });
+            // Prepare token addresses (handle native tokens)
+            const tokenAAddress = tokenA.address === 'native' 
+                ? (chainId === 56 ? zeroAddress : chainInfo?.weth?.address || zeroAddress)
+                : tokenA.address;
+            const tokenBAddress = tokenB.address === 'native'
+                ? (chainId === 56 ? zeroAddress : chainInfo?.weth?.address || zeroAddress)
+                : tokenB.address;
 
-            // Simulate transaction
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // In production, this would be set from the actual transaction hash
-            const mockTxHash = '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-            setTxHash(mockTxHash);
-            
-            // The useEffect will handle the success message when transaction is confirmed
+            // Prepare amounts in wei
+            const decimalsA = tokenA.decimals || 18;
+            const decimalsB = tokenB.decimals || 18;
+            const amountAWei = parseUnits(amountA, decimalsA);
+            const amountBWei = parseUnits(amountB, decimalsB);
+            const minAmountAWei = parseUnits(minAmountA.toFixed(decimalsA), decimalsA);
+            const minAmountBWei = parseUnits(minAmountB.toFixed(decimalsB), decimalsB);
+
+            // Router ABI - Standard Uniswap V2 style addLiquidity
+            const routerAbi = parseAbi([
+                'function addLiquidity(address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline) external returns (uint amountA, uint amountB, uint liquidity)',
+                'function addLiquidityETH(address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline) external payable returns (uint amountToken, uint amountETH, uint liquidity)',
+            ]);
+
+            // Determine if we're adding ETH/BNB liquidity
+            const isNativeA = tokenA.address === 'native';
+            const isNativeB = tokenB.address === 'native';
+
+            // Calculate deadline (20 minutes from now)
+            const deadline = Math.floor(Date.now() / 1000) + (20 * 60);
+
+            if (isNativeA || isNativeB) {
+                // Add liquidity with native token (ETH/BNB)
+                const token = isNativeA ? tokenBAddress : tokenAAddress;
+                const amountTokenDesired = isNativeA ? amountBWei : amountAWei;
+                const amountTokenMin = isNativeA ? minAmountBWei : minAmountAWei;
+                const amountETHMin = isNativeA ? minAmountAWei : minAmountBWei;
+                const ethValue = isNativeA ? amountAWei : amountBWei;
+
+                writeContract(
+                    {
+                        address: routerAddress,
+                        abi: routerAbi,
+                        functionName: 'addLiquidityETH',
+                        args: [token, amountTokenDesired, amountTokenMin, amountETHMin, finalAddress, BigInt(deadline)],
+                        value: ethValue,
+                        gas: gasSettings?.gasLimit ? BigInt(gasSettings.gasLimit) : undefined,
+                    },
+                    {
+                        onSuccess: (hash) => {
+                            setTxHash(hash);
+                            console.log('Add liquidity transaction submitted:', hash);
+                            
+                            // Save to transaction history
+                            if (finalAddress && chainId) {
+                                try {
+                                    saveSwapTransaction({
+                                        txHash: hash,
+                                        userAddress: finalAddress,
+                                        chainId: chainId,
+                                        type: 'addLiquidity',
+                                        tokenIn: tokenA.symbol,
+                                        tokenOut: tokenB.symbol,
+                                        amountIn: amountA,
+                                        amountOut: amountB,
+                                        status: 'pending',
+                                        timestamp: Date.now(),
+                                    });
+                                } catch (error) {
+                                    console.error('Failed to save transaction:', error);
+                                }
+                            }
+                        },
+                        onError: (error) => {
+                            console.error('Add liquidity failed:', error);
+                            alert('Failed to add liquidity: ' + (error.message || 'Unknown error'));
+                            setLoading(false);
+                        },
+                    }
+                );
+            } else {
+                // Add liquidity with two ERC20 tokens
+                writeContract(
+                    {
+                        address: routerAddress,
+                        abi: routerAbi,
+                        functionName: 'addLiquidity',
+                        args: [
+                            tokenAAddress,
+                            tokenBAddress,
+                            amountAWei,
+                            amountBWei,
+                            minAmountAWei,
+                            minAmountBWei,
+                            finalAddress,
+                            BigInt(deadline),
+                        ],
+                        gas: gasSettings?.gasLimit ? BigInt(gasSettings.gasLimit) : undefined,
+                    },
+                    {
+                        onSuccess: (hash) => {
+                            setTxHash(hash);
+                            console.log('Add liquidity transaction submitted:', hash);
+                            
+                            // Save to transaction history
+                            if (finalAddress && chainId) {
+                                try {
+                                    saveSwapTransaction({
+                                        txHash: hash,
+                                        userAddress: finalAddress,
+                                        chainId: chainId,
+                                        type: 'addLiquidity',
+                                        tokenIn: tokenA.symbol,
+                                        tokenOut: tokenB.symbol,
+                                        amountIn: amountA,
+                                        amountOut: amountB,
+                                        status: 'pending',
+                                        timestamp: Date.now(),
+                                    });
+                                } catch (error) {
+                                    console.error('Failed to save transaction:', error);
+                                }
+                            }
+                        },
+                        onError: (error) => {
+                            console.error('Add liquidity failed:', error);
+                            alert('Failed to add liquidity: ' + (error.message || 'Unknown error'));
+                            setLoading(false);
+                        },
+                    }
+                );
+            }
         } catch (error) {
             console.error('Error adding liquidity:', error);
             alert('Failed to add liquidity: ' + (error.message || 'Unknown error'));
@@ -580,6 +824,7 @@ const AddLiquidityCard = ({ address, isConnected, chainId }) => {
                         tokenA={tokenA}
                         tokenB={tokenB}
                         ratio={priceRatio}
+                        priceImpact={null} // Could calculate price impact if needed
                     />
                 )}
 

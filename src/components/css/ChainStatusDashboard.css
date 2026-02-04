@@ -40,4 +40,67 @@
     color: #dc3545;
 }
 
+.chain-status-dashboard .websocket-status {
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+    text-align: center;
+}
+
+.chain-status-dashboard .health-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.chain-status-dashboard .metric-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.chain-status-dashboard .health-metrics-detail {
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+}
+
+.chain-status-dashboard .metric-card {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    border: 1px solid #dee2e6;
+    text-align: center;
+}
+
+.chain-status-dashboard .metric-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.chain-status-dashboard .metric-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #212529;
+}
+
+.chain-status-dashboard .status-history {
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .chain-status-dashboard .health-metrics {
+        font-size: 0.75rem;
+    }
+    
+    .chain-status-dashboard .metric-card {
+        padding: 0.75rem;
+    }
+    
+    .chain-status-dashboard .metric-value {
+        font-size: 1.25rem;
+    }
+}
+
 

@@ -29,16 +29,112 @@
 .cross-chain-swap .route-item {
     padding: 0.5rem;
     border-bottom: 1px solid #dee2e6;
+    transition: all 0.2s ease;
 }
 
 .cross-chain-swap .route-item:last-child {
     border-bottom: none;
 }
 
+.cross-chain-swap .route-item:hover {
+    background-color: #f8f9fa;
+}
+
+.cross-chain-swap .route-item.route-selected {
+    background-color: #e7f3ff;
+    border: 2px solid #0056b3;
+    border-radius: 0.375rem;
+}
+
+.cross-chain-swap .route-item.route-best {
+    border-left: 4px solid #28a745;
+}
+
+.cross-chain-swap .route-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.cross-chain-swap .route-name {
+    font-weight: 600;
+    color: #333;
+}
+
+.cross-chain-swap .route-score {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 600;
+}
+
 .cross-chain-swap .route-details {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 0.5rem;
+}
+
+.cross-chain-swap .route-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.cross-chain-swap .route-value {
+    font-weight: 600;
+    color: #0056b3;
+}
+
+/* Routes Comparison */
+.cross-chain-swap .routes-comparison {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    border: 1px solid #dee2e6;
+}
+
+.cross-chain-swap .routes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.cross-chain-swap .route-comparison-summary {
+    background-color: #ffffff;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    border: 1px solid #dee2e6;
+    margin-top: 0.75rem;
+}
+
+.cross-chain-swap .comparison-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.cross-chain-swap .comparison-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+}
+
+.cross-chain-swap .comparison-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.cross-chain-swap .comparison-value {
+    font-size: 0.875rem;
+    color: #333;
+    font-weight: 600;
 }
 
 .cross-chain-swap .fee-estimate {

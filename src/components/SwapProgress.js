@@ -58,7 +58,7 @@ const STAGE_CONFIG = {
     },
 };
 
-const SwapProgress = ({ swapStatus, onCancel, className = '' }) => {
+const SwapProgress = ({ swapStatus, onCancel, onRequestRefund, className = '' }) => {
     if (!swapStatus) {
         return null;
     }
@@ -269,8 +269,34 @@ const SwapProgress = ({ swapStatus, onCancel, className = '' }) => {
                                     </small>
                                 </div>
                             )}
+                            {swapStatus.refundStatus && (
+                                <div className="mt-2">
+                                    <Badge bg={swapStatus.refundStatus === 'approved' ? 'success' : swapStatus.refundStatus === 'pending' ? 'warning' : 'secondary'}>
+                                        Refund: {swapStatus.refundStatus}
+                                    </Badge>
+                                    {swapStatus.refundTxHash && (
+                                        <div className="mt-1">
+                                            <small>
+                                                Refund TX: {swapStatus.refundTxHash.slice(0, 10)}...{swapStatus.refundTxHash.slice(-8)}
+                                            </small>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </Alert>
                     </div>
+                )}
+
+                {/* Refund Request Button */}
+                {status === 'failed' && onRequestRefund && !swapStatus.refundStatus && (
+                    <Button
+                        variant="outline-warning"
+                        size="sm"
+                        className="mt-3"
+                        onClick={onRequestRefund}
+                    >
+                        Request Refund
+                    </Button>
                 )}
 
                 {/* Cancel Button */}

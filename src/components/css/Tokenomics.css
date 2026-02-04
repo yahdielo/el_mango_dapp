@@ -1,0 +1,501 @@
+.tokenomics-container {
+    padding: 2rem 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.tokenomics-title {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #F26E01;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(242, 110, 1, 0.2);
+}
+
+.tokenomics-subtitle {
+    font-size: 1.25rem;
+    color: #6c757d;
+    margin-bottom: 2rem;
+}
+
+/* Metric Cards */
+.metric-card {
+    border: 1px solid #E9E9E9;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.metric-card:hover {
+    box-shadow: 0 8px 24px rgba(242, 110, 1, 0.15);
+    transform: translateY(-2px);
+}
+
+.metric-icon {
+    color: #F26E01;
+    margin-bottom: 0.75rem;
+}
+
+.metric-label {
+    font-size: 0.875rem;
+    color: #7A7A7A;
+    margin-bottom: 0.5rem;
+}
+
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+}
+
+/* User Balance Card */
+.user-balance-card {
+    background: linear-gradient(135deg, rgba(242, 110, 1, 0.1) 0%, rgba(242, 110, 1, 0.05) 100%);
+    border: 2px solid rgba(242, 110, 1, 0.2);
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(242, 110, 1, 0.1);
+}
+
+.balance-label {
+    font-size: 0.875rem;
+    color: #7A7A7A;
+    margin-bottom: 0.5rem;
+}
+
+.balance-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #F26E01;
+    margin-bottom: 0.25rem;
+}
+
+.balance-usd {
+    font-size: 1rem;
+    color: #7A7A7A;
+}
+
+.balance-icon {
+    color: #F26E01;
+    opacity: 0.3;
+}
+
+/* Chart Toggle */
+.chart-toggle {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.chart-toggle-btn {
+    padding: 0.75rem 2rem;
+    border: 2px solid #E9E9E9;
+    border-radius: 24px;
+    background-color: #FFFFFF;
+    color: #7A7A7A;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chart-toggle-btn:hover {
+    border-color: #F26E01;
+    color: #F26E01;
+}
+
+.chart-toggle-btn.active {
+    background: linear-gradient(135deg, #F26E01 0%, #E65100 100%);
+    color: #FFFFFF;
+    border-color: #F26E01;
+    box-shadow: 0 4px 12px rgba(242, 110, 1, 0.3);
+}
+
+/* Chart Cards */
+.chart-card,
+.distribution-list-card,
+.vesting-card {
+    border: 1px solid #E9E9E9;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    height: 100%;
+}
+
+.chart-card .card-header,
+.distribution-list-card .card-header,
+.vesting-card .card-header {
+    background-color: #F9F9F9;
+    border-bottom: 1px solid #E9E9E9;
+    font-weight: 700;
+    color: #333;
+}
+
+/* Pie Chart */
+.pie-chart-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+.pie-chart {
+    width: 100%;
+    max-width: 300px;
+    height: auto;
+}
+
+.pie-segment {
+    transition: all 0.3s ease;
+}
+
+.pie-segment:hover {
+    filter: brightness(1.1);
+    transform-origin: center;
+}
+
+/* Distribution List */
+.distribution-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.distribution-item {
+    padding: 1rem;
+    background-color: #F9F9F9;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.distribution-item:hover {
+    background-color: #F0F0F0;
+    transform: translateX(4px);
+}
+
+.distribution-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.distribution-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.distribution-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.distribution-icon {
+    color: #7A7A7A;
+}
+
+.distribution-name {
+    font-weight: 600;
+    color: #333;
+    font-size: 1rem;
+}
+
+.distribution-percentage {
+    font-size: 0.875rem;
+    color: #7A7A7A;
+}
+
+.distribution-amount {
+    font-weight: 700;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+/* Vesting Timeline */
+.vesting-timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.vesting-item {
+    position: relative;
+    margin-bottom: 2rem;
+    padding-left: 2rem;
+}
+
+.vesting-line {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: -2rem;
+    width: 4px;
+    border-radius: 2px;
+}
+
+.vesting-item:last-child .vesting-line {
+    display: none;
+}
+
+.vesting-content {
+    background-color: #F9F9F9;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border-left: 4px solid;
+    transition: all 0.2s ease;
+}
+
+.vesting-item:nth-child(1) .vesting-content {
+    border-left-color: #FF6B6B;
+}
+
+.vesting-item:nth-child(2) .vesting-content {
+    border-left-color: #FF6B6B;
+}
+
+.vesting-item:nth-child(3) .vesting-content {
+    border-left-color: #4ECDC4;
+}
+
+.vesting-item:nth-child(4) .vesting-content {
+    border-left-color: #4ECDC4;
+}
+
+.vesting-item:nth-child(5) .vesting-content {
+    border-left-color: #4ECDC4;
+}
+
+.vesting-item:nth-child(6) .vesting-content {
+    border-left-color: #4ECDC4;
+}
+
+.vesting-content:hover {
+    background-color: #F0F0F0;
+    transform: translateX(4px);
+}
+
+.vesting-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.vesting-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.vesting-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+    border: 3px solid #FFFFFF;
+    box-shadow: 0 0 0 2px currentColor;
+}
+
+.vesting-category {
+    font-weight: 700;
+    color: #333;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.vesting-details {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.vesting-period {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    color: #7A7A7A;
+}
+
+.vesting-amount {
+    font-weight: 700;
+    color: #333;
+    font-size: 1.1rem;
+    text-align: right;
+}
+
+.vesting-progress {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #E9E9E9;
+}
+
+.progress-label {
+    font-size: 0.875rem;
+    color: #7A7A7A;
+    margin-bottom: 0.5rem;
+}
+
+/* Info Cards */
+.info-card {
+    border: 1px solid #E9E9E9;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    height: 100%;
+}
+
+.info-card .card-header {
+    background-color: #F9F9F9;
+    border-bottom: 1px solid #E9E9E9;
+    font-weight: 700;
+    color: #333;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid #F5F5F5;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #7A7A7A;
+}
+
+.info-value {
+    font-weight: 700;
+    color: #333;
+}
+
+.contract-address {
+    font-family: 'Courier New', monospace;
+    background-color: #F8F9FA;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.lock-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid #F5F5F5;
+}
+
+.lock-item:last-child {
+    border-bottom: none;
+}
+
+.lock-header {
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.lock-details {
+    color: #7A7A7A;
+    font-size: 0.95rem;
+    padding-left: 1.75rem;
+}
+
+.airdrop-phases {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0 0;
+}
+
+.airdrop-phases li {
+    padding: 0.25rem 0;
+    color: #333;
+}
+
+.airdrop-phases li::before {
+    content: '✓';
+    color: #4ECDC4;
+    font-weight: bold;
+    margin-right: 0.5rem;
+}
+
+.refresh-button {
+    padding: 0.75rem 2rem;
+    border: 2px solid #F26E01;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #F26E01 0%, #E65100 100%);
+    color: #FFFFFF;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(242, 110, 1, 0.3);
+}
+
+.refresh-button:hover {
+    background: linear-gradient(135deg, #FF8C00 0%, #F26E01 100%);
+    box-shadow: 0 6px 16px rgba(242, 110, 1, 0.4);
+    transform: translateY(-2px);
+}
+
+.refresh-button:active {
+    transform: scale(0.98);
+}
+
+@media (max-width: 768px) {
+    .tokenomics-title {
+        font-size: 2rem;
+    }
+
+    .tokenomics-subtitle {
+        font-size: 1rem;
+    }
+
+    .metric-value {
+        font-size: 1.25rem;
+    }
+
+    .balance-value {
+        font-size: 1.5rem;
+    }
+
+    .chart-toggle {
+        flex-direction: column;
+    }
+
+    .chart-toggle-btn {
+        width: 100%;
+    }
+
+    .pie-chart {
+        max-width: 250px;
+    }
+
+    .vesting-header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .vesting-amount {
+        text-align: left;
+    }
+
+    .distribution-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .distribution-amount {
+        text-align: left;
+    }
+}
+

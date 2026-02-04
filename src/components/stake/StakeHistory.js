@@ -1,63 +1,91 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useAccount } from 'wagmi';
 import chainConfig from '../../services/chainConfig';
+import { getSwapHistory } from '../../services/transactionHistory';
 import '../css/StakeMobile.css';
 
 const StakeHistory = ({ address, chainId }) => {
+    const { address: accountAddress } = useAccount();
+    const finalAddress = address || accountAddress;
+    
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // 'all', 'stake', 'unstake', 'claim'
+    const [dateFilter, setDateFilter] = useState('all'); // 'all', 'today', 'week', 'month', 'year'
 
-    useEffect(() => {
-        if (address) {
-            // TODO: Fetch actual staking history from API
-            setLoading(true);
-            setTimeout(() => {
-                // Mock data
-                setHistory([
-                    {
-                        id: 1,
-                        type: 'stake',
-                        token: 'MANGO',
-                        amount: '1000.00',
-                        timestamp: new Date(Date.now() - 86400000 * 10).toISOString(),
-                        txHash: '0x123...abc',
-                        status: 'success'
-                    },
-                    {
-                        id: 2,
-                        type: 'claim',
-                        token: 'MANGO',
-                        amount: '12.50',
-                        timestamp: new Date(Date.now() - 86400000 * 5).toISOString(),
-                        txHash: '0x456...def',
-                        status: 'success'
-                    },
-                    {
-                        id: 3,
-                        type: 'stake',
-                        token: 'BNB',
-                        amount: '50.00',
-                        timestamp: new Date(Date.now() - 86400000 * 3).toISOString(),
-                        txHash: '0x789...ghi',
-                        status: 'success'
-                    },
-                    {
-                        id: 4,
-                        type: 'unstake',
-                        token: 'ETH',
-                        amount: '10.00',
-                        timestamp: new Date(Date.now() - 86400000).toISOString(),
-                        txHash: '0xabc...jkl',
-                        status: 'success'
-                    }
-                ]);
-                setLoading(false);
-            }, 1000);
-        } else {
+    const fetchHistory = useCallback(async () => {
+        if (!finalAddress) {
             setHistory([]);
             setLoading(false);
+            return;
         }
-    }, [address, chainId]);
+
+        setLoading(true);
+        try {
+            // Fetch all transactions from history service
+            const allHistory = getSwapHistory(finalAddress, chainId);
+            
+            // Filter for staking-related transactions
+            const stakingTypes = ['stake', 'unstake', 'claimRewards', 'claimAllRewards'];
+            const stakingHistory = allHistory.filter(tx => 
+                stakingTypes.includes(tx.type)
+            ).map(tx => {
+                // Map transaction types to display types
+                let displayType = tx.type;
+                if (tx.type === 'claimRewards' || tx.type === 'claimAllRewards') {
+                    displayType = 'claim';
+                }
+
+                // Determine token and amount
+                let token = tx.tokenOutSymbol || tx.tokenInSymbol || 'Unknown';
+                let amount = tx.amountOut || tx.amountIn || '0';
+
+                // For unstake, use tokenOut
+                if (tx.type === 'unstake') {
+                    token = tx.tokenOutSymbol || tx.tokenInSymbol || 'Unknown';
+                    amount = tx.amountOut || tx.amountIn || '0';
+                }
+
+                // For stake, use tokenIn
+                if (tx.type === 'stake') {
+                    token = tx.tokenInSymbol || 'Unknown';
+                    amount = tx.amountIn || '0';
+                }
+
+                // For claim, use tokenOut
+                if (displayType === 'claim') {
+                    token = tx.tokenOutSymbol || tx.tokenInSymbol || 'Unknown';
+                    amount = tx.amountOut || tx.amountIn || '0';
+                }
+
+                return {
+                    id: tx.txHash,
+                    type: displayType,
+                    token: token,
+                    amount: amount,
+                    timestamp: tx.timestamp || tx.createdAt || new Date().toISOString(),
+                    txHash: tx.txHash,
+                    status: tx.status === 'completed' ? 'success' : tx.status || 'pending',
+                    chainId: tx.chainId,
+                };
+            });
+
+            setHistory(stakingHistory);
+        } catch (error) {
+            console.error('Error fetching staking history:', error);
+            setHistory([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [finalAddress, chainId]);
+
+    useEffect(() => {
+        fetchHistory();
+        
+        // Auto-refresh every 15 seconds
+        const interval = setInterval(fetchHistory, 15000);
+        return () => clearInterval(interval);
+    }, [fetchHistory]);
 
     const formatDate = (timestamp) => {
         const date = new Date(timestamp);
@@ -69,21 +97,65 @@ const StakeHistory = ({ address, chainId }) => {
             const hours = Math.floor(diff / (1000 * 60 * 60));
             if (hours === 0) {
                 const minutes = Math.floor(diff / (1000 * 60));
-                return `${minutes} minutes ago`;
+                return minutes <= 1 ? 'just now' : `${minutes} minutes ago`;
             }
-            return `${hours} hours ago`;
+            return `${hours} hour${hours > 1 ? 's' : ''} ago`;
         } else if (days === 1) {
             return 'Yesterday';
         } else if (days < 7) {
             return `${days} days ago`;
         } else {
-            return date.toLocaleDateString();
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
         }
     };
 
-    const filteredHistory = filter === 'all'
-        ? history
-        : history.filter(item => item.type === filter);
+    const filteredHistory = useMemo(() => {
+        let filtered = history;
+
+        // Filter by type
+        if (filter !== 'all') {
+            filtered = filtered.filter(item => {
+                if (filter === 'claim') {
+                    return item.type === 'claim';
+                }
+                return item.type === filter;
+            });
+        }
+
+        // Filter by date
+        if (dateFilter !== 'all') {
+            const now = new Date();
+            const filterDate = new Date();
+            
+            switch (dateFilter) {
+                case 'today':
+                    filterDate.setHours(0, 0, 0, 0);
+                    break;
+                case 'week':
+                    filterDate.setDate(now.getDate() - 7);
+                    break;
+                case 'month':
+                    filterDate.setMonth(now.getMonth() - 1);
+                    break;
+                case 'year':
+                    filterDate.setFullYear(now.getFullYear() - 1);
+                    break;
+                default:
+                    break;
+            }
+
+            filtered = filtered.filter(item => {
+                const itemDate = new Date(item.timestamp);
+                return itemDate >= filterDate;
+            });
+        }
+
+        return filtered;
+    }, [history, filter, dateFilter]);
 
     const getTransactionDescription = (tx) => {
         switch (tx.type) {
@@ -118,32 +190,47 @@ const StakeHistory = ({ address, chainId }) => {
 
     return (
         <div className="stake-history">
-            {/* Filter */}
+            {/* Filters */}
             <div className="stake-history-filters">
-                <button
-                    className={`stake-history-filter ${filter === 'all' ? 'active' : ''}`}
-                    onClick={() => setFilter('all')}
-                >
-                    All
-                </button>
-                <button
-                    className={`stake-history-filter ${filter === 'stake' ? 'active' : ''}`}
-                    onClick={() => setFilter('stake')}
-                >
-                    Stake
-                </button>
-                <button
-                    className={`stake-history-filter ${filter === 'unstake' ? 'active' : ''}`}
-                    onClick={() => setFilter('unstake')}
-                >
-                    Unstake
-                </button>
-                <button
-                    className={`stake-history-filter ${filter === 'claim' ? 'active' : ''}`}
-                    onClick={() => setFilter('claim')}
-                >
-                    Claims
-                </button>
+                <div className="stake-history-filter-group">
+                    <button
+                        className={`stake-history-filter ${filter === 'all' ? 'active' : ''}`}
+                        onClick={() => setFilter('all')}
+                    >
+                        All
+                    </button>
+                    <button
+                        className={`stake-history-filter ${filter === 'stake' ? 'active' : ''}`}
+                        onClick={() => setFilter('stake')}
+                    >
+                        Stake
+                    </button>
+                    <button
+                        className={`stake-history-filter ${filter === 'unstake' ? 'active' : ''}`}
+                        onClick={() => setFilter('unstake')}
+                    >
+                        Unstake
+                    </button>
+                    <button
+                        className={`stake-history-filter ${filter === 'claim' ? 'active' : ''}`}
+                        onClick={() => setFilter('claim')}
+                    >
+                        Claims
+                    </button>
+                </div>
+                <div className="stake-history-date-filter">
+                    <select
+                        className="stake-history-date-select"
+                        value={dateFilter}
+                        onChange={(e) => setDateFilter(e.target.value)}
+                    >
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">Last 7 Days</option>
+                        <option value="month">Last 30 Days</option>
+                        <option value="year">Last Year</option>
+                    </select>
+                </div>
             </div>
 
             {/* History List */}
@@ -167,7 +254,8 @@ const StakeHistory = ({ address, chainId }) => {
                         </div>
 
                         {tx.txHash && (() => {
-                            const chainInfo = chainConfig.getChain(chainId);
+                            const txChainId = tx.chainId || chainId;
+                            const chainInfo = chainConfig.getChain(txChainId);
                             const explorerUrl = chainInfo?.blockExplorers?.[0]?.url || 'https://basescan.org';
                             return (
                                 <a

@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
 import { parseUnits } from 'viem';
 import chainConfig from '../../services/chainConfig';
+import { getUserStakes, calculateUnlockProgress, getEarlyUnstakePenalty, STAKING_ABI } from '../../services/stakingService';
+import { saveSwapTransaction, updateSwapTransaction } from '../../services/transactionHistory';
 import '../css/StakeMobile.css';
 
 const ActiveStakesList = ({ address, chainId }) => {
@@ -16,6 +18,7 @@ const ActiveStakesList = ({ address, chainId }) => {
     
     const stakingAddress = chainConfig.getContractAddress(chainId, 'manager');
     const gasSettings = chainConfig.getGasSettings(chainId);
+    const publicClient = usePublicClient();
     const { writeContract } = useWriteContract();
     
     // Transaction receipt
@@ -28,7 +31,16 @@ const ActiveStakesList = ({ address, chainId }) => {
 
     // Handle transaction confirmation
     useEffect(() => {
-        if (isConfirmed && txHash) {
+        if (isConfirmed && txHash && finalAddress && chainId) {
+            // Update transaction status in history
+            try {
+                updateSwapTransaction(txHash, 'completed', {
+                    confirmedAt: new Date().toISOString(),
+                });
+            } catch (error) {
+                console.error('Failed to update transaction status:', error);
+            }
+
             if (unstakingId) {
                 alert('Tokens unstaked successfully!');
                 setUnstakingId(null);
@@ -40,9 +52,9 @@ const ActiveStakesList = ({ address, chainId }) => {
             }
             setTxHash(null);
         }
-    }, [isConfirmed, txHash, unstakingId, claimingId]);
+    }, [isConfirmed, txHash, unstakingId, claimingId, finalAddress, chainId, fetchStakes]);
 
-    const fetchStakes = async () => {
+    const fetchStakes = useCallback(async () => {
         if (!finalAddress) {
             setStakes([]);
             setLoading(false);
@@ -51,38 +63,15 @@ const ActiveStakesList = ({ address, chainId }) => {
 
         setLoading(true);
         try {
-            // TODO: Fetch actual active stakes from API/contract
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            // Mock data
-            setStakes([
-                {
-                    id: 1,
-                    token: 'MANGO',
-                    amount: '1000.00',
-                    apy: 12.5,
-                    stakedDate: new Date(Date.now() - 86400000 * 10).toISOString(),
-                    unlockDate: new Date(Date.now() + 86400000 * 20).toISOString(),
-                    rewards: '12.50',
-                    status: 'active'
-                },
-                {
-                    id: 2,
-                    token: 'BNB',
-                    amount: '50.00',
-                    apy: 8.5,
-                    stakedDate: new Date(Date.now() - 86400000 * 5).toISOString(),
-                    unlockDate: new Date(Date.now() + 86400000 * 2).toISOString(),
-                    rewards: '2.15',
-                    status: 'active'
-                }
-            ]);
+            const fetchedStakes = await getUserStakes(publicClient, stakingAddress, finalAddress, chainId);
+            setStakes(fetchedStakes);
         } catch (error) {
             console.error('Error fetching stakes:', error);
             setStakes([]);
         } finally {
             setLoading(false);
         }
-    };
+    }, [finalAddress, publicClient, stakingAddress, chainId]);
 
     useEffect(() => {
         fetchStakes();
@@ -98,30 +87,72 @@ const ActiveStakesList = ({ address, chainId }) => {
 
     const handleUnstake = async (stakeId) => {
         const stake = stakes.find(s => s.id === stakeId);
-        if (!stake) return;
+        if (!stake || !stakingAddress) return;
 
         const isBeforeUnlock = new Date(stake.unlockDate) > new Date();
+        
+        // Get early unstake penalty if applicable
+        let penaltyPercent = 0;
+        if (isBeforeUnlock && publicClient) {
+            try {
+                penaltyPercent = await getEarlyUnstakePenalty(publicClient, stakingAddress, stakeId);
+            } catch (error) {
+                console.warn('Failed to fetch penalty:', error);
+                penaltyPercent = 2.5; // Default penalty
+            }
+        }
+
         const confirmMessage = isBeforeUnlock 
-            ? '⚠️ Unstaking before unlock date may incur penalties. Continue?'
+            ? `⚠️ Unstaking before unlock date will incur a ${penaltyPercent.toFixed(2)}% penalty. Continue?`
             : 'Are you sure you want to unstake?';
 
         if (!window.confirm(confirmMessage)) return;
 
         setUnstakingId(stakeId);
         try {
-            // TODO: Implement actual contract interaction
-            // const stakingAbi = parseAbi(['function unstake(uint256 stakeId)']);
-            // writeContract({
-            //     address: stakingAddress,
-            //     abi: stakingAbi,
-            //     functionName: 'unstake',
-            //     args: [stakeId],
-            // });
-
-            // Simulate transaction
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            const mockTxHash = '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-            setTxHash(mockTxHash);
+            writeContract(
+                {
+                    address: stakingAddress,
+                    abi: STAKING_ABI,
+                    functionName: 'unstake',
+                    args: [BigInt(stakeId)],
+                    gas: gasSettings?.gasLimit ? BigInt(gasSettings.gasLimit) : undefined,
+                },
+                {
+                    onSuccess: (hash) => {
+                        setTxHash(hash);
+                        console.log('Unstake transaction submitted:', hash);
+                        
+                        // Save to transaction history
+                        if (finalAddress && chainId) {
+                            try {
+                                saveSwapTransaction({
+                                    txHash: hash,
+                                    userAddress: finalAddress,
+                                    chainId: chainId,
+                                    type: 'unstake',
+                                    tokenInSymbol: 'Staked',
+                                    tokenInAddress: stake.tokenAddress || 'staked',
+                                    amountIn: stake.amount,
+                                    tokenOutSymbol: stake.token,
+                                    tokenOutAddress: stake.tokenAddress || 'native',
+                                    amountOut: stake.amount,
+                                    status: 'pending',
+                                    earlyUnstake: isBeforeUnlock,
+                                    penaltyPercent: penaltyPercent,
+                                });
+                            } catch (error) {
+                                console.error('Failed to save transaction to history:', error);
+                            }
+                        }
+                    },
+                    onError: (error) => {
+                        console.error('Unstake failed:', error);
+                        alert('Failed to unstake: ' + (error.message || 'Unknown error'));
+                        setUnstakingId(null);
+                    },
+                }
+            );
         } catch (error) {
             console.error('Error unstaking:', error);
             alert('Failed to unstake: ' + (error.message || 'Unknown error'));
@@ -131,26 +162,53 @@ const ActiveStakesList = ({ address, chainId }) => {
 
     const handleClaimRewards = async (stakeId) => {
         const stake = stakes.find(s => s.id === stakeId);
-        if (!stake || parseFloat(stake.rewards) <= 0) {
+        if (!stake || parseFloat(stake.rewards) <= 0 || !stakingAddress) {
             alert('No rewards to claim');
             return;
         }
 
         setClaimingId(stakeId);
         try {
-            // TODO: Implement actual contract interaction
-            // const stakingAbi = parseAbi(['function claimRewards(uint256 stakeId)']);
-            // writeContract({
-            //     address: stakingAddress,
-            //     abi: stakingAbi,
-            //     functionName: 'claimRewards',
-            //     args: [stakeId],
-            // });
-
-            // Simulate transaction
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            const mockTxHash = '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-            setTxHash(mockTxHash);
+            writeContract(
+                {
+                    address: stakingAddress,
+                    abi: STAKING_ABI,
+                    functionName: 'claimRewards',
+                    args: [BigInt(stakeId)],
+                    gas: gasSettings?.gasLimit ? BigInt(gasSettings.gasLimit) : undefined,
+                },
+                {
+                    onSuccess: (hash) => {
+                        setTxHash(hash);
+                        console.log('Claim rewards transaction submitted:', hash);
+                        
+                        // Save to transaction history
+                        if (finalAddress && chainId) {
+                            try {
+                                saveSwapTransaction({
+                                    txHash: hash,
+                                    userAddress: finalAddress,
+                                    chainId: chainId,
+                                    type: 'claimRewards',
+                                    tokenInSymbol: 'Rewards',
+                                    amountIn: stake.rewards,
+                                    tokenOutSymbol: stake.token,
+                                    tokenOutAddress: stake.tokenAddress || 'native',
+                                    amountOut: stake.rewards,
+                                    status: 'pending',
+                                });
+                            } catch (error) {
+                                console.error('Failed to save transaction to history:', error);
+                            }
+                        }
+                    },
+                    onError: (error) => {
+                        console.error('Claim rewards failed:', error);
+                        alert('Failed to claim rewards: ' + (error.message || 'Unknown error'));
+                        setClaimingId(null);
+                    },
+                }
+            );
         } catch (error) {
             console.error('Error claiming rewards:', error);
             alert('Failed to claim rewards: ' + (error.message || 'Unknown error'));
@@ -205,10 +263,25 @@ const ActiveStakesList = ({ address, chainId }) => {
                             <span className="stake-active-value">{formatDate(stake.unlockDate)}</span>
                         </div>
                         <div className="stake-active-detail-item">
+                            <span className="stake-active-label">Unlock Progress:</span>
+                            <span className="stake-active-value">
+                                {calculateUnlockProgress(stake.stakedDate, stake.unlockDate).toFixed(1)}%
+                            </span>
+                        </div>
+                        <div className="stake-active-detail-item">
                             <span className="stake-active-label">Pending Rewards:</span>
                             <span className="stake-active-value stake-active-rewards">
                                 {stake.rewards} {stake.token}
                             </span>
+                        </div>
+                        {/* Progress Bar */}
+                        <div className="stake-unlock-progress">
+                            <div 
+                                className="stake-unlock-progress-bar"
+                                style={{ 
+                                    width: `${calculateUnlockProgress(stake.stakedDate, stake.unlockDate)}%` 
+                                }}
+                            />
                         </div>
                     </div>
 

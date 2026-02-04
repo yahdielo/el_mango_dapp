@@ -1,51 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { usePublicClient } from 'wagmi';
+import chainConfig from '../../services/chainConfig';
+import { getStakingPools } from '../../services/stakingService';
 import '../css/StakeMobile.css';
 
 const StakePoolList = ({ chainId }) => {
     const [pools, setPools] = useState([]);
     const [loading, setLoading] = useState(true);
     const [sortBy, setSortBy] = useState('apy'); // 'apy', 'tvl', 'token'
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'active', 'inactive'
+    const publicClient = usePublicClient();
+
+    const stakingAddress = chainConfig.getContractAddress(chainId, 'manager');
+
+    const fetchPools = useCallback(async () => {
+        setLoading(true);
+        try {
+            const fetchedPools = await getStakingPools(publicClient, stakingAddress, chainId);
+            setPools(fetchedPools);
+        } catch (error) {
+            console.error('Error fetching pools:', error);
+            setPools([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [publicClient, stakingAddress, chainId]);
 
     useEffect(() => {
-        // TODO: Fetch actual staking pools from API
-        setLoading(true);
-        setTimeout(() => {
-            // Mock data
-            setPools([
-                {
-                    id: 1,
-                    token: 'MANGO',
-                    tokenName: 'Mango Token',
-                    apy: 12.5,
-                    tvl: 500000,
-                    totalStaked: 1000000,
-                    minStake: 10,
-                    lockPeriod: '30 days'
-                },
-                {
-                    id: 2,
-                    token: 'BNB',
-                    tokenName: 'BNB',
-                    apy: 8.5,
-                    tvl: 2500000,
-                    totalStaked: 5000000,
-                    minStake: 1,
-                    lockPeriod: '7 days'
-                },
-                {
-                    id: 3,
-                    token: 'ETH',
-                    tokenName: 'Ethereum',
-                    apy: 6.2,
-                    tvl: 1000000,
-                    totalStaked: 2000000,
-                    minStake: 0.1,
-                    lockPeriod: '14 days'
-                }
-            ]);
-            setLoading(false);
-        }, 1000);
-    }, [chainId]);
+        fetchPools();
+        
+        // Auto-refresh every 60 seconds
+        const interval = setInterval(fetchPools, 60000);
+        return () => clearInterval(interval);
+    }, [fetchPools]);
 
     const formatNumber = (num) => {
         const n = parseFloat(num);
@@ -54,18 +42,28 @@ const StakePoolList = ({ chainId }) => {
         return `$${n.toFixed(2)}`;
     };
 
-    const sortedPools = [...pools].sort((a, b) => {
-        switch (sortBy) {
-            case 'apy':
-                return b.apy - a.apy;
-            case 'tvl':
-                return b.tvl - a.tvl;
-            case 'token':
-                return a.token.localeCompare(b.token);
-            default:
-                return 0;
-        }
-    });
+    const filteredAndSortedPools = useMemo(() => {
+        let filtered = pools.filter(pool => {
+            const matchesSearch = !searchQuery || 
+                pool.token.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                pool.tokenName.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesStatus = filterStatus === 'all' || pool.status === filterStatus;
+            return matchesSearch && matchesStatus;
+        });
+
+        return filtered.sort((a, b) => {
+            switch (sortBy) {
+                case 'apy':
+                    return b.apy - a.apy;
+                case 'tvl':
+                    return b.tvl - a.tvl;
+                case 'token':
+                    return a.token.localeCompare(b.token);
+                default:
+                    return 0;
+            }
+        });
+    }, [pools, searchQuery, filterStatus, sortBy]);
 
     if (loading) {
         return (
@@ -77,28 +75,58 @@ const StakePoolList = ({ chainId }) => {
 
     return (
         <div className="stake-pools-list">
-            {/* Sort Control */}
+            {/* Search and Filter Controls */}
             <div className="stake-pools-controls">
-                <select 
-                    className="stake-pools-sort"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                >
-                    <option value="apy">Sort by APY</option>
-                    <option value="tvl">Sort by TVL</option>
-                    <option value="token">Sort by Token</option>
-                </select>
+                <input
+                    type="text"
+                    className="stake-pools-search"
+                    placeholder="Search pools..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <div className="stake-pools-filters">
+                    <select 
+                        className="stake-pools-filter"
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                    >
+                        <option value="all">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                    <select 
+                        className="stake-pools-sort"
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                    >
+                        <option value="apy">Sort by APY</option>
+                        <option value="tvl">Sort by TVL</option>
+                        <option value="token">Sort by Token</option>
+                    </select>
+                </div>
             </div>
 
             {/* Pool Cards */}
-            {sortedPools.map((pool) => (
+            {filteredAndSortedPools.length === 0 ? (
+                <div className="stake-card">
+                    <div className="stake-empty-state">
+                        <p>No pools found matching your criteria</p>
+                    </div>
+                </div>
+            ) : (
+                filteredAndSortedPools.map((pool) => (
                 <div key={pool.id} className="stake-pool-card">
                     <div className="stake-pool-header">
                         <div className="stake-pool-token">
                             <div className="stake-pool-token-symbol">{pool.token}</div>
                             <div className="stake-pool-token-name">{pool.tokenName}</div>
                         </div>
-                        <div className="stake-pool-apy">{pool.apy.toFixed(2)}% APY</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                            <div className="stake-pool-apy">{pool.apy.toFixed(2)}% APY</div>
+                            <div className={`stake-pool-status stake-pool-status-${pool.status}`}>
+                                {pool.status === 'active' ? '✓ Active' : '✗ Inactive'}
+                            </div>
+                        </div>
                     </div>
                     
                     <div className="stake-pool-details">
@@ -133,7 +161,8 @@ const StakePoolList = ({ chainId }) => {
                         Stake {pool.token}
                     </button>
                 </div>
-            ))}
+                ))
+            )}
         </div>
     );
 };

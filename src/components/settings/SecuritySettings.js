@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
+import { useAccount } from 'wagmi';
 import SettingsSection from './SettingsSection';
 import SettingsToggle from './SettingsToggle';
+import { exportSwapHistoryCSV, importSwapHistoryCSV, clearSwapHistory, getSwapHistory } from '../../services/transactionHistory';
 import '../css/SettingsMobile.css';
 
 const SecuritySettings = () => {
+    const { address } = useAccount();
     const [autoApprove, setAutoApprove] = useState(() => {
         return localStorage.getItem('autoApproveTokens') === 'true';
     });
+    const [isExporting, setIsExporting] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
 
     const handleAutoApproveChange = (value) => {
         if (value) {
@@ -25,75 +30,135 @@ const SecuritySettings = () => {
     };
 
     const handleClearHistory = () => {
-        if (window.confirm('Are you sure you want to clear all transaction history? This cannot be undone.')) {
-            localStorage.removeItem('transactionHistory');
-            alert('Transaction history cleared');
+        const historyCount = getSwapHistory(address).length;
+        if (historyCount === 0) {
+            alert('No transaction history to clear');
+            return;
+        }
+
+        const message = address 
+            ? `Are you sure you want to clear all transaction history for this wallet (${historyCount} transactions)? This cannot be undone.`
+            : `Are you sure you want to clear all transaction history (${historyCount} transactions)? This cannot be undone.`;
+
+        if (window.confirm(message)) {
+            const success = clearSwapHistory(address);
+            if (success) {
+                alert(`Transaction history cleared${address ? ' for this wallet' : ''}`);
+            } else {
+                alert('Failed to clear transaction history');
+            }
         }
     };
 
     const handleExportHistory = () => {
-        // Collect all transaction-related data from localStorage
-        const history = localStorage.getItem('transactionHistory');
-        const swaps = localStorage.getItem('swapHistory');
-        const stakes = localStorage.getItem('stakeHistory');
-        const liquidity = localStorage.getItem('liquidityHistory');
-        
-        const exportData = {
-            exportDate: new Date().toISOString(),
-            transactionHistory: history ? JSON.parse(history) : [],
-            swapHistory: swaps ? JSON.parse(swaps) : [],
-            stakeHistory: stakes ? JSON.parse(stakes) : [],
-            liquidityHistory: liquidity ? JSON.parse(liquidity) : []
-        };
+        setIsExporting(true);
+        try {
+            const csvData = exportSwapHistoryCSV(address);
+            
+            if (!csvData || csvData.trim() === '') {
+                alert('No transaction history to export');
+                setIsExporting(false);
+                return;
+            }
 
-        if (Object.values(exportData).every(v => !v || (Array.isArray(v) && v.length === 0))) {
-            alert('No transaction history to export');
-            return;
+            // Add BOM for Excel compatibility
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvData], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const dateStr = new Date().toISOString().split('T')[0];
+            const filename = address 
+                ? `mango-defi-history-${address.slice(0, 8)}-${dateStr}.csv`
+                : `mango-defi-history-${dateStr}.csv`;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            const historyCount = getSwapHistory(address).length;
+            alert(`Exported ${historyCount} transaction(s) to ${filename}`);
+        } catch (error) {
+            console.error('Export error:', error);
+            alert('Failed to export transaction history: ' + (error.message || 'Unknown error'));
+        } finally {
+            setIsExporting(false);
         }
-
-        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `mango-defi-history-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
     };
 
     const handleImportHistory = () => {
+        setIsImporting(true);
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.json';
-        input.onchange = (e) => {
+        input.accept = '.csv,.json';
+        input.onchange = async (e) => {
             const file = e.target.files[0];
-            if (!file) return;
+            if (!file) {
+                setIsImporting(false);
+                return;
+            }
 
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = async (event) => {
                 try {
-                    const data = JSON.parse(event.target.result);
-                    
-                    if (window.confirm('This will replace your current transaction history. Continue?')) {
-                        if (data.transactionHistory) {
-                            localStorage.setItem('transactionHistory', JSON.stringify(data.transactionHistory));
+                    const fileContent = event.target.result;
+                    const fileName = file.name.toLowerCase();
+                    const isCSV = fileName.endsWith('.csv');
+                    const isJSON = fileName.endsWith('.json');
+
+                    if (!isCSV && !isJSON) {
+                        alert('Unsupported file format. Please use CSV or JSON files.');
+                        setIsImporting(false);
+                        return;
+                    }
+
+                    // Ask user if they want to merge or replace
+                    const merge = window.confirm(
+                        'Import mode:\n\n' +
+                        'OK = Merge with existing history (duplicates will be skipped)\n' +
+                        'Cancel = Replace existing history'
+                    );
+
+                    let result;
+                    if (isCSV) {
+                        result = importSwapHistoryCSV(fileContent, merge);
+                    } else {
+                        // Try to parse as JSON
+                        try {
+                            const jsonData = JSON.parse(fileContent);
+                            // Check if it's the old format with multiple history types
+                            if (jsonData.swapHistory) {
+                                // Old format - extract swapHistory
+                                result = importSwapHistory(JSON.stringify(jsonData.swapHistory), merge);
+                            } else if (Array.isArray(jsonData)) {
+                                // New format - direct array
+                                result = importSwapHistory(JSON.stringify(jsonData), merge);
+                            } else {
+                                throw new Error('Invalid JSON format');
+                            }
+                        } catch (jsonError) {
+                            alert('Failed to parse JSON file: ' + jsonError.message);
+                            setIsImporting(false);
+                            return;
                         }
-                        if (data.swapHistory) {
-                            localStorage.setItem('swapHistory', JSON.stringify(data.swapHistory));
-                        }
-                        if (data.stakeHistory) {
-                            localStorage.setItem('stakeHistory', JSON.stringify(data.stakeHistory));
-                        }
-                        if (data.liquidityHistory) {
-                            localStorage.setItem('liquidityHistory', JSON.stringify(data.liquidityHistory));
-                        }
-                        alert('History imported successfully!');
+                    }
+
+                    if (result.success) {
+                        alert(`✓ ${result.message}`);
+                    } else {
+                        alert(`✗ ${result.message}`);
                     }
                 } catch (error) {
-                    alert('Failed to import history: Invalid file format');
                     console.error('Import error:', error);
+                    alert('Failed to import history: ' + (error.message || 'Invalid file format'));
+                } finally {
+                    setIsImporting(false);
                 }
+            };
+            reader.onerror = () => {
+                alert('Failed to read file');
+                setIsImporting(false);
             };
             reader.readAsText(file);
         };
@@ -121,18 +186,21 @@ const SecuritySettings = () => {
                     <button 
                         className="settings-button settings-button-secondary"
                         onClick={handleExportHistory}
+                        disabled={isExporting || isImporting}
                     >
-                        Export
+                        {isExporting ? 'Exporting...' : 'Export'}
                     </button>
                     <button 
                         className="settings-button settings-button-secondary"
                         onClick={handleImportHistory}
+                        disabled={isExporting || isImporting}
                     >
-                        Import
+                        {isImporting ? 'Importing...' : 'Import'}
                     </button>
                     <button 
                         className="settings-button settings-button-destructive"
                         onClick={handleClearHistory}
+                        disabled={isExporting || isImporting}
                     >
                         Clear
                     </button>

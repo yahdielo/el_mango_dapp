@@ -189,12 +189,52 @@ export const useCrossChainSwap = () => {
         };
     }, [stopStatusPolling]);
 
+    const requestRefund = useCallback(async (swapId, reason = 'Swap failed') => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const result = await swapApi.requestRefund(swapId, reason);
+            // Update swap status to show refund requested
+            setSwapStatus((prev) => ({ 
+                ...prev, 
+                refundStatus: 'requested',
+                refundRequestedAt: new Date().toISOString(),
+            }));
+            return result;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const getRefundStatus = useCallback(async (swapId) => {
+        try {
+            const result = await swapApi.getRefundStatus(swapId);
+            // Update swap status with refund info
+            setSwapStatus((prev) => ({ 
+                ...prev, 
+                refundStatus: result.status,
+                refundAmount: result.amount,
+                refundTxHash: result.txHash,
+            }));
+            return result;
+        } catch (err) {
+            console.error('Error getting refund status:', err);
+            throw err;
+        }
+    }, []);
+
     return {
         initiateSwap,
         swapStatus,
         loading,
         error,
         cancelSwap,
+        requestRefund,
+        getRefundStatus,
         isPolling: statusPolling,
     };
 };

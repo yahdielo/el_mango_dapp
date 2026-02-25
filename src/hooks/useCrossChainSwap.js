@@ -1,240 +1,92 @@
-/**
- * React Hook for Cross-Chain Swap Management
- * 
- * Provides hooks for initiating and tracking cross-chain swaps via LayerSwap
- */
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { initiateSwap, getStatus } from '../services/bridgeApi';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useAccount } from 'wagmi';
-import { swapApi } from '../services/mangoApi';
+const POLL_INTERVAL_MS = 4000;
+const TERMINAL_STATUSES = ['completed', 'failed', 'expired', 'refunded', 'refund_pending'];
 
 /**
- * Hook to get available cross-chain routes
- * @param {number} sourceChainId - Source chain ID
- * @param {number} destChainId - Destination chain ID
- * @param {string} [tokenIn] - Optional source token
- * @param {string} [tokenOut] - Optional destination token
- * @returns {Object} { routes, loading, error, refetch }
+ * Cross-chain swap flow via LayerSwap
+ * @returns {{ startSwap: Function, status: string, swapId: string|null, depositActions: Array, error: string|null, isLoading: boolean, reset: Function }}
  */
-export const useSwapRoutes = (sourceChainId, destChainId, tokenIn = null, tokenOut = null) => {
-    const [routes, setRoutes] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+export function useCrossChainSwap() {
+  const [swapId, setSwapId] = useState(null);
+  const [status, setStatus] = useState(null);
+  const [depositActions, setDepositActions] = useState([]);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const pollRef = useRef(null);
 
-    const fetchRoutes = useCallback(async () => {
-        if (!sourceChainId || !destChainId) {
-            setRoutes([]);
-            return;
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!swapId) {
+      stopPolling();
+      return;
+    }
+
+    const poll = async () => {
+      try {
+        const result = await getStatus(swapId);
+        setStatus(result.status);
+        if (result.depositActions?.length) {
+          setDepositActions(result.depositActions);
         }
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            const data = await swapApi.getRoutes(sourceChainId, destChainId, tokenIn, tokenOut);
-            setRoutes(data.routes || []);
-        } catch (err) {
-            setError(err.message);
-            setRoutes([]);
-        } finally {
-            setLoading(false);
+        if (TERMINAL_STATUSES.includes(result.status)) {
+          stopPolling();
         }
-    }, [sourceChainId, destChainId, tokenIn, tokenOut]);
-
-    useEffect(() => {
-        fetchRoutes();
-    }, [fetchRoutes]);
-
-    return {
-        routes,
-        loading,
-        error,
-        refetch: fetchRoutes,
+      } catch (err) {
+        setError(err?.message || 'Failed to fetch status');
+      }
     };
-};
 
-/**
- * Hook to get fee estimate for a cross-chain swap
- * @param {Object} estimateParams - Estimate parameters
- * @returns {Object} { estimate, loading, error, refetch }
- */
-export const useSwapEstimate = (estimateParams) => {
-    const [estimate, setEstimate] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    poll();
+    pollRef.current = setInterval(poll, POLL_INTERVAL_MS);
+    return stopPolling;
+  }, [swapId, stopPolling]);
 
-    const fetchEstimate = useCallback(async () => {
-        if (!estimateParams?.sourceChainId || !estimateParams?.destChainId || 
-            !estimateParams?.tokenIn || !estimateParams?.tokenOut || !estimateParams?.amountIn) {
-            setEstimate(null);
-            return;
+  const startSwap = useCallback(
+    async (params) => {
+      setError(null);
+      setIsLoading(true);
+      try {
+        const result = await initiateSwap(params);
+        setSwapId(result.swapId);
+        setStatus('user_transfer_pending');
+        setDepositActions(result.depositActions || []);
+        if (result.depositUrl) {
+          window.open(result.depositUrl, '_blank');
         }
+        return result;
+      } catch (err) {
+        setError(err?.message || 'Failed to initiate swap');
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
 
-        setLoading(true);
-        setError(null);
+  const reset = useCallback(() => {
+    stopPolling();
+    setSwapId(null);
+    setStatus(null);
+    setDepositActions([]);
+    setError(null);
+  }, [stopPolling]);
 
-        try {
-            const data = await swapApi.getEstimate(estimateParams);
-            setEstimate(data);
-        } catch (err) {
-            setError(err.message);
-            setEstimate(null);
-        } finally {
-            setLoading(false);
-        }
-    }, [estimateParams]);
-
-    useEffect(() => {
-        fetchEstimate();
-    }, [fetchEstimate]);
-
-    return {
-        estimate,
-        loading,
-        error,
-        refetch: fetchEstimate,
-    };
-};
-
-/**
- * Hook to initiate and track a cross-chain swap
- * @returns {Object} { initiateSwap, swapStatus, loading, error, cancelSwap }
- */
-export const useCrossChainSwap = () => {
-    const { address } = useAccount();
-    const [swapStatus, setSwapStatus] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [statusPolling, setStatusPolling] = useState(false);
-    const statusIntervalRef = useRef(null);
-
-    const stopStatusPolling = useCallback(() => {
-        if (statusIntervalRef.current) {
-            clearInterval(statusIntervalRef.current);
-            statusIntervalRef.current = null;
-        }
-        setStatusPolling(false);
-    }, []);
-
-    const startStatusPolling = useCallback((swapId) => {
-        if (statusPolling || statusIntervalRef.current) return;
-
-        setStatusPolling(true);
-        statusIntervalRef.current = setInterval(async () => {
-            try {
-                const status = await swapApi.getSwapStatus(swapId);
-                setSwapStatus(status);
-
-                // Stop polling if swap is completed or failed
-                if (['completed', 'failed', 'cancelled'].includes(status.status)) {
-                    stopStatusPolling();
-                }
-            } catch (err) {
-                console.error('Error polling swap status:', err);
-            }
-        }, 5000); // Poll every 5 seconds
-    }, [statusPolling, stopStatusPolling]);
-
-    const initiateSwap = useCallback(async (swapParams) => {
-        if (!address) {
-            throw new Error('Wallet not connected');
-        }
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            const result = await swapApi.initiateCrossChainSwap({
-                ...swapParams,
-                recipient: address,
-            });
-
-            setSwapStatus(result);
-
-            // Start polling for status updates
-            if (result.swapId) {
-                startStatusPolling(result.swapId);
-            }
-
-            return result;
-        } catch (err) {
-            setError(err.message);
-            throw err;
-        } finally {
-            setLoading(false);
-        }
-    }, [address, startStatusPolling]);
-
-    const cancelSwap = useCallback(async (swapId) => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const result = await swapApi.cancelSwap(swapId);
-            setSwapStatus((prev) => ({ ...prev, status: 'cancelled' }));
-            stopStatusPolling();
-            return result;
-        } catch (err) {
-            setError(err.message);
-            throw err;
-        } finally {
-            setLoading(false);
-        }
-    }, [stopStatusPolling]);
-
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            stopStatusPolling();
-        };
-    }, [stopStatusPolling]);
-
-    const requestRefund = useCallback(async (swapId, reason = 'Swap failed') => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const result = await swapApi.requestRefund(swapId, reason);
-            // Update swap status to show refund requested
-            setSwapStatus((prev) => ({ 
-                ...prev, 
-                refundStatus: 'requested',
-                refundRequestedAt: new Date().toISOString(),
-            }));
-            return result;
-        } catch (err) {
-            setError(err.message);
-            throw err;
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    const getRefundStatus = useCallback(async (swapId) => {
-        try {
-            const result = await swapApi.getRefundStatus(swapId);
-            // Update swap status with refund info
-            setSwapStatus((prev) => ({ 
-                ...prev, 
-                refundStatus: result.status,
-                refundAmount: result.amount,
-                refundTxHash: result.txHash,
-            }));
-            return result;
-        } catch (err) {
-            console.error('Error getting refund status:', err);
-            throw err;
-        }
-    }, []);
-
-    return {
-        initiateSwap,
-        swapStatus,
-        loading,
-        error,
-        cancelSwap,
-        requestRefund,
-        getRefundStatus,
-        isPolling: statusPolling,
-    };
-};
+  return {
+    startSwap,
+    swapId,
+    status,
+    depositActions,
+    error,
+    isLoading,
+    reset,
+  };
+}

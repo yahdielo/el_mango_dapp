@@ -1,0 +1,27 @@
+@import url("https://fonts.googleapis.com/css2?family=Afacad:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 100%;
+    --primary: 107 97% 49%;
+    --primary-foreground: 0 0% 0%;
+    --border: 214.3 31.8% 91.4%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    @apply bg-[#111111] text-white;
+    font-family: 'Afacad', sans-serif;
+  }
+}

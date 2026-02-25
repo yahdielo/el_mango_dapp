@@ -1,1 +1,0 @@
-(self.webpackChunkmango=self.webpackChunkmango||[]).push([[270],{50477:()=>{},51786:()=>{}}]);

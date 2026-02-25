@@ -21,6 +21,12 @@ npm run dev
 
 App runs at **http://localhost:3003**
 
+### Deploy (Vercel)
+
+For the wallet connect modal to load the full wallet list from Reown, set this in your Vercel project **Environment Variables**:
+
+- **`VITE_REOWN_PROJECT_ID`** – Create a project at [Reown Dashboard](https://dashboard.reown.com/) and paste the Project ID. If unset, a fallback ID is used and custom wallets (MetaMask, Trust, Coinbase, WalletConnect) still show.
+
 ## Stack
 
 - Vite + React 18

@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 
 const THRESHOLD = 0.9; // 90% to confirm
 
-export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPending, useClickOnly = false, connectLabel }) {
+export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPending, useClickOnly = false, connectLabel, swapLabel }) {
   const [progress, setProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef(null);
@@ -110,7 +110,7 @@ export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPendi
         onTouchStart={handlePointerDown}
         className="absolute inset-0 rounded-[20px] flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:ring-offset-2 focus:ring-offset-[#111111] disabled:opacity-70 disabled:cursor-not-allowed w-full overflow-hidden select-none touch-none min-h-[44px]"
         style={{ background: '#3CF902', border: '1px solid #FFF306' }}
-        aria-label={isConnectOnly ? 'Connect wallet' : isPending ? 'Swap in progress' : 'Slide to swap or click to swap'}
+        aria-label={isConnectOnly ? 'Connect wallet' : isPending ? 'In progress' : (swapLabel || 'Slide to swap')}
       >
         {/* Progress fill */}
         {!isConnectOnly && !useClickOnly && (
@@ -161,7 +161,7 @@ export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPendi
           </div>
         )}
 
-        <span className="text-black text-[20px] font-normal flex items-center justify-center gap-2 relative z-10">
+        <span className="text-[20px] font-semibold flex items-center justify-center gap-2 relative z-10" style={{ color: '#111111' }}>
           {isPending && (
             <svg
               className="animate-spin h-5 w-5"
@@ -169,6 +169,7 @@ export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPendi
               fill="none"
               viewBox="0 0 24 24"
               aria-hidden="true"
+              style={{ color: '#111111' }}
             >
               <circle
                 className="opacity-25"
@@ -191,7 +192,7 @@ export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPendi
               ? (connectLabel || 'Connect Wallet')
               : useClickOnly
                 ? 'Swap'
-                : 'Slide To Swap'}
+                : (swapLabel || 'Slide To Swap')}
         </span>
 
         <div className="absolute" style={{ right: '44px', top: '15px' }}>

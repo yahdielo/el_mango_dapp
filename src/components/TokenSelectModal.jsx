@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
+import { usePublicClient } from 'wagmi';
+import { isAddress } from 'viem';
 import { useTokenBalance } from '../hooks/useTokenBalance';
+import { ERC20_ABI } from '../config/abis';
 
 function TokenRow({ token, address, chainId, onSelect }) {
   const { formattedBalance, isLoading, error } = useTokenBalance({
@@ -45,19 +48,69 @@ function TokenRow({ token, address, chainId, onSelect }) {
 
 export default function TokenSelectModal({ show, onHide, tokens, onSelect, address, chainId }) {
   const [search, setSearch] = useState('');
+  const [customTokens, setCustomTokens] = useState([]);
+  const [addAddress, setAddAddress] = useState('');
+  const [addError, setAddError] = useState('');
+  const [addLoading, setAddLoading] = useState(false);
   const closeButtonRef = useRef(null);
+  const publicClient = usePublicClient({ chainId });
 
-  const filtered = tokens.filter((t) =>
-    t.symbol.toLowerCase().includes(search.toLowerCase()) ||
-    t.name.toLowerCase().includes(search.toLowerCase())
+  const allTokens = [...tokens, ...customTokens];
+  const filtered = allTokens.filter((t) =>
+    (t.symbol && t.symbol.toLowerCase().includes(search.toLowerCase())) ||
+    (t.name && t.name.toLowerCase().includes(search.toLowerCase())) ||
+    (t.address && t.address.toLowerCase().includes(search.toLowerCase()))
   );
 
+  const handleAddByAddress = async () => {
+    const raw = addAddress.trim();
+    setAddError('');
+    if (!raw) return;
+    if (!isAddress(raw)) {
+      setAddError('Invalid contract address');
+      return;
+    }
+    const addr = raw.toLowerCase();
+    const exists = allTokens.some((t) => (t.address || '').toLowerCase() === addr);
+    if (exists) {
+      setAddError('Token already in list');
+      return;
+    }
+    if (!publicClient || !chainId) {
+      setAddError('Network not available');
+      return;
+    }
+    setAddLoading(true);
+    try {
+      const [symbol, name, decimals] = await Promise.all([
+        publicClient.readContract({ address: raw, abi: ERC20_ABI, functionName: 'symbol' }),
+        publicClient.readContract({ address: raw, abi: ERC20_ABI, functionName: 'name' }),
+        publicClient.readContract({ address: raw, abi: ERC20_ABI, functionName: 'decimals' }),
+      ]);
+      const token = {
+        address: raw,
+        symbol: symbol || 'UNKNOWN',
+        name: name || 'Unknown',
+        decimals: Number(decimals ?? 18),
+        chainId,
+      };
+      setCustomTokens((prev) => [...prev, token]);
+      setAddAddress('');
+      setSearch('');
+    } catch (err) {
+      setAddError(err?.message?.includes('contract') ? 'Contract not found or not a token' : 'Failed to load token');
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (!show) return;
+    if (!show) {
+      setAddError('');
+      return;
+    }
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        onHide();
-      }
+      if (e.key === 'Escape') onHide();
     };
     document.addEventListener('keydown', handleKeyDown);
     closeButtonRef.current?.focus();
@@ -99,6 +152,28 @@ export default function TokenSelectModal({ show, onHide, tokens, onSelect, addre
             placeholder="Search token..."
             className="w-full px-4 py-3 rounded-xl bg-[#111] text-white border border-gray-700 focus:border-[#3CF902] focus:outline-none mb-4"
           />
+          <div className="mb-4">
+            <div className="text-gray-400 text-sm mb-2">Add by contract address</div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={addAddress}
+                onChange={(e) => { setAddAddress(e.target.value); setAddError(''); }}
+                placeholder="0x..."
+                className="flex-1 px-4 py-2 rounded-xl bg-[#111] text-white border border-gray-700 focus:border-[#3CF902] focus:outline-none text-sm"
+                disabled={addLoading}
+              />
+              <button
+                type="button"
+                onClick={handleAddByAddress}
+                disabled={addLoading || !addAddress.trim()}
+                className="px-4 py-2 rounded-xl bg-[#3CF902] text-black font-medium text-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {addLoading ? '…' : 'Add'}
+              </button>
+            </div>
+            {addError && <p className="text-red-400 text-sm mt-2">{addError}</p>}
+          </div>
         </div>
         <div className="overflow-y-auto max-h-[50vh] p-4 overscroll-contain">
           {filtered.map((token) => (

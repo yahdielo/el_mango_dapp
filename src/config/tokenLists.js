@@ -163,8 +163,17 @@ export const tokenLists = {
   },
 };
 
+const ZERO = '0x0000000000000000000000000000000000000000';
+
 const NATIVE_TOKENS = {
   0: { symbol: 'BTC', name: 'Bitcoin', decimals: 8, address: 'BTC', logoURI: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' },
+  1: { symbol: 'ETH', name: 'Ether', decimals: 18, address: ZERO, native: true, logoURI: ETH_LOGO },
+  8453: { symbol: 'ETH', name: 'Ether', decimals: 18, address: ZERO, native: true, logoURI: ETH_LOGO },
+  42161: { symbol: 'ETH', name: 'Ether', decimals: 18, address: ZERO, native: true, logoURI: ETH_LOGO },
+  10: { symbol: 'ETH', name: 'Ether', decimals: 18, address: ZERO, native: true, logoURI: ETH_LOGO },
+  43114: { symbol: 'AVAX', name: 'Avalanche', decimals: 18, address: ZERO, native: true, logoURI: WAVAX_LOGO },
+  137: { symbol: 'MATIC', name: 'Polygon', decimals: 18, address: ZERO, native: true, logoURI: WMATIC_LOGO },
+  56: { symbol: 'BNB', name: 'BNB', decimals: 18, address: ZERO, native: true, logoURI: WBNB_LOGO },
   501111: { symbol: 'SOL', name: 'Solana', decimals: 9, address: 'SOL', logoURI: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' },
   728126428: { symbol: 'TRX', name: 'Tron', decimals: 6, address: 'TRX', logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/tron/info/logo.png' },
   101: { symbol: 'SUI', name: 'Sui', decimals: 9, address: 'SUI', logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/sui/info/logo.png' },

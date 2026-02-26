@@ -16,6 +16,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 
 const queryClient = new QueryClient();
+// Reown project ID. In Reown Dashboard you must add Allowed Origins (e.g. https://el-mango-dapp.vercel.app)
+// or you get 403 and WebSocket 3000 (Unauthorized: invalid key).
 const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || 'd1e4867bd0b1fdc19e40af935262591e';
 
 const metadata = {
@@ -25,18 +27,22 @@ const metadata = {
   icons: ['https://mangodefi.wtf/static/media/mango.d01e53f401b1e8ed51a3.png'],
 };
 
-const networks = [
+// Specify chains to support (WalletConnect / connect modal).
+// Add or remove from @reown/appkit/networks to change supported chains.
+const chains = [
+  base,
   mainnet,
   optimism,
-  bsc,
   polygon,
-  base,
   arbitrum,
+  bsc,
   avalanche,
   fantom,
   zksync,
   tron,
 ];
+
+const networks = chains;
 
 // Known wallet IDs from Reown WalletGuide so the "All Wallets" list is never empty
 // even when the Explorer API fails or projectId is misconfigured.
@@ -68,7 +74,7 @@ const CUSTOM_WALLETS = [
     id: 'coinbase',
     name: 'Coinbase Wallet',
     homepage: 'https://www.coinbase.com/wallet',
-    image_url: 'https://images.walletconnect.org/coinbase-wallet.svg',
+    image_url: 'https://www.coinbase.com/favicon.ico',
     mobile_link: 'https://go.cb-w.com/',
     desktop_link: 'https://www.coinbase.com/wallet',
   },
@@ -91,12 +97,14 @@ const wagmiAdapter = new WagmiAdapter({
 createAppKit({
   adapters: [wagmiAdapter],
   networks,
+  defaultNetwork: base,
   projectId,
   metadata,
   allWallets: 'SHOW',
   featuredWalletIds: FEATURED_WALLET_IDS,
   customWallets: CUSTOM_WALLETS,
   enableWallets: true,
+  features: { analytics: false },
 });
 
 export function AppKitProvider({ children }) {

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppKitProvider } from './providers/AppKitProvider';
 import { useTelegramWebApp } from './hooks/useTelegramWebApp';
+import ReownSetupBanner from './components/ReownSetupBanner';
 import SwapPage from './pages/SwapPage';
 import CrossChainPage from './pages/CrossChainPage';
 
@@ -8,6 +9,7 @@ export default function App() {
   useTelegramWebApp();
   return (
     <AppKitProvider>
+      <ReownSetupBanner />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<SwapPage />} />

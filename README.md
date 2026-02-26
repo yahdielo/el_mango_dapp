@@ -21,11 +21,20 @@ npm run dev
 
 App runs at **http://localhost:3003**
 
-### Deploy (Vercel)
+### Deploy (Vercel) – WalletConnect / Reown
 
-For the wallet connect modal to load the full wallet list from Reown, set this in your Vercel project **Environment Variables**:
+WalletConnect (QR code, mobile) will return **403** and **WebSocket 3000 (Unauthorized: invalid key)** until Reown is configured correctly.
 
-- **`VITE_REOWN_PROJECT_ID`** – Create a project at [Reown Dashboard](https://dashboard.reown.com/) and paste the Project ID. If unset, a fallback ID is used and custom wallets (MetaMask, Trust, Coinbase, WalletConnect) still show.
+1. **Create a project** at [Reown Dashboard](https://dashboard.reown.com/) (or [cloud.reown.com](https://cloud.reown.com)).
+2. **Add Allowed Origins** in that project:
+   - `https://el-mango-dapp.vercel.app` (your production URL)
+   - `http://localhost:3003` (for local dev)
+   Without these, `api.web3modal.org` and the relay will reject requests (403 / invalid key).
+3. **Set in Vercel** → Project → Settings → Environment Variables:
+   - **`VITE_REOWN_PROJECT_ID`** = your Reown project ID (e.g. `prj_...`).
+4. Redeploy so the new env is used.
+
+**Detailed steps:** [docs/WALLETCONNECT_SETUP.md](docs/WALLETCONNECT_SETUP.md) (fix 403 and “Unauthorized: invalid key”).
 
 ## Stack
 

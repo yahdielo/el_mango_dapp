@@ -36,6 +36,15 @@ WalletConnect (QR code, mobile) will return **403** and **WebSocket 3000 (Unauth
 
 **Detailed steps:** [docs/WALLETCONNECT_SETUP.md](docs/WALLETCONNECT_SETUP.md) (fix 403 and “Unauthorized: invalid key”).
 
+### Make swap fully functional
+
+1. **Reown** – Set `VITE_REOWN_PROJECT_ID` and add your app URL to Project Domains (see above).
+2. **Quotes** – Set `VITE_MANGO_SERVICES_URL` to your mangoServices base URL. Same-chain swap needs this for `/api/v1/swap/quote`.
+3. **Routers** – Set router addresses in `src/chains.json` per chain, or use env: `VITE_BASE_ROUTER`, `VITE_ETHEREUM_ROUTER`, etc. (see `.env.example`).
+4. **Vercel** – After changing env vars, redeploy. Ensure `/assets/*` is not rewritten to `index.html` (see `vercel.json`).
+
+Copy `.env.example` to `.env` for local dev; in production set the same variables in Vercel.
+
 ## Stack
 
 - Vite + React 18

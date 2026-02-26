@@ -298,13 +298,16 @@ export default function SwapPage() {
             onConnect={
               address && chainId && !isChainSupportedForSwap(chainId)
                 ? handleSwitchToBase
-                : handleConnect
+                : address
+                  ? handleConnect
+                  : undefined
             }
             connectLabel={
               address && chainId && !isChainSupportedForSwap(chainId)
                 ? 'Switch to Base'
                 : undefined
             }
+            emptyStateLabel={!address ? 'Connect above to swap' : undefined}
             disabled={
               (address && isChainSupportedForSwap(chainId) && (!canSwap || swapSuccess || swapPending || !routerConfigured)) ||
               (address && !isChainSupportedForSwap(chainId) && !switchChain)

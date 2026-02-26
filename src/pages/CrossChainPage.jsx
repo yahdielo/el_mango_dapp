@@ -339,8 +339,9 @@ export default function CrossChainPage() {
           )}
           <SlideToSwapButton
             onSwap={address ? handleConfirmSwap : undefined}
-            onConnect={handleConnect}
+            onConnect={address ? handleConnect : undefined}
             swapLabel="Slide to Continue"
+            emptyStateLabel={!address ? 'Connect above to continue' : undefined}
             disabled={!canConfirm || bridgeLoading}
             isPending={bridgeLoading}
           />

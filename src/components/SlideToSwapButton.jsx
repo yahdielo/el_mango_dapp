@@ -2,13 +2,14 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 
 const THRESHOLD = 0.9; // 90% to confirm
 
-export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPending, useClickOnly = false, connectLabel, swapLabel }) {
+export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPending, useClickOnly = false, connectLabel, swapLabel, emptyStateLabel }) {
   const [progress, setProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef(null);
 
   const isConnectOnly = onConnect && !onSwap;
-  const isDisabled = disabled || isPending;
+  const isEmptyState = Boolean(emptyStateLabel && !onSwap && !onConnect);
+  const isDisabled = disabled || isPending || isEmptyState;
 
   const reset = useCallback(() => {
     setProgress(0);
@@ -82,6 +83,7 @@ export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPendi
   }, [isDragging, handleMove, handleEnd]);
 
   const handleClick = () => {
+    if (isEmptyState) return;
     if (isConnectOnly) {
       onConnect();
       return;
@@ -94,6 +96,7 @@ export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPendi
 
   const handlePointerDown = (e) => {
     if (isDisabled) return;
+    if (isEmptyState) return;
     if (isConnectOnly) return;
     if (useClickOnly) return;
     setIsDragging(true);
@@ -110,10 +113,10 @@ export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPendi
         onTouchStart={handlePointerDown}
         className="absolute inset-0 rounded-[20px] flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:ring-offset-2 focus:ring-offset-[#111111] disabled:opacity-70 disabled:cursor-not-allowed w-full overflow-hidden select-none touch-none min-h-[44px]"
         style={{ background: '#3CF902', border: '1px solid #FFF306' }}
-        aria-label={isConnectOnly ? 'Connect wallet' : isPending ? 'In progress' : (swapLabel || 'Slide to swap')}
+        aria-label={isEmptyState ? emptyStateLabel : isConnectOnly ? 'Connect wallet' : isPending ? 'In progress' : (swapLabel || 'Slide to swap')}
       >
         {/* Progress fill */}
-        {!isConnectOnly && !useClickOnly && (
+        {!isConnectOnly && !useClickOnly && !isEmptyState && (
           <div
             className="absolute inset-y-0 left-0 rounded-l-[19px] transition-[width] duration-75 ease-out pointer-events-none"
             style={{
@@ -124,7 +127,7 @@ export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPendi
         )}
 
         {/* Draggable handle - follows cursor when sliding */}
-        {!isConnectOnly && !useClickOnly && (
+        {!isConnectOnly && !useClickOnly && !isEmptyState && (
           <div
             className="absolute top-1/2 -translate-y-1/2 pointer-events-none transition-none"
             style={{
@@ -145,8 +148,8 @@ export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPendi
           </div>
         )}
 
-        {/* Static handle for Connect Wallet (no slide) */}
-        {isConnectOnly && (
+        {/* Static handle for Connect or empty state (no slide) */}
+        {(isConnectOnly || isEmptyState) && (
           <div className="absolute" style={{ left: '-4px', top: '-5px' }}>
             <svg width="68" height="68" viewBox="0 0 68 68" fill="none">
               <ellipse cx="33.5" cy="30" rx="25.5" ry="24" fill="#111111" />
@@ -188,11 +191,13 @@ export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPendi
           )}
           {isPending
             ? 'Confirming...'
-            : isConnectOnly
-              ? (connectLabel || 'Connect Wallet')
-              : useClickOnly
-                ? 'Swap'
-                : (swapLabel || 'Slide To Swap')}
+            : isEmptyState
+              ? emptyStateLabel
+              : isConnectOnly
+                ? (connectLabel || 'Connect Wallet')
+                : useClickOnly
+                  ? 'Swap'
+                  : (swapLabel || 'Slide To Swap')}
         </span>
 
         <div className="absolute" style={{ right: '44px', top: '15px' }}>

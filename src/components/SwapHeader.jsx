@@ -1,4 +1,4 @@
-export default function SwapHeader({ address, onConnect, onOpenWalletConnect }) {
+export default function SwapHeader({ address, onConnect }) {
   const formatAddress = (addr) => {
     if (!addr) return 'Connect';
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -7,7 +7,7 @@ export default function SwapHeader({ address, onConnect, onOpenWalletConnect }) 
   return (
     <div className="relative flex items-center justify-between mb-5 h-11">
       <div className="w-10 shrink-0" aria-hidden="true" />
-      <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
+      <div className="absolute left-1/2 -translate-x-1/2">
         <button
           onClick={onConnect}
           type="button"
@@ -22,16 +22,6 @@ export default function SwapHeader({ address, onConnect, onOpenWalletConnect }) 
             <path d="M1.5 1.5L6.5 6.5L11.5 1.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        {!address && onOpenWalletConnect && (
-          <button
-            type="button"
-            onClick={onOpenWalletConnect}
-            className="text-[#3CF902] text-xs hover:underline focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:ring-offset-1 focus:ring-offset-[#111111] rounded px-1 -my-0.5"
-            aria-label="Connect with WalletConnect or other wallets"
-          >
-            WalletConnect / Other wallets
-          </button>
-        )}
       </div>
       <button
         type="button"

@@ -28,7 +28,7 @@ const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
 export default function SwapPage() {
   const { address } = useAccount();
   const chainId = useChainId();
-  const { handleConnect } = useConnectWallet();
+  const { handleConnect, openModal } = useConnectWallet();
   const { switchChain } = useSwitchChain();
   const navigate = useNavigate();
   const supportedChainId = getFirstSupportedChain();
@@ -173,7 +173,7 @@ export default function SwapPage() {
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center" style={{ fontFamily: "'Afacad', sans-serif" }}>
       <div className="w-full max-w-[402px] flex flex-col px-5 pt-[80px] pb-8 min-h-screen">
-        <SwapHeader address={address} onConnect={handleConnect} />
+        <SwapHeader address={address} onConnect={handleConnect} onOpenWalletConnect={openModal} />
         {chainId && !isChainSupportedForSwap(chainId) && (
           <UnsupportedChainBanner currentChainId={chainId} />
         )}

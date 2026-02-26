@@ -35,5 +35,5 @@ export function useConnectWallet() {
     }
   }, [address, injectedConnector, connectAsync, open]);
 
-  return { handleConnect, isConnecting: isPending };
+  return { handleConnect, openModal: open, isConnecting: isPending };
 }

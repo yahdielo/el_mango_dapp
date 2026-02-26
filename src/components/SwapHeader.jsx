@@ -1,4 +1,4 @@
-export default function SwapHeader({ address, onConnect }) {
+export default function SwapHeader({ address, onConnect, onOpenWalletConnect }) {
   const formatAddress = (addr) => {
     if (!addr) return 'Connect';
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -7,21 +7,31 @@ export default function SwapHeader({ address, onConnect }) {
   return (
     <div className="relative flex items-center justify-between mb-5 h-11">
       <div className="w-10 shrink-0" aria-hidden="true" />
-      <div className="absolute left-1/2 -translate-x-1/2">
-      <button
-        onClick={onConnect}
-        type="button"
-        className="flex items-center gap-2 min-h-[44px] min-w-[44px] focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:ring-offset-2 focus:ring-offset-[#111111] rounded-lg"
-        aria-label={address ? 'Open wallet menu' : 'Connect wallet'}
-      >
-        <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden bg-[#3CF902] flex items-center justify-center">
-          <span className="text-black font-bold text-sm">{address ? address[0].toUpperCase() : 'C'}</span>
-        </div>
-        <span className="text-white text-[16px] font-normal">{formatAddress(address)}</span>
-        <svg width="13" height="8" viewBox="0 0 13 8" fill="none">
-          <path d="M1.5 1.5L6.5 6.5L11.5 1.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
+      <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
+        <button
+          onClick={onConnect}
+          type="button"
+          className="flex items-center gap-2 min-h-[44px] min-w-[44px] focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:ring-offset-2 focus:ring-offset-[#111111] rounded-lg"
+          aria-label={address ? 'Open wallet menu' : 'Connect wallet'}
+        >
+          <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden bg-[#3CF902] flex items-center justify-center">
+            <span className="text-black font-bold text-sm">{address ? address[0].toUpperCase() : 'C'}</span>
+          </div>
+          <span className="text-white text-[16px] font-normal">{formatAddress(address)}</span>
+          <svg width="13" height="8" viewBox="0 0 13 8" fill="none">
+            <path d="M1.5 1.5L6.5 6.5L11.5 1.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        {!address && onOpenWalletConnect && (
+          <button
+            type="button"
+            onClick={onOpenWalletConnect}
+            className="text-[#3CF902] text-xs hover:underline focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:ring-offset-1 focus:ring-offset-[#111111] rounded px-1 -my-0.5"
+            aria-label="Connect with WalletConnect or other wallets"
+          >
+            WalletConnect / Other wallets
+          </button>
+        )}
       </div>
       <button
         type="button"

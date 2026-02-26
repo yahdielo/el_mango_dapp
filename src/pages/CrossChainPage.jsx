@@ -28,7 +28,7 @@ const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
 
 export default function CrossChainPage() {
   const { address } = useAccount();
-  const { handleConnect } = useConnectWallet();
+  const { handleConnect, openModal } = useConnectWallet();
   const navigate = useNavigate();
   const allChains = useMemo(() => getAllChains(), []);
   const chains = useMemo(
@@ -239,7 +239,7 @@ export default function CrossChainPage() {
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center" style={{ fontFamily: "'Afacad', sans-serif" }}>
       <div className="w-full max-w-[402px] flex flex-col px-5 pt-[80px] pb-8 min-h-screen">
-        <SwapHeader address={address} onConnect={handleConnect} />
+        <SwapHeader address={address} onConnect={handleConnect} onOpenWalletConnect={openModal} />
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-white text-[32px] font-medium">Cross-Chain Swap</h1>
           <button

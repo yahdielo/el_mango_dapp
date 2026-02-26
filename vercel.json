@@ -1,9 +1,16 @@
 {
   "framework": "vite",
-  "rewrites": [
+  "headers": [
     {
-      "source": "/((?!assets/).*)",
-      "destination": "/index.html"
+      "source": "/index.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }]
+    },
+    {
+      "source": "/",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }]
     }
+  ],
+  "rewrites": [
+    { "source": "/((?!assets/).*)", "destination": "/index.html" }
   ]
 }

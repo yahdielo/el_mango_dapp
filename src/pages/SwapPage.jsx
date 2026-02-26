@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useAccount, useChainId } from 'wagmi';
-import { useAppKit } from '@reown/appkit/react';
+import { useConnectWallet } from '../hooks/useConnectWallet';
 import { useNavigate } from 'react-router-dom';
 import SwapHeader from '../components/SwapHeader';
 import SwapCard from '../components/SwapCard';
@@ -28,7 +28,7 @@ const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
 export default function SwapPage() {
   const { address } = useAccount();
   const chainId = useChainId();
-  const { open } = useAppKit();
+  const { handleConnect } = useConnectWallet();
   const navigate = useNavigate();
   const effectiveChainId = chainId || DEFAULT_CHAIN;
   const SWAP_TOKENS = useMemo(() => getTokensForChain(effectiveChainId), [effectiveChainId]);
@@ -168,7 +168,7 @@ export default function SwapPage() {
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center" style={{ fontFamily: "'Afacad', sans-serif" }}>
       <div className="w-full max-w-[402px] flex flex-col px-5 pt-[80px] pb-8 min-h-screen">
-        <SwapHeader address={address} onConnect={open} />
+        <SwapHeader address={address} onConnect={handleConnect} />
         {chainId && !isChainSupportedForSwap(chainId) && (
           <UnsupportedChainBanner currentChainId={chainId} />
         )}
@@ -290,7 +290,7 @@ export default function SwapPage() {
           )}
           <SlideToSwapButton
             onSwap={address && routerConfigured ? handleSwapClick : undefined}
-            onConnect={open}
+            onConnect={handleConnect}
             disabled={!canSwap || swapSuccess || swapPending || !routerConfigured}
             isPending={swapPending}
           />

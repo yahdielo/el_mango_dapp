@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useAccount } from 'wagmi';
-import { useAppKit } from '@reown/appkit/react';
+import { useConnectWallet } from '../hooks/useConnectWallet';
 import { useNavigate } from 'react-router-dom';
 import SwapHeader from '../components/SwapHeader';
 import CrossChainSwapCard from '../components/CrossChainSwapCard';
@@ -28,7 +28,7 @@ const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
 
 export default function CrossChainPage() {
   const { address } = useAccount();
-  const { open } = useAppKit();
+  const { handleConnect } = useConnectWallet();
   const navigate = useNavigate();
   const allChains = useMemo(() => getAllChains(), []);
   const chains = useMemo(
@@ -190,7 +190,7 @@ export default function CrossChainPage() {
 
   const handleConfirmSwap = useCallback(async () => {
     if (!address) {
-      open();
+      handleConnect();
       return;
     }
     if (!isCrossChain) return;
@@ -210,7 +210,7 @@ export default function CrossChainPage() {
     }
   }, [
     address,
-    open,
+    handleConnect,
     isCrossChain,
     routeSupported,
     startSwap,
@@ -239,7 +239,7 @@ export default function CrossChainPage() {
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center" style={{ fontFamily: "'Afacad', sans-serif" }}>
       <div className="w-full max-w-[402px] flex flex-col px-5 pt-[80px] pb-8 min-h-screen">
-        <SwapHeader address={address} onConnect={open} />
+        <SwapHeader address={address} onConnect={handleConnect} />
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-white text-[32px] font-medium">Cross-Chain Swap</h1>
           <button
@@ -339,7 +339,7 @@ export default function CrossChainPage() {
           )}
           <SlideToSwapButton
             onSwap={address ? handleConfirmSwap : undefined}
-            onConnect={open}
+            onConnect={handleConnect}
             disabled={!canConfirm || bridgeLoading}
             isPending={bridgeLoading}
           />

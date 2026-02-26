@@ -8,8 +8,10 @@ import SlideToSwapButton from '../components/SlideToSwapButton';
 import SwapTransactionDetails from '../components/SwapTransactionDetails';
 import UnsupportedChainBanner from '../components/UnsupportedChainBanner';
 import TokenSelectModal from '../components/TokenSelectModal';
+import ChainSelectionModal from '../components/ChainSelectionModal';
 import SwapFooter from '../components/SwapFooter';
-import { getTokensForChain, isChainSupportedForSwap, getFirstSupportedChain } from '../config/tokenLists';
+import { getTokensForChain, isChainSupportedForSwap, SUPPORTED_SWAP_CHAINS } from '../config/tokenLists';
+import { getAllChains } from '../utils/chainConfig';
 import { useTokenBalance, isNativeToken } from '../hooks/useTokenBalance';
 import { useSwapValidation } from '../hooks/useSwapValidation';
 import { useQuote } from '../hooks/useQuote';
@@ -31,10 +33,19 @@ export default function SwapPage() {
   const { handleConnect } = useConnectWallet();
   const { switchChain } = useSwitchChain();
   const navigate = useNavigate();
-  const supportedChainId = getFirstSupportedChain();
-  const handleSwitchToBase = useCallback(() => {
-    switchChain?.({ chainId: supportedChainId });
-  }, [switchChain, supportedChainId]);
+  const supportedChains = useMemo(
+    () => getAllChains().filter((c) => SUPPORTED_SWAP_CHAINS.includes(parseInt(c.chainId, 10))),
+    []
+  );
+  const [showChainPicker, setShowChainPicker] = useState(false);
+  const handleOpenChainPicker = useCallback(() => setShowChainPicker(true), []);
+  const handleSwitchChain = useCallback(
+    (chain) => {
+      switchChain?.({ chainId: parseInt(chain.chainId, 10) });
+      setShowChainPicker(false);
+    },
+    [switchChain]
+  );
   const effectiveChainId = chainId || DEFAULT_CHAIN;
   const SWAP_TOKENS = useMemo(() => getTokensForChain(effectiveChainId), [effectiveChainId]);
   const [amount1, setAmount1] = useState('');
@@ -297,14 +308,14 @@ export default function SwapPage() {
             onSwap={address && isChainSupportedForSwap(chainId) ? handleSwapClick : undefined}
             onConnect={
               address && chainId && !isChainSupportedForSwap(chainId)
-                ? handleSwitchToBase
+                ? handleOpenChainPicker
                 : address
                   ? handleConnect
                   : undefined
             }
             connectLabel={
               address && chainId && !isChainSupportedForSwap(chainId)
-                ? 'Switch to Base'
+                ? 'Switch network'
                 : undefined
             }
             emptyStateLabel={!address ? 'Connect above to swap' : undefined}
@@ -326,6 +337,13 @@ export default function SwapPage() {
         onSelect={handleTokenSelect}
         address={address}
         chainId={effectiveChainId}
+      />
+      <ChainSelectionModal
+        show={showChainPicker}
+        onHide={() => setShowChainPicker(false)}
+        chains={supportedChains}
+        onSelect={handleSwitchChain}
+        title="Switch network"
       />
     </div>
   );

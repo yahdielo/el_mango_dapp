@@ -11,7 +11,7 @@ export default function ReownSetupBanner() {
     if (typeof window === 'undefined') return;
     if (sessionStorage.getItem(STORAGE_KEY)) return;
 
-    const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || 'd1e4867bd0b1fdc19e40af935262591e';
+    const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || 'prj_eaba00ab0e7c5a6e1e61f0635a5c4de1';
     const url = `${REOWN_CONFIG_URL}?projectId=${projectId}&st=appkit&sv=react-wagmi-1.7.15`;
 
     fetch(url)
@@ -27,6 +27,12 @@ export default function ReownSetupBanner() {
   const dismiss = () => {
     sessionStorage.setItem(STORAGE_KEY, '1');
     setShow(false);
+  };
+
+  const copyOrigin = () => {
+    try {
+      navigator.clipboard.writeText(origin);
+    } catch (_) {}
   };
 
   if (!show || !origin) return null;
@@ -46,8 +52,16 @@ export default function ReownSetupBanner() {
         >
           Reown Dashboard
         </a>
-        , add this URL to Project Domains: <code className="bg-black/10 px-1 rounded">{origin}</code>
+        → Project Domains, add exactly: <code className="bg-black/10 px-1 rounded">{origin}</code>
       </span>
+      <button
+        type="button"
+        onClick={copyOrigin}
+        className="ml-1 px-1.5 py-0.5 rounded bg-black/10 text-xs font-medium hover:bg-black/20"
+        aria-label="Copy URL"
+      >
+        Copy
+      </button>
       <button
         type="button"
         onClick={dismiss}

@@ -18,7 +18,7 @@ import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 const queryClient = new QueryClient();
 // Reown project ID. In Reown Dashboard you must add Allowed Origins (e.g. https://el-mango-dapp.vercel.app)
 // or you get 403 and WebSocket 3000 (Unauthorized: invalid key).
-const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || 'd1e4867bd0b1fdc19e40af935262591e';
+const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || 'prj_eaba00ab0e7c5a6e1e61f0635a5c4de1';
 
 const metadata = {
   name: 'MangoSwap',

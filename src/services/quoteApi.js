@@ -10,6 +10,15 @@ import { isNativeToken } from '../hooks/useTokenBalance';
 
 const MANGO_SERVICES_URL = import.meta.env.VITE_MANGO_SERVICES_URL || '';
 
+/** When app is HTTPS, use HTTPS for API to avoid Mixed Content block. */
+function getBaseUrl() {
+  const raw = (MANGO_SERVICES_URL || '').replace(/\/$/, '');
+  if (typeof window !== 'undefined' && window.location?.protocol === 'https:' && raw.startsWith('http://')) {
+    return raw.replace(/^http:\/\//i, 'https://');
+  }
+  return raw;
+}
+
 async function fetchJson(url) {
   const res = await fetch(url, {
     headers: { Accept: 'application/json' },
@@ -45,7 +54,7 @@ export async function getQuote({ chainId, tokenIn, tokenOut, amountIn }) {
     throw new Error('Tokens required');
   }
 
-  const baseUrl = (MANGO_SERVICES_URL || '').replace(/\/$/, '');
+  const baseUrl = getBaseUrl();
   if (!baseUrl) {
     throw new Error('VITE_MANGO_SERVICES_URL not configured');
   }
@@ -97,7 +106,7 @@ export async function getQuote({ chainId, tokenIn, tokenOut, amountIn }) {
 export async function getTokenPriceUsd({ chainId, token }) {
   if (!token?.symbol || !chainId) return 0;
 
-  const baseUrl = (MANGO_SERVICES_URL || '').replace(/\/$/, '');
+  const baseUrl = getBaseUrl();
   if (!baseUrl) return 0;
 
   // USDC addresses per chain (aligned with tokenLists.js)

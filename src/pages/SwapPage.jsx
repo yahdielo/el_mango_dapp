@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useAccount, useChainId } from 'wagmi';
+import { useAccount, useChainId, useSwitchChain } from 'wagmi';
 import { useConnectWallet } from '../hooks/useConnectWallet';
 import { useNavigate } from 'react-router-dom';
 import SwapHeader from '../components/SwapHeader';
@@ -9,7 +9,7 @@ import SwapTransactionDetails from '../components/SwapTransactionDetails';
 import UnsupportedChainBanner from '../components/UnsupportedChainBanner';
 import TokenSelectModal from '../components/TokenSelectModal';
 import SwapFooter from '../components/SwapFooter';
-import { getTokensForChain, isChainSupportedForSwap } from '../config/tokenLists';
+import { getTokensForChain, isChainSupportedForSwap, getFirstSupportedChain } from '../config/tokenLists';
 import { useTokenBalance, isNativeToken } from '../hooks/useTokenBalance';
 import { useSwapValidation } from '../hooks/useSwapValidation';
 import { useQuote } from '../hooks/useQuote';
@@ -29,7 +29,12 @@ export default function SwapPage() {
   const { address } = useAccount();
   const chainId = useChainId();
   const { handleConnect } = useConnectWallet();
+  const { switchChain } = useSwitchChain();
   const navigate = useNavigate();
+  const supportedChainId = getFirstSupportedChain();
+  const handleSwitchToBase = useCallback(() => {
+    switchChain?.({ chainId: supportedChainId });
+  }, [switchChain, supportedChainId]);
   const effectiveChainId = chainId || DEFAULT_CHAIN;
   const SWAP_TOKENS = useMemo(() => getTokensForChain(effectiveChainId), [effectiveChainId]);
   const [amount1, setAmount1] = useState('');
@@ -289,9 +294,21 @@ export default function SwapPage() {
             </div>
           )}
           <SlideToSwapButton
-            onSwap={address && routerConfigured ? handleSwapClick : undefined}
-            onConnect={handleConnect}
-            disabled={!canSwap || swapSuccess || swapPending || !routerConfigured}
+            onSwap={address && isChainSupportedForSwap(chainId) ? handleSwapClick : undefined}
+            onConnect={
+              address && chainId && !isChainSupportedForSwap(chainId)
+                ? handleSwitchToBase
+                : handleConnect
+            }
+            connectLabel={
+              address && chainId && !isChainSupportedForSwap(chainId)
+                ? 'Switch to Base'
+                : undefined
+            }
+            disabled={
+              (address && isChainSupportedForSwap(chainId) && (!canSwap || swapSuccess || swapPending || !routerConfigured)) ||
+              (address && !isChainSupportedForSwap(chainId) && !switchChain)
+            }
             isPending={swapPending}
           />
         </div>

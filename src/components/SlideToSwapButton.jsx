@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 
 const THRESHOLD = 0.9; // 90% to confirm
 
-export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPending, useClickOnly = false }) {
+export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPending, useClickOnly = false, connectLabel }) {
   const [progress, setProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef(null);
@@ -188,7 +188,7 @@ export default function SlideToSwapButton({ onSwap, onConnect, disabled, isPendi
           {isPending
             ? 'Confirming...'
             : isConnectOnly
-              ? 'Connect Wallet'
+              ? (connectLabel || 'Connect Wallet')
               : useClickOnly
                 ? 'Swap'
                 : 'Slide To Swap'}

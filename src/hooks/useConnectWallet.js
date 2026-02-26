@@ -1,18 +1,16 @@
 import { useCallback, useMemo } from 'react';
 import { useAccount, useConnect } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
-import { getTelegramWebApp } from './useTelegramWebApp';
 
 /**
- * In Telegram WebView the Reown modal can throw "Illegal invocation" when
- * accessing provider.connected in timers. Use injected connector directly
- * (no modal) for connect; use open() when already connected (account menu).
+ * Connect without opening Reown modal when possible to avoid "Illegal invocation"
+ * (modal touches provider.connected in timers and breaks in WebView/Chrome).
+ * Use injected connector first everywhere; open modal only for account menu.
  */
 export function useConnectWallet() {
   const { address } = useAccount();
   const { open } = useAppKit();
   const { connectAsync, connectors, isPending } = useConnect();
-  const isWebView = Boolean(getTelegramWebApp());
 
   const injectedConnector = useMemo(
     () =>
@@ -30,12 +28,12 @@ export function useConnectWallet() {
       open();
       return;
     }
-    if (isWebView && injectedConnector) {
+    if (injectedConnector) {
       connectAsync({ connector: injectedConnector }).catch(() => {});
     } else {
       open();
     }
-  }, [address, isWebView, injectedConnector, connectAsync, open]);
+  }, [address, injectedConnector, connectAsync, open]);
 
   return { handleConnect, isConnecting: isPending };
 }

@@ -3,6 +3,7 @@ import { usePublicClient } from 'wagmi';
 import { isAddress } from 'viem';
 import { useTokenBalance } from '../hooks/useTokenBalance';
 import { ERC20_ABI } from '../config/abis';
+import { getTokenLogoUrl } from '../utils/tokenLogoUrl';
 import TokenLogo from './TokenLogo';
 
 function TokenRow({ token, address, chainId, onSelect }) {
@@ -76,12 +77,19 @@ export default function TokenSelectModal({ show, onHide, tokens, onSelect, addre
         publicClient.readContract({ address: raw, abi: ERC20_ABI, functionName: 'name' }),
         publicClient.readContract({ address: raw, abi: ERC20_ABI, functionName: 'decimals' }),
       ]);
+      let logoURI = null;
+      try {
+        logoURI = await getTokenLogoUrl(chainId, raw);
+      } catch {
+        // keep logoURI null; TokenLogo will show first letter
+      }
       const token = {
         address: raw,
         symbol: symbol || 'UNKNOWN',
         name: name || 'Unknown',
         decimals: Number(decimals ?? 18),
         chainId,
+        ...(logoURI && { logoURI }),
       };
       setCustomTokens((prev) => [...prev, token]);
       setAddAddress('');

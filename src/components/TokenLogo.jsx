@@ -7,6 +7,7 @@ const FALLBACK_LOGO_BY_SYMBOL = {
   DAI: 'https://assets.coingecko.com/coins/images/9956/large/Badge_Dai.png',
   WETH: 'https://assets.coingecko.com/coins/images/2518/large/weth.png',
   ETH: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
+  PONKE: 'https://assets.coingecko.com/coins/images/33233/small/ponke.png',
 };
 
 /**

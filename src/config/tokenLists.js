@@ -13,6 +13,7 @@ const USDT_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/b
 const DAI_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png';
 const SHIB_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE/logo.png';
 const PEPE_LOGO = 'https://assets.coingecko.com/coins/images/29850/large/pepe-token.jpeg';
+const PONKE_LOGO = 'https://assets.coingecko.com/coins/images/33233/small/ponke.png';
 const UNI_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984/logo.png';
 const LINK_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x514910771AF9Ca656af840dff83E8264EcF986CA/logo.png';
 const ARB_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/assets/0x912CE59144191C1204E64559FE8253a0e49E6548/logo.png';
@@ -161,6 +162,15 @@ export const tokenLists = {
       { symbol: 'LINK', name: 'Chainlink', decimals: 18, address: '0x514910771AF9Ca656af840dff83E8264EcF986CA', logoURI: LINK_LOGO },
     ],
   },
+  // Solana (501111) – official PONKE is on Solana only (mint: 5z3EqYQo9HiCEs3R84RCDMu2n7anpDMxRhdK8PSWmrRC)
+  501111: {
+    default: [
+      { symbol: 'PONKE', name: 'Ponke', decimals: 6, address: '5z3EqYQo9HiCEs3R84RCDMu2n7anpDMxRhdK8PSWmrRC', logoURI: PONKE_LOGO },
+    ],
+    popular: [
+      { symbol: 'PONKE', name: 'Ponke', decimals: 6, address: '5z3EqYQo9HiCEs3R84RCDMu2n7anpDMxRhdK8PSWmrRC', logoURI: PONKE_LOGO },
+    ],
+  },
 };
 
 const ZERO = '0x0000000000000000000000000000000000000000';
@@ -179,6 +189,7 @@ const NATIVE_TOKENS = {
   101: { symbol: 'SUI', name: 'Sui', decimals: 9, address: 'SUI', logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/sui/info/logo.png' },
   144: { symbol: 'XRP', name: 'XRP', decimals: 6, address: 'XRP', logoURI: 'https://cryptologos.cc/logos/xrp-xrp-logo.png' },
 };
+
 
 function getDefaultTokens(chainId) {
   return tokenLists[chainId]?.default || [];

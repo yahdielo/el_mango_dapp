@@ -29,7 +29,9 @@ export function useConnectWallet() {
       return;
     }
     if (injectedConnector) {
-      connectAsync({ connector: injectedConnector }).catch(() => {});
+      connectAsync({ connector: injectedConnector }).catch(() => {
+        open();
+      });
     } else {
       open();
     }

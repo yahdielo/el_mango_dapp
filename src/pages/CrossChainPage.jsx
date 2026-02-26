@@ -54,8 +54,18 @@ export default function CrossChainPage() {
   const [showTokenInModal, setShowTokenInModal] = useState(false);
   const [showTokenOutModal, setShowTokenOutModal] = useState(false);
 
-  const tokensIn = useMemo(() => getTokensForChain(sourceChainId), [sourceChainId]);
-  const tokensOut = useMemo(() => getTokensForChain(destChainId), [destChainId]);
+  const filterCrossChainTokens = useCallback((tokens) => {
+    return (tokens || []).filter((t) => (t.symbol || '').toUpperCase() !== 'MANGO');
+  }, []);
+
+  const tokensIn = useMemo(
+    () => filterCrossChainTokens(getTokensForChain(sourceChainId)),
+    [sourceChainId, filterCrossChainTokens]
+  );
+  const tokensOut = useMemo(
+    () => filterCrossChainTokens(getTokensForChain(destChainId)),
+    [destChainId, filterCrossChainTokens]
+  );
 
   const { balance: balanceTokenIn } = useTokenBalance({
     address,
@@ -142,20 +152,26 @@ export default function CrossChainPage() {
   }, [tokensOut]);
 
   // Default tokens when chain changes
-  const setSourceChainWithToken = useCallback((chain) => {
-    const id = parseInt(chain.chainId);
-    setSourceChainId(id);
-    setSourceChain(chain);
-    const tokens = getTokensForChain(id);
-    setTokenIn(tokens[0] || null);
-  }, []);
-  const setDestChainWithToken = useCallback((chain) => {
-    const id = parseInt(chain.chainId);
-    setDestChainId(id);
-    setDestChain(chain);
-    const tokens = getTokensForChain(id);
-    setTokenOut(tokens[0] || null);
-  }, []);
+  const setSourceChainWithToken = useCallback(
+    (chain) => {
+      const id = parseInt(chain.chainId);
+      setSourceChainId(id);
+      setSourceChain(chain);
+      const tokens = filterCrossChainTokens(getTokensForChain(id));
+      setTokenIn(tokens[0] || null);
+    },
+    [filterCrossChainTokens]
+  );
+  const setDestChainWithToken = useCallback(
+    (chain) => {
+      const id = parseInt(chain.chainId);
+      setDestChainId(id);
+      setDestChain(chain);
+      const tokens = filterCrossChainTokens(getTokensForChain(id));
+      setTokenOut(tokens[0] || null);
+    },
+    [filterCrossChainTokens]
+  );
 
   const handleTokenInSelect = (token) => {
     setTokenIn(token);
@@ -228,7 +244,7 @@ export default function CrossChainPage() {
     !bridgeLoading;
   const canConfirm = isCrossChain ? canConfirmCrossChain : false;
   const showUnsupportedWarning = isCrossChain && routeSupported === false && !routeLoading;
-  const showRouteUnknownMessage = isCrossChain && routeSupported === null && !routeLoading;
+  const showRouteUnknownMessage = isCrossChain && routeSupported === null && !routeLoading && amountIn && parseFloat(amountIn) > 0;
 
   const usdIn = amountIn && (priceIn > 0 || tokenIn?.symbol === 'USDC' || tokenIn?.symbol === 'USDT')
     ? (priceIn > 0 ? parseFloat(amountIn) * priceIn : parseFloat(amountIn))
@@ -334,8 +350,8 @@ export default function CrossChainPage() {
             </p>
           )}
           {showRouteUnknownMessage && (
-            <p className="text-gray-400 text-sm text-center mb-2">
-              Route check unavailable. You can still slide to continue and complete the swap on LayerSwap.
+            <p className="text-gray-500 text-xs text-center mb-2">
+              Route check unavailable — you can still slide to continue; swap completes on LayerSwap.
             </p>
           )}
           {(bridgeError || validationError || effectiveQuoteError) && !bridgeStatus && (

@@ -20,15 +20,26 @@ function getBaseUrl() {
 }
 
 async function fetchJson(url) {
-  const res = await fetch(url, {
-    headers: { Accept: 'application/json' },
-    signal: AbortSignal.timeout(15000),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `API error: ${res.status}`);
+  try {
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `API error: ${res.status}`);
+    }
+    return res.json();
+  } catch (e) {
+    const baseUrl = getBaseUrl();
+    const hint = baseUrl
+      ? `Quote server unreachable (${baseUrl}). Use a public HTTPS URL for VITE_MANGO_SERVICES_URL.`
+      : 'Set VITE_MANGO_SERVICES_URL to your mangoServices base URL.';
+    if (e?.message && (e.message === 'Failed to fetch' || /net::err|unreachable|cors/i.test(e.message))) {
+      throw new Error(hint);
+    }
+    throw e;
   }
-  return res.json();
 }
 
 /**

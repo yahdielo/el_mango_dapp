@@ -126,8 +126,10 @@ export function mapErrorToUserMessage(err) {
   if (CONFIG_PATTERNS.some((p) => p.test(msg))) return msg; // keep config messages as-is (short)
   if (NETWORK_PATTERNS.some((p) => p.test(msg))) return 'Network error. Try again.';
 
-  // CORS / fetch (common when mangoServices URL wrong or CORS not set)
-  if (/failed to fetch|cors|net::err|aborted/i.test(msg)) return 'Cannot reach server. Check mangoServices URL and CORS.';
+  // Quote server unreachable (wrong URL, local IP from HTTPS app, CORS, or server down)
+  if (/failed to fetch|cors|net::err|aborted|unreachable|quote server unreachable|VITE_MANGO_SERVICES_URL/i.test(msg)) {
+    return 'Quote server unreachable. Set VITE_MANGO_SERVICES_URL to a public HTTPS URL (not a local IP when the app is on HTTPS).';
+  }
 
   // Fallback: shorten raw message
   const raw = err?.shortMessage || err?.message || String(err);

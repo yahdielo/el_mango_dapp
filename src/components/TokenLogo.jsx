@@ -1,0 +1,44 @@
+import { useState } from 'react';
+
+/** Fallback logo URLs (e.g. CoinGecko) when primary (Trust Wallet) fails with connection reset */
+const FALLBACK_LOGO_BY_SYMBOL = {
+  USDT: 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
+  USDC: 'https://assets.coingecko.com/coins/images/6319/large/USDC.png',
+  DAI: 'https://assets.coingecko.com/coins/images/9956/large/Badge_Dai.png',
+  WETH: 'https://assets.coingecko.com/coins/images/2518/large/weth.png',
+  ETH: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
+};
+
+/**
+ * Renders token logo with fallback: primary logoURI -> fallback URL (if symbol known) -> letter.
+ * Handles Trust Wallet CDN connection resets (e.g. raw.githubusercontent ERR_CONNECTION_RESET).
+ */
+export default function TokenLogo({ token, className = '', letterClassName = 'text-white font-bold text-sm' }) {
+  const [srcIndex, setSrcIndex] = useState(0);
+  const primary = token?.logoURI;
+  const fallback = token?.symbol ? FALLBACK_LOGO_BY_SYMBOL[token.symbol] : null;
+  const urls = [primary, fallback].filter(Boolean);
+  const currentSrc = urls[srcIndex];
+  const showLetter = !currentSrc || srcIndex >= urls.length;
+
+  const handleError = () => {
+    if (srcIndex + 1 < urls.length) setSrcIndex((i) => i + 1);
+    else setSrcIndex(urls.length);
+  };
+
+  const letter = token?.symbol?.[0] || '?';
+
+  return (
+    <>
+      {currentSrc && !showLetter && (
+        <img
+          src={currentSrc}
+          alt={token?.symbol ?? ''}
+          className={className || 'w-full h-full object-cover'}
+          onError={handleError}
+        />
+      )}
+      <span className={showLetter ? letterClassName : 'hidden'}>{letter}</span>
+    </>
+  );
+}

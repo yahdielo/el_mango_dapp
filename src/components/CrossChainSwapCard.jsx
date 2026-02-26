@@ -1,3 +1,5 @@
+import TokenLogo from './TokenLogo';
+
 const CHAIN_COLORS = {
   1: '#627EEA', 10: '#FF0420', 56: '#F3BA2F', 137: '#8247E5', 8453: '#0052FF',
   42161: '#28A0F0', 43114: '#E84142', 728126428: '#FF0019', 501111: '#9945FF',
@@ -18,19 +20,7 @@ export default function CrossChainSwapCard({
 }) {
   const TokenIcon = () => (
     <div className="w-[54px] h-[54px] rounded-full flex items-center justify-center overflow-hidden bg-[#8247E5]">
-      {token?.logoURI ? (
-        <img
-          src={token.logoURI}
-          alt={token.symbol}
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.style.display = 'none';
-            e.target.nextSibling?.classList.remove('hidden');
-          }}
-        />
-      ) : null}
-      <span className={`text-white font-bold ${token?.logoURI ? 'hidden' : ''}`}>{token?.symbol?.[0] || '?'}</span>
+      <TokenLogo token={token} letterClassName="text-white font-bold" />
     </div>
   );
 

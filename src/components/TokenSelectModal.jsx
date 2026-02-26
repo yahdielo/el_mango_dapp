@@ -3,6 +3,7 @@ import { usePublicClient } from 'wagmi';
 import { isAddress } from 'viem';
 import { useTokenBalance } from '../hooks/useTokenBalance';
 import { ERC20_ABI } from '../config/abis';
+import TokenLogo from './TokenLogo';
 
 function TokenRow({ token, address, chainId, onSelect }) {
   const { formattedBalance, isLoading, error } = useTokenBalance({
@@ -20,19 +21,7 @@ function TokenRow({ token, address, chainId, onSelect }) {
     >
       <div className="flex items-center gap-3 min-w-0">
         <div className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden bg-[#3CF902]">
-          {token.logoURI ? (
-            <img
-              src={token.logoURI}
-              alt={token.symbol}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.style.display = 'none';
-                e.target.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
-          ) : null}
-          <span className={`text-black font-bold text-sm ${token.logoURI ? 'hidden' : ''}`}>{token.symbol?.[0] || '?'}</span>
+          <TokenLogo token={token} letterClassName="text-black font-bold text-sm" />
         </div>
         <div>
           <div className="text-white font-medium">{token.symbol}</div>

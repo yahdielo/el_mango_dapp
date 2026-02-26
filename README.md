@@ -39,7 +39,7 @@ WalletConnect (QR code, mobile) will return **403** and **WebSocket 3000 (Unauth
 ### Make swap fully functional
 
 1. **Reown** – Set `VITE_REOWN_PROJECT_ID` and add your app URL to Project Domains (see above).
-2. **Quotes** – Set `VITE_MANGO_SERVICES_URL` to your mangoServices base URL. Same-chain swap needs this for `/api/v1/swap/quote`.
+2. **Quotes** – Set `VITE_MANGO_SERVICES_URL` to your mangoServices base URL (same-chain swap uses `/api/v1/swap/quote`). It must be reachable from the browser; use a **public HTTPS** URL when the app is on HTTPS (e.g. Vercel). A local IP (e.g. `http://193.31.31.199:3000`) will cause "Quote server unreachable" in production.
 3. **Routers** – Set router addresses in `src/chains.json` per chain, or use env: `VITE_BASE_ROUTER`, `VITE_ETHEREUM_ROUTER`, etc. (see `.env.example`).
 4. **Vercel** – After changing env vars, redeploy. Ensure `/assets/*` is not rewritten to `index.html` (see `vercel.json`).
 

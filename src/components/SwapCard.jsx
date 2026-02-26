@@ -1,19 +1,9 @@
+import TokenLogo from './TokenLogo';
+
 export default function SwapCard({ label, token, amount, onAmountChange, onTokenClick, onMaxClick, readOnly, disabled, usdValue }) {
   const TokenIcon = () => (
     <div className="w-[54px] h-[54px] rounded-full flex items-center justify-center overflow-hidden bg-[#8247E5]">
-      {token?.logoURI ? (
-        <img
-          src={token.logoURI}
-          alt={token.symbol}
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.style.display = 'none';
-            e.target.nextElementSibling?.classList.remove('hidden');
-          }}
-        />
-      ) : null}
-      <span className={`text-white font-bold ${token?.logoURI ? 'hidden' : ''}`}>{token?.symbol?.[0] || '?'}</span>
+      <TokenLogo token={token} letterClassName="text-white font-bold" />
     </div>
   );
 

@@ -28,7 +28,7 @@ export function useBridgeRouteSupport(sourceChainId, destChainId, tokenIn, token
     setLoading(true);
     isRouteSupported(sourceChainId, destChainId, tokenIn, tokenOut)
       .then(setIsSupported)
-      .catch(() => setIsSupported(false))
+      .catch(() => setIsSupported(null))
       .finally(() => setLoading(false));
   }, [sourceChainId, destChainId, tokenIn?.symbol, tokenOut?.symbol]);
 

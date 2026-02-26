@@ -223,11 +223,12 @@ export default function CrossChainPage() {
 
   const canConfirmCrossChain =
     isCrossChain &&
-    (routeSupported === true || routeLoading) &&
+    routeSupported !== false &&
     canSwap &&
     !bridgeLoading;
   const canConfirm = isCrossChain ? canConfirmCrossChain : false;
   const showUnsupportedWarning = isCrossChain && routeSupported === false && !routeLoading;
+  const showRouteUnknownMessage = isCrossChain && routeSupported === null && !routeLoading;
 
   const usdIn = amountIn && (priceIn > 0 || tokenIn?.symbol === 'USDC' || tokenIn?.symbol === 'USDT')
     ? (priceIn > 0 ? parseFloat(amountIn) * priceIn : parseFloat(amountIn))
@@ -330,6 +331,11 @@ export default function CrossChainPage() {
           {showUnsupportedWarning && (
             <p className="text-amber-400 text-sm text-center mb-2">
               This route is not supported by the bridge. Try a different token or chain.
+            </p>
+          )}
+          {showRouteUnknownMessage && (
+            <p className="text-gray-400 text-sm text-center mb-2">
+              Route check unavailable. You can still slide to continue and complete the swap on LayerSwap.
             </p>
           )}
           {(bridgeError || validationError || effectiveQuoteError) && !bridgeStatus && (

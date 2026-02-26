@@ -13,7 +13,6 @@ const USDT_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/b
 const DAI_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png';
 const SHIB_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE/logo.png';
 const PEPE_LOGO = 'https://assets.coingecko.com/coins/images/29850/large/pepe-token.jpeg';
-const PONKE_LOGO = 'https://assets.coingecko.com/coins/images/33233/small/ponke.png';
 const UNI_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984/logo.png';
 const LINK_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x514910771AF9Ca656af840dff83E8264EcF986CA/logo.png';
 const ARB_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/assets/0x912CE59144191C1204E64559FE8253a0e49E6548/logo.png';
@@ -160,15 +159,6 @@ export const tokenLists = {
       { symbol: 'PEPE', name: 'Pepe', decimals: 18, address: '0x6982508145454Ce325dDbE47a25d4ec3d2311933', logoURI: PEPE_LOGO },
       { symbol: 'UNI', name: 'Uniswap', decimals: 18, address: '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', logoURI: UNI_LOGO },
       { symbol: 'LINK', name: 'Chainlink', decimals: 18, address: '0x514910771AF9Ca656af840dff83E8264EcF986CA', logoURI: LINK_LOGO },
-    ],
-  },
-  // Solana (501111) – official PONKE is on Solana only (mint: 5z3EqYQo9HiCEs3R84RCDMu2n7anpDMxRhdK8PSWmrRC)
-  501111: {
-    default: [
-      { symbol: 'PONKE', name: 'Ponke', decimals: 6, address: '5z3EqYQo9HiCEs3R84RCDMu2n7anpDMxRhdK8PSWmrRC', logoURI: PONKE_LOGO },
-    ],
-    popular: [
-      { symbol: 'PONKE', name: 'Ponke', decimals: 6, address: '5z3EqYQo9HiCEs3R84RCDMu2n7anpDMxRhdK8PSWmrRC', logoURI: PONKE_LOGO },
     ],
   },
 };

@@ -12,18 +12,31 @@
   <body>
     <div id="root"></div>
     <script>
-      // Fix "Illegal invocation" when Reown/WalletConnect access window.ethereum in iframe/WebView (e.g. Telegram).
-      // Getters like .connected must run with correct 'this'; bound references can lose context.
+      // Fix "Illegal invocation" when Reown/WalletConnect access provider in iframe/WebView (e.g. Telegram).
+      // Use a getter/setter so we wrap window.ethereum whenever it is set (e.g. async MetaMask inject).
       (function () {
-        if (typeof window === 'undefined' || !window.ethereum) return;
-        var orig = window.ethereum;
-        window.ethereum = new Proxy(orig, {
-          get: function (target, prop) {
-            var val = Reflect.get(target, prop, target);
-            if (typeof val === 'function') return val.bind(target);
-            return val;
-          }
-        });
+        if (typeof window === 'undefined') return;
+        var realEthereum = window.ethereum;
+        function wrapProvider(target) {
+          if (!target || typeof target !== 'object') return target;
+          try {
+            return new Proxy(target, {
+              get: function (t, prop) {
+                var val = Reflect.get(t, prop, t);
+                if (typeof val === 'function') return val.bind(t);
+                if (val && typeof val === 'object' && prop !== 'constructor' && !(val instanceof Date)) return wrapProvider(val);
+                return val;
+              }
+            });
+          } catch (e) { return target; }
+        }
+        try {
+          Object.defineProperty(window, 'ethereum', {
+            get: function () { return realEthereum ? wrapProvider(realEthereum) : realEthereum; },
+            set: function (v) { realEthereum = v; },
+            configurable: true
+          });
+        } catch (e) {}
       })();
     </script>
     <script type="module" src="/src/main.jsx"></script>

@@ -37,16 +37,6 @@ export default function CrossChainSwapStatusBanner({ status, swapId, depositActi
           Send {depositAction.amount} {depositAction.token?.symbol || ''} to: {depositAction.to_address}
         </p>
       )}
-      {status === 'user_transfer_pending' && (
-        <a
-          href="https://www.layerswap.io/app"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2 inline-block text-sm text-[#3CF902] hover:underline"
-        >
-          Complete on LayerSwap →
-        </a>
-      )}
       {isSuccess || isFailed ? (
         <button
           type="button"

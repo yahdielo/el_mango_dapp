@@ -220,7 +220,6 @@ export default function CrossChainPage() {
         amountIn,
         recipient: address,
       });
-      window.open('https://www.layerswap.io/app', '_blank');
     } catch (_) {
       // error set by hook
     }

@@ -58,9 +58,6 @@ export function useCrossChainSwap() {
         setSwapId(result.swapId);
         setStatus('user_transfer_pending');
         setDepositActions(result.depositActions || []);
-        if (result.depositUrl) {
-          window.open(result.depositUrl, '_blank');
-        }
         return result;
       } catch (err) {
         setError(err?.message || 'Failed to initiate swap');

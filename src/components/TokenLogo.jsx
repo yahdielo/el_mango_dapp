@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import mangoTokenImage from '../assets/mango-token.jpg';
 
 /** Fallback logo URLs (e.g. CoinGecko) when primary (Trust Wallet) fails with connection reset */
 const FALLBACK_LOGO_BY_SYMBOL = {
-  MANGO: '/mango-token.jpg',
+  MANGO: mangoTokenImage,
   USDT: 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
   USDC: 'https://assets.coingecko.com/coins/images/6319/large/USDC.png',
   DAI: 'https://assets.coingecko.com/coins/images/9956/large/Badge_Dai.png',

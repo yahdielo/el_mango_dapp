@@ -6,7 +6,9 @@
  * (e.g. 1inch, CoinGecko) for refresh-on-demand or periodic updates.
  */
 
-const MANGO_LOGO = '/mango-token.jpg';
+import mangoTokenImage from '../assets/mango-token.jpg';
+
+const MANGO_LOGO = mangoTokenImage;
 const ETH_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png';
 const USDC_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png';
 const USDT_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png';

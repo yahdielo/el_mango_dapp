@@ -354,6 +354,7 @@ export default function CrossChainPage() {
               depositActions={depositActions}
               sourceChainId={sourceChainId}
               sourceChain={sourceChain}
+              tokenIn={tokenIn}
               onDismiss={() => {
                 resetBridge();
                 setAmountIn('');

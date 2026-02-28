@@ -55,17 +55,13 @@ export default function CrossChainPage() {
   const [showTokenInModal, setShowTokenInModal] = useState(false);
   const [showTokenOutModal, setShowTokenOutModal] = useState(false);
 
-  const filterCrossChainTokens = useCallback((tokens) => {
-    return (tokens || []).filter((t) => (t.symbol || '').toUpperCase() !== 'MANGO');
-  }, []);
-
   const tokensIn = useMemo(
-    () => filterCrossChainTokens(getTokensForChain(sourceChainId)),
-    [sourceChainId, filterCrossChainTokens]
+    () => getTokensForChain(sourceChainId).filter((t) => t.symbol !== 'MANGO'),
+    [sourceChainId]
   );
   const tokensOut = useMemo(
-    () => filterCrossChainTokens(getTokensForChain(destChainId)),
-    [destChainId, filterCrossChainTokens]
+    () => getTokensForChain(destChainId).filter((t) => t.symbol !== 'MANGO'),
+    [destChainId]
   );
 
   const { balance: balanceTokenIn } = useTokenBalance({
@@ -159,28 +155,32 @@ export default function CrossChainPage() {
   useEffect(() => {
     if (!tokenOut && tokensOut[0]) setTokenOut(tokensOut[0]);
   }, [tokensOut]);
+  useEffect(() => {
+    if (tokenIn?.symbol === 'MANGO' && tokensIn.length && !tokensIn.some((t) => t.symbol === 'MANGO')) {
+      setTokenIn(tokensIn[0] || null);
+    }
+  }, [sourceChainId, tokensIn, tokenIn?.symbol]);
+  useEffect(() => {
+    if (tokenOut?.symbol === 'MANGO' && tokensOut.length && !tokensOut.some((t) => t.symbol === 'MANGO')) {
+      setTokenOut(tokensOut[0] || null);
+    }
+  }, [destChainId, tokensOut, tokenOut?.symbol]);
 
   // Default tokens when chain changes
-  const setSourceChainWithToken = useCallback(
-    (chain) => {
-      const id = parseInt(chain.chainId);
-      setSourceChainId(id);
-      setSourceChain(chain);
-      const tokens = filterCrossChainTokens(getTokensForChain(id));
-      setTokenIn(tokens[0] || null);
-    },
-    [filterCrossChainTokens]
-  );
-  const setDestChainWithToken = useCallback(
-    (chain) => {
-      const id = parseInt(chain.chainId);
-      setDestChainId(id);
-      setDestChain(chain);
-      const tokens = filterCrossChainTokens(getTokensForChain(id));
-      setTokenOut(tokens[0] || null);
-    },
-    [filterCrossChainTokens]
-  );
+  const setSourceChainWithToken = useCallback((chain) => {
+    const id = parseInt(chain.chainId);
+    setSourceChainId(id);
+    setSourceChain(chain);
+    const tokens = getTokensForChain(id).filter((t) => t.symbol !== 'MANGO');
+    setTokenIn(tokens[0] || null);
+  }, []);
+  const setDestChainWithToken = useCallback((chain) => {
+    const id = parseInt(chain.chainId);
+    setDestChainId(id);
+    setDestChain(chain);
+    const tokens = getTokensForChain(id).filter((t) => t.symbol !== 'MANGO');
+    setTokenOut(tokens[0] || null);
+  }, []);
 
   const handleTokenInSelect = (token) => {
     setTokenIn(token);

@@ -6,9 +6,9 @@
  * (e.g. 1inch, CoinGecko) for refresh-on-demand or periodic updates.
  */
 
-import mangoTokenImage from '../assets/mango-token.jpg';
+import { MANGO_LOGO_DATA_URL } from '../constants/mangoLogo';
 
-const MANGO_LOGO = mangoTokenImage;
+const MANGO_LOGO = MANGO_LOGO_DATA_URL;
 const ETH_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png';
 const USDC_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png';
 const USDT_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png';
@@ -163,12 +163,34 @@ export const tokenLists = {
       { symbol: 'LINK', name: 'Chainlink', decimals: 18, address: '0x514910771AF9Ca656af840dff83E8264EcF986CA', logoURI: LINK_LOGO },
     ],
   },
+  // Solana (501111) – native SOL + stables for cross-chain
+  501111: {
+    default: [
+      { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', logoURI: USDC_LOGO },
+      { symbol: 'USDT', name: 'Tether USD', decimals: 6, address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', logoURI: USDT_LOGO },
+    ],
+    popular: [
+      { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', logoURI: USDC_LOGO },
+      { symbol: 'USDT', name: 'Tether USD', decimals: 6, address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', logoURI: USDT_LOGO },
+    ],
+  },
+  // Tron (728126428) – native TRX + stables for cross-chain
+  728126428: {
+    default: [
+      { symbol: 'USDT', name: 'Tether USD', decimals: 6, address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', logoURI: USDT_LOGO },
+      { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: 'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8', logoURI: USDC_LOGO },
+    ],
+    popular: [
+      { symbol: 'USDT', name: 'Tether USD', decimals: 6, address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', logoURI: USDT_LOGO },
+      { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: 'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8', logoURI: USDC_LOGO },
+    ],
+  },
 };
 
 const ZERO = '0x0000000000000000000000000000000000000000';
 
 const NATIVE_TOKENS = {
-  0: { symbol: 'BTC', name: 'Bitcoin', decimals: 8, address: 'BTC', logoURI: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' },
+  0: { symbol: 'BTC', name: 'Bitcoin', decimals: 8, address: 'BTC', logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/bitcoin/info/logo.png' },
   1: { symbol: 'ETH', name: 'Ether', decimals: 18, address: ZERO, native: true, logoURI: ETH_LOGO },
   8453: { symbol: 'ETH', name: 'Ether', decimals: 18, address: ZERO, native: true, logoURI: ETH_LOGO },
   42161: { symbol: 'ETH', name: 'Ether', decimals: 18, address: ZERO, native: true, logoURI: ETH_LOGO },
@@ -179,7 +201,7 @@ const NATIVE_TOKENS = {
   501111: { symbol: 'SOL', name: 'Solana', decimals: 9, address: 'SOL', logoURI: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' },
   728126428: { symbol: 'TRX', name: 'Tron', decimals: 6, address: 'TRX', logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/tron/info/logo.png' },
   101: { symbol: 'SUI', name: 'Sui', decimals: 9, address: 'SUI', logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/sui/info/logo.png' },
-  144: { symbol: 'XRP', name: 'XRP', decimals: 6, address: 'XRP', logoURI: 'https://cryptologos.cc/logos/xrp-xrp-logo.png' },
+  144: { symbol: 'XRP', name: 'XRP', decimals: 6, address: 'XRP', logoURI: 'https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png' },
 };
 
 

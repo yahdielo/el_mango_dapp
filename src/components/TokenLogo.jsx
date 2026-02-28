@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import mangoTokenImage from '../assets/mango-token.jpg';
+import { useState, useMemo } from 'react';
+import { MANGO_LOGO_DATA_URL } from '../constants/mangoLogo';
 
 /** Fallback logo URLs (e.g. CoinGecko) when primary (Trust Wallet) fails with connection reset */
 const FALLBACK_LOGO_BY_SYMBOL = {
-  MANGO: mangoTokenImage,
+  MANGO: MANGO_LOGO_DATA_URL,
   USDT: 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
   USDC: 'https://assets.coingecko.com/coins/images/6319/large/USDC.png',
   DAI: 'https://assets.coingecko.com/coins/images/9956/large/Badge_Dai.png',
@@ -13,13 +13,13 @@ const FALLBACK_LOGO_BY_SYMBOL = {
 
 /**
  * Renders token logo with fallback: primary logoURI -> fallback URL (if symbol known) -> letter.
- * Handles Trust Wallet CDN connection resets (e.g. raw.githubusercontent ERR_CONNECTION_RESET).
+ * For MANGO: also tries inline SVG data URL so the icon always displays (works in Telegram WebView, strict CSP, etc.).
  */
 export default function TokenLogo({ token, className = '', letterClassName = 'text-white font-bold text-sm' }) {
   const [srcIndex, setSrcIndex] = useState(0);
   const primary = token?.logoURI;
   const fallback = token?.symbol ? FALLBACK_LOGO_BY_SYMBOL[token.symbol] : null;
-  const urls = [primary, fallback].filter(Boolean);
+  const urls = useMemo(() => [primary, fallback].filter(Boolean), [primary, fallback]);
   const currentSrc = urls[srcIndex];
   const showLetter = !currentSrc || srcIndex >= urls.length;
 
@@ -37,6 +37,8 @@ export default function TokenLogo({ token, className = '', letterClassName = 'te
           src={currentSrc}
           alt={token?.symbol ?? ''}
           className={className || 'w-full h-full object-cover'}
+          loading="eager"
+          decoding="async"
           onError={handleError}
         />
       )}

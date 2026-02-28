@@ -129,7 +129,7 @@ export function mapErrorToUserMessage(err) {
   // Quote server unreachable (wrong URL, local IP from HTTPS app, CORS, or server down)
   if (/failed to fetch|cors|net::err|aborted|unreachable|quote server unreachable|VITE_MANGO_SERVICES_URL/i.test(msg)) {
     return 'Quote server unreachable. Set VITE_MANGO_SERVICES_URL to a public HTTPS URL (not a local IP when the app is on HTTPS).';
-  } q
+  }
 
   // Fallback: shorten raw message
   const raw = err?.shortMessage || err?.message || String(err);

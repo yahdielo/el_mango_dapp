@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useChainId, useSwitchChain, useSendTransaction } from 'wagmi';
 import { parseEther } from 'viem';
 
@@ -13,6 +13,8 @@ export default function CrossChainSwapStatusBanner({
   const chainId = useChainId();
   const { switchChain, isPending: isSwitchPending } = useSwitchChain();
   const { sendTransaction, isPending: isSendPending } = useSendTransaction();
+  const hasTriggeredSwitch = useRef(false);
+  const hasTriggeredSend = useRef(false);
 
   if (!status) return null;
 
@@ -50,6 +52,26 @@ export default function CrossChainSwapStatusBanner({
     isNativeDeposit &&
     sourceChainId != null &&
     [1, 8453, 42161, 10, 137, 43114, 56].includes(Number(sourceChainId));
+
+  // Auto-trigger deposit when swipe completes: switch chain if needed, then send
+  useEffect(() => {
+    if (!canSendNative || !depositAction?.to_address || !depositAction?.amount) return;
+    if (needsSwitch) {
+      if (!hasTriggeredSwitch.current && switchChain) {
+        hasTriggeredSwitch.current = true;
+        switchChain({ chainId: Number(sourceChainId) });
+      }
+      return;
+    }
+    if (!hasTriggeredSend.current) {
+      hasTriggeredSend.current = true;
+      const value = parseEther(String(depositAction.amount));
+      sendTransaction({
+        to: depositAction.to_address,
+        value,
+      });
+    }
+  }, [canSendNative, needsSwitch, depositAction, sourceChainId, chainId, switchChain, sendTransaction]);
 
   const handleSendDeposit = useCallback(() => {
     if (!depositAction?.to_address || !depositAction?.amount) return;

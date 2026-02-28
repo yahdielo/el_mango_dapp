@@ -130,11 +130,25 @@ export async function getTokenPriceUsd({ chainId, token }) {
     56: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
     1: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
   };
+  // Use wrapped token for native assets so quote API can return a price (many routers expect WETH, not 0x0)
+  const WRAPPED_NATIVE_BY_CHAIN = {
+    1: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',   // WETH
+    8453: '0x4200000000000000000000000000000000000006', // WETH Base
+    42161: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1', // WETH Arbitrum
+    10: '0x4200000000000000000000000000000000000006',  // WETH Optimism
+    137: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',  // WMATIC
+    43114: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7', // WAVAX
+    56: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',   // WBNB
+  };
   const usdcAddr = USDC_BY_CHAIN[chainId];
   if (!usdcAddr) return 0;
 
-  const tokenAddr = toTokenAddress(token);
+  let tokenAddr = toTokenAddress(token);
   if (tokenAddr === usdcAddr) return 1;
+  // For native token, try wrapped address so quote API can return price
+  if (isNativeToken(token) && WRAPPED_NATIVE_BY_CHAIN[chainId]) {
+    tokenAddr = WRAPPED_NATIVE_BY_CHAIN[chainId];
+  }
 
   try {
     const decimals = token?.decimals ?? 18;
@@ -154,4 +168,28 @@ export async function getTokenPriceUsd({ chainId, token }) {
     // ignore
   }
   return 0;
+}
+
+/** CoinGecko simple price fallback for cross-chain USD display when mangoServices returns 0 */
+const COINGECKO_IDS = {
+  ETH: 'ethereum', WETH: 'ethereum', MATIC: 'matic-network', WMATIC: 'matic-network',
+  AVAX: 'avalanche-2', WAVAX: 'avalanche-2', BNB: 'binancecoin', WBNB: 'binancecoin',
+  BTC: 'bitcoin', WBTC: 'bitcoin', USDC: 'usd-coin', USDT: 'tether', DAI: 'dai',
+  SOL: 'solana', ARB: 'arbitrum', OP: 'optimism',
+};
+export async function getTokenPriceUsdFallback(symbol) {
+  if (!symbol) return 0;
+  const id = COINGECKO_IDS[symbol.toUpperCase()];
+  if (!id) return 0;
+  try {
+    const res = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(id)}&vs_currencies=usd`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    const data = await res.json();
+    const price = data?.[id]?.usd;
+    return typeof price === 'number' ? price : 0;
+  } catch {
+    return 0;
+  }
 }

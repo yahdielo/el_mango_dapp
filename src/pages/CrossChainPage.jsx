@@ -18,6 +18,7 @@ import { useSwapValidation } from '../hooks/useSwapValidation';
 import { useQuote } from '../hooks/useQuote';
 import { useGasEstimate } from '../hooks/useGasEstimate';
 import { useCrossChainSwap } from '../hooks/useCrossChainSwap';
+import { useCrossChainUsdPrices } from '../hooks/useCrossChainUsdPrices';
 import { useBridgeRouteSupport } from '../hooks/useBridgeRouteSupport';
 import { LAYERSWAP_CHAIN_IDS } from '../services/bridgeApi';
 import { formatBalance } from '../utils/formatBalance';
@@ -111,6 +112,14 @@ export default function CrossChainPage() {
     tokenIn,
     tokenOut
   );
+
+  const { priceInUsd: crossChainPriceIn, priceOutUsd: crossChainPriceOut, loading: crossChainPriceLoading } = useCrossChainUsdPrices({
+    isCrossChain,
+    sourceChainId,
+    destChainId,
+    tokenIn,
+    tokenOut,
+  });
 
   const {
     startSwap,
@@ -245,12 +254,24 @@ export default function CrossChainPage() {
   const showUnsupportedWarning = isCrossChain && routeSupported === false && !routeLoading;
   const showRouteUnknownMessage = isCrossChain && routeSupported === null && !routeLoading && amountIn && parseFloat(amountIn) > 0;
 
-  const usdIn = amountIn && (priceIn > 0 || tokenIn?.symbol === 'USDC' || tokenIn?.symbol === 'USDT')
-    ? (priceIn > 0 ? parseFloat(amountIn) * priceIn : parseFloat(amountIn))
-    : 0;
-  const usdOut = amountOut && (priceOut > 0 || tokenOut?.symbol === 'USDC' || tokenOut?.symbol === 'USDT')
-    ? (priceOut > 0 ? parseFloat(amountOut) * priceOut : parseFloat(amountOut))
-    : 0;
+  const usdIn = useMemo(() => {
+    if (!amountIn || parseFloat(amountIn) <= 0) return 0;
+    const amt = parseFloat(amountIn);
+    if (isCrossChain) {
+      const price = crossChainPriceIn > 0 ? crossChainPriceIn : (tokenIn?.symbol === 'USDC' || tokenIn?.symbol === 'USDT' ? 1 : 0);
+      return price * amt;
+    }
+    return (priceIn > 0 ? parseFloat(amountIn) * priceIn : (tokenIn?.symbol === 'USDC' || tokenIn?.symbol === 'USDT' ? amt : 0));
+  }, [amountIn, isCrossChain, crossChainPriceIn, tokenIn?.symbol, priceIn]);
+  const usdOut = useMemo(() => {
+    if (!amountOut || parseFloat(amountOut) <= 0) return 0;
+    const amt = parseFloat(amountOut);
+    if (isCrossChain) {
+      const price = crossChainPriceOut > 0 ? crossChainPriceOut : (tokenOut?.symbol === 'USDC' || tokenOut?.symbol === 'USDT' ? 1 : 0);
+      return price * amt;
+    }
+    return (priceOut > 0 ? parseFloat(amountOut) * priceOut : (tokenOut?.symbol === 'USDC' || tokenOut?.symbol === 'USDT' ? amt : 0));
+  }, [amountOut, isCrossChain, crossChainPriceOut, tokenOut?.symbol, priceOut]);
 
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center" style={{ fontFamily: "'Afacad', sans-serif" }}>
@@ -331,6 +352,8 @@ export default function CrossChainPage() {
               status={bridgeStatus}
               swapId={swapId}
               depositActions={depositActions}
+              sourceChainId={sourceChainId}
+              sourceChain={sourceChain}
               onDismiss={() => {
                 resetBridge();
                 setAmountIn('');

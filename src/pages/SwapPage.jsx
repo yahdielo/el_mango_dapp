@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useAccount, useChainId, useSwitchChain } from 'wagmi';
 import { useConnectWallet } from '../hooks/useConnectWallet';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import SwapHeader from '../components/SwapHeader';
 import SwapCard from '../components/SwapCard';
 import SlideToSwapButton from '../components/SlideToSwapButton';
@@ -23,6 +23,7 @@ import { mapErrorToUserMessage } from '../utils/errorMapping';
 import { sanitizeAmountInput } from '../utils/inputValidation';
 import { getSlippageToleranceInBasisPoints } from '../utils/slippageUtils';
 import SlippageSelector, { loadSlippageFromStorage } from '../components/SlippageSelector';
+import { useWhitelist } from '../hooks/useWhitelist';
 
 const DEFAULT_CHAIN = 8453;
 const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
@@ -33,6 +34,9 @@ export default function SwapPage() {
   const { handleConnect } = useConnectWallet();
   const { switchChain } = useSwitchChain();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refParam = searchParams.get('ref');
+  const isValidRef = useMemo(() => refParam && /^0x[a-fA-F0-9]{40}$/.test(refParam), [refParam]);
   const supportedChains = useMemo(
     () => getAllChains().filter((c) => SUPPORTED_SWAP_CHAINS.includes(parseInt(c.chainId, 10))),
     []
@@ -62,6 +66,7 @@ export default function SwapPage() {
     token: token1,
     chainId: effectiveChainId,
   });
+  const { data: whitelist } = useWhitelist(address, effectiveChainId);
 
   const { amountOut: quoteAmountOut, loading: quoteLoading, error: quoteError, estimated: quoteEstimated, priceIn, priceOut } = useQuote({
     chainId: effectiveChainId,
@@ -71,7 +76,10 @@ export default function SwapPage() {
   });
 
   const slippageBps = getSlippageToleranceInBasisPoints(effectiveChainId, { getSlippage }, slippage);
-  const referrer = useMemo(() => getReferrerAddress(effectiveChainId), [effectiveChainId]);
+  const referrer = useMemo(
+    () => (isValidRef ? refParam : getReferrerAddress(effectiveChainId)),
+    [effectiveChainId, isValidRef, refParam]
+  );
 
   const { executeSwap, isPending: swapPending, error: swapError, txHash, reset: resetSwap, isSuccess: swapSuccess, explorerUrl } = useSwap({
     tokenIn: token1,
@@ -184,20 +192,30 @@ export default function SwapPage() {
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center" style={{ fontFamily: "'Afacad', sans-serif" }}>
       <div className="w-full max-w-[402px] flex flex-col px-5 pt-[80px] pb-8 min-h-screen">
-        <SwapHeader address={address} onConnect={handleConnect} />
+        <SwapHeader address={address} onConnect={handleConnect} whitelistTier={whitelist?.tier ?? null} />
         {chainId && !isChainSupportedForSwap(chainId) && (
           <UnsupportedChainBanner currentChainId={chainId} />
         )}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-white text-[32px] font-medium">Swap</h1>
-          <button
-            type="button"
-            onClick={() => navigate('/cross-chain')}
-            className="text-[#3CF902] text-sm font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:ring-offset-2 focus:ring-offset-[#111111] rounded px-2 py-2 -my-1 min-h-[44px]"
-            aria-label="Go to cross-chain bridge"
-          >
-            Cross-Chain →
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/referral')}
+              className="text-[#3CF902] text-sm font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:ring-offset-2 focus:ring-offset-[#111111] rounded px-2 py-2 -my-1 min-h-[44px]"
+              aria-label="Referral"
+            >
+              Referral
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/cross-chain')}
+              className="text-[#3CF902] text-sm font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:ring-offset-2 focus:ring-offset-[#111111] rounded px-2 py-2 -my-1 min-h-[44px]"
+              aria-label="Go to cross-chain bridge"
+            >
+              Cross-Chain →
+            </button>
+          </div>
         </div>
 
         <div className="relative flex flex-col">

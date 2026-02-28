@@ -8,8 +8,6 @@ import {
   optimism,
   polygon,
   avalanche,
-  fantom,
-  zksync,
   tron,
 } from '@reown/appkit/networks';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -27,18 +25,16 @@ const metadata = {
   icons: ['https://mangodefi.wtf/static/media/mango.d01e53f401b1e8ed51a3.png'],
 };
 
-// Specify chains to support (WalletConnect / connect modal).
-// Add or remove from @reown/appkit/networks to change supported chains.
+// Chains that match our chains.json (EVM + Tron). Only these appear in "Choose Network"
+// and are supported in the app. Order: Base first (default), then rest.
 const chains = [
   base,
   mainnet,
+  arbitrum,
   optimism,
   polygon,
-  arbitrum,
   bsc,
   avalanche,
-  fantom,
-  zksync,
   tron,
 ];
 

@@ -1,12 +1,29 @@
-export default function SwapHeader({ address, onConnect }) {
+const TIER_LABELS = {
+  None: null,
+  Standard: { short: 'Standard', fee: 'Standard fees' },
+  VIP: { short: 'VIP', fee: '50% fee discount' },
+  Premium: { short: 'Premium', fee: 'No fees' },
+};
+
+export default function SwapHeader({ address, onConnect, whitelistTier = null }) {
   const formatAddress = (addr) => {
     if (!addr) return 'Connect';
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
+  const tierInfo = whitelistTier && TIER_LABELS[whitelistTier] ? TIER_LABELS[whitelistTier] : null;
 
   return (
     <div className="relative flex items-center justify-between mb-5 h-11">
-      <div className="w-10 shrink-0" aria-hidden="true" />
+      <div className="w-10 shrink-0 flex items-center justify-end">
+        {tierInfo && (
+          <span
+            className="text-[10px] font-medium px-2 py-0.5 rounded bg-[#3CF902]/20 text-[#3CF902] border border-[#3CF902]/40"
+            title={tierInfo.fee}
+          >
+            {tierInfo.short}
+          </span>
+        )}
+      </div>
       <div className="absolute left-1/2 -translate-x-1/2">
         <button
           onClick={onConnect}

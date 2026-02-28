@@ -21,9 +21,12 @@ import { useCrossChainSwap } from '../hooks/useCrossChainSwap';
 import { useCrossChainUsdPrices } from '../hooks/useCrossChainUsdPrices';
 import { useBridgeRouteSupport } from '../hooks/useBridgeRouteSupport';
 import { LAYERSWAP_CHAIN_IDS } from '../services/bridgeApi';
+import { getReferralChain, syncReferral } from '../services/referralApi';
+import { isCrossChainViaBackendAvailable } from '../services/crossChainSwapApi';
 import { formatBalance } from '../utils/formatBalance';
 import { mapErrorToUserMessage } from '../utils/errorMapping';
 import SlippageSelector, { loadSlippageFromStorage } from '../components/SlippageSelector';
+import { useWhitelist } from '../hooks/useWhitelist';
 
 const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
 
@@ -69,6 +72,7 @@ export default function CrossChainPage() {
     token: tokenIn,
     chainId: sourceChainId,
   });
+  const { data: whitelist } = useWhitelist(address, sourceChainId);
 
   const isCrossChain = sourceChainId !== destChainId;
   const { amountOut: quoteAmountOut, loading: quoteLoading, error: quoteError, estimated: quoteEstimated, priceIn, priceOut } = useQuote({
@@ -221,15 +225,32 @@ export default function CrossChainPage() {
     if (!isCrossChain) return;
     if (routeSupported === false) return;
     try {
-      await startSwap({
-        sourceChainId,
-        destChainId,
-        tokenIn,
-        tokenOut,
-        amountIn,
-        recipient: address,
-      });
-    } catch (_) {
+        const referrerRes = await getReferralChain(address, { allChains: true }).catch(() => null);
+        const raw = referrerRes?.data ?? referrerRes;
+        const referrals = raw?.referrals ?? [];
+        const primaryReferrer = raw?.primaryReferrer ?? raw?.referral?.referrer ?? null;
+        const sourceReferrer = referrals.find((r) => Number(r.chainId) === sourceChainId)?.referrer ?? primaryReferrer;
+
+        await startSwap({
+          sourceChainId,
+          destChainId,
+          tokenIn,
+          tokenOut,
+          amountIn,
+          recipient: address,
+          referrer: sourceReferrer || undefined,
+        });
+
+        // When not using backend, run referral sync client-side (backend does it when using mangoServices)
+        if (!isCrossChainViaBackendAvailable() && sourceReferrer) {
+          syncReferral({
+            userAddress: address,
+            referrerAddress: sourceReferrer,
+            sourceChainId,
+            destChainId,
+          }).catch(() => {});
+        }
+      } catch (_) {
       // error set by hook
     }
   }, [
@@ -276,16 +297,25 @@ export default function CrossChainPage() {
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center" style={{ fontFamily: "'Afacad', sans-serif" }}>
       <div className="w-full max-w-[402px] flex flex-col px-5 pt-[80px] pb-8 min-h-screen">
-        <SwapHeader address={address} onConnect={handleConnect} />
+        <SwapHeader address={address} onConnect={handleConnect} whitelistTier={whitelist?.tier ?? null} />
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-white text-[32px] font-medium">Cross-Chain Swap</h1>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="text-[#3CF902] text-sm font-medium hover:underline"
-          >
-            ← Swap
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="text-[#3CF902] text-sm font-medium hover:underline"
+            >
+              ← Swap
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/referral')}
+              className="text-[#3CF902] text-sm font-medium hover:underline"
+            >
+              Referral
+            </button>
+          </div>
         </div>
 
         <div className="relative flex flex-col">

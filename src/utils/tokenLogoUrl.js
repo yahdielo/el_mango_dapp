@@ -43,7 +43,8 @@ export async function fetchTokenLogoFromCoinGecko(chainId, tokenAddress) {
   const platform = platformMap[chainId];
   if (!platform) return null;
   try {
-    const url = `https://api.coingecko.com/api/v3/coins/${platform}/contract/${tokenAddress.toLowerCase()}`;
+    const key = import.meta.env.VITE_COINGECKO_API_KEY;
+    const url = `https://api.coingecko.com/api/v3/coins/${platform}/contract/${tokenAddress.toLowerCase()}${key ? `?x_cg_demo_api_key=${encodeURIComponent(key)}` : ''}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return null;
     const data = await res.json();

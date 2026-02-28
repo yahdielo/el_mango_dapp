@@ -89,7 +89,7 @@ export default function SwapCard({ label, token, amount, onAmountChange, onToken
       <div className="absolute text-right" style={{ top: '43.8%', right: '6.9%' }}>
         {readOnly ? (
           <>
-            <div className="text-black text-[32px] font-medium leading-none">{amount || '0'}</div>
+            <div className="text-black text-[20px] font-medium leading-none">{amount || '0'}</div>
             <div className="text-black text-[14px] font-medium mt-1">=${displayUsd} USD</div>
           </>
         ) : (
@@ -101,7 +101,7 @@ export default function SwapCard({ label, token, amount, onAmountChange, onToken
               placeholder="0"
               readOnly={disabled}
               disabled={disabled}
-              className={`text-black text-[32px] font-medium leading-none bg-transparent border-none outline-none w-32 text-right placeholder:text-gray-400 ${disabled ? 'cursor-not-allowed' : ''}`}
+              className={`text-black text-[20px] font-medium leading-none bg-transparent border-none outline-none w-32 text-right placeholder:text-gray-400 ${disabled ? 'cursor-not-allowed' : ''}`}
             />
             <div className="text-black text-[14px] font-medium mt-1">=${displayUsd} USD</div>
           </>

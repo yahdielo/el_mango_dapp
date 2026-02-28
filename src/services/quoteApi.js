@@ -170,24 +170,24 @@ export async function getTokenPriceUsd({ chainId, token }) {
   return 0;
 }
 
-/** CoinGecko simple price fallback for cross-chain USD display when mangoServices returns 0 */
-const COINGECKO_IDS = {
-  ETH: 'ethereum', WETH: 'ethereum', MATIC: 'matic-network', WMATIC: 'matic-network',
-  AVAX: 'avalanche-2', WAVAX: 'avalanche-2', BNB: 'binancecoin', WBNB: 'binancecoin',
-  BTC: 'bitcoin', WBTC: 'bitcoin', USDC: 'usd-coin', USDT: 'tether', DAI: 'dai',
-  SOL: 'solana', ARB: 'arbitrum', OP: 'optimism',
-};
-export async function getTokenPriceUsdFallback(symbol) {
+/**
+ * Optional: backend USD price (e.g. GET /api/v1/price?symbol=ETH).
+ * Use when quote API returns 0 for cross-chain. Backend can proxy CoinGecko server-side to avoid CORS.
+ * @param {string} symbol - Token symbol (ETH, USDC, etc.)
+ * @returns {Promise<number>}
+ */
+export async function getTokenPriceUsdFromBackend(symbol) {
   if (!symbol) return 0;
-  const id = COINGECKO_IDS[symbol.toUpperCase()];
-  if (!id) return 0;
+  const baseUrl = getBaseUrl();
+  if (!baseUrl) return 0;
   try {
     const res = await fetch(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(id)}&vs_currencies=usd`,
-      { signal: AbortSignal.timeout(8000) }
+      `${baseUrl}/api/v1/price?symbol=${encodeURIComponent(symbol.toUpperCase())}`,
+      { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8000) }
     );
+    if (!res.ok) return 0;
     const data = await res.json();
-    const price = data?.[id]?.usd;
+    const price = data?.usd ?? data?.price;
     return typeof price === 'number' ? price : 0;
   } catch {
     return 0;

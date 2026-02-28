@@ -145,7 +145,7 @@ export default function CrossChainSwapCard({
       <div className="absolute text-right" style={{ top: '43.8%', right: '6.9%' }}>
         {readOnly ? (
           <>
-            <div className="text-black text-[32px] font-medium leading-none">{amount || '0'}</div>
+            <div className="text-black text-[20px] font-medium leading-none">{amount || '0'}</div>
             <div className="text-black text-[14px] font-medium mt-1">=${usd} USD</div>
           </>
         ) : (
@@ -158,7 +158,7 @@ export default function CrossChainSwapCard({
                 if (/^\d*\.?\d*$/.test(v) || v === '') onAmountChange?.(v);
               }}
               placeholder="0"
-              className="text-black text-[32px] font-medium leading-none bg-transparent border-none outline-none w-32 text-right placeholder:text-gray-400"
+              className="text-black text-[20px] font-medium leading-none bg-transparent border-none outline-none w-32 text-right placeholder:text-gray-400"
             />
             <div className="text-black text-[14px] font-medium mt-1">=${usd} USD</div>
           </>

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { getTokenPriceUsd, getTokenPriceUsdFallback } from '../services/quoteApi';
+import { getTokenPriceUsd, getTokenPriceUsdFromBackend } from '../services/quoteApi';
 
 /**
  * Fetch USD prices for source and destination tokens on cross-chain page.
- * Uses mangoServices (api.mangoswap.io) quote API; falls back to CoinGecko when 0.
+ * 1) Uses mangoServices quote API (WETH->USDC etc.).
+ * 2) If 0, tries backend GET /api/v1/price?symbol=ETH (no in-browser CoinGecko = no CORS/429).
  */
 export function useCrossChainUsdPrices({ isCrossChain, sourceChainId, destChainId, tokenIn, tokenOut }) {
   const [priceInUsd, setPriceInUsd] = useState(0);
@@ -25,8 +26,8 @@ export function useCrossChainUsdPrices({ isCrossChain, sourceChainId, destChainI
       try {
         let inUsd = await getTokenPriceUsd({ chainId: sourceChainId, token: tokenIn });
         let outUsd = await getTokenPriceUsd({ chainId: destChainId, token: tokenOut });
-        if (inUsd === 0) inUsd = await getTokenPriceUsdFallback(tokenIn?.symbol);
-        if (outUsd === 0) outUsd = await getTokenPriceUsdFallback(tokenOut?.symbol);
+        if (inUsd === 0) inUsd = await getTokenPriceUsdFromBackend(tokenIn?.symbol);
+        if (outUsd === 0) outUsd = await getTokenPriceUsdFromBackend(tokenOut?.symbol);
         if (!cancelled) {
           setPriceInUsd(inUsd);
           setPriceOutUsd(outUsd);

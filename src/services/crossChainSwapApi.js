@@ -56,6 +56,9 @@ export async function initiateCrossChainViaBackend({
     signal: AbortSignal.timeout(30000),
   });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) {
+    throw new Error('Cross-chain API requires authentication. Set VITE_MANGO_SERVICES_API_KEY in your build environment.');
+  }
   if (!res.ok) {
     throw new Error(data?.error || data?.message || `API error: ${res.status}`);
   }

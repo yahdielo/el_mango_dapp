@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
+import mangoTokenImage from '../assets/mango-token.jpg';
 
 /** Fallback logo URLs (e.g. CoinGecko) when primary (Trust Wallet) fails with connection reset */
 const FALLBACK_LOGO_BY_SYMBOL = {
-  MANGO: '/mango-token.jpg',
+  MANGO: mangoTokenImage,
   USDT: 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
   USDC: 'https://assets.coingecko.com/coins/images/6319/large/USDC.png',
   DAI: 'https://assets.coingecko.com/coins/images/9956/large/Badge_Dai.png',
@@ -12,7 +13,7 @@ const FALLBACK_LOGO_BY_SYMBOL = {
 
 /**
  * Renders token logo with fallback: primary logoURI -> fallback URL (if symbol known) -> letter.
- * MANGO uses the official /mango-token.jpg from public.
+ * MANGO uses bundled mango-token.jpg so it loads on Vercel and all deployments.
  */
 export default function TokenLogo({ token, className = '', letterClassName = 'text-white font-bold text-sm' }) {
   const [srcIndex, setSrcIndex] = useState(0);

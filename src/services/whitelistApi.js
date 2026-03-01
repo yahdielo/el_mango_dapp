@@ -5,9 +5,12 @@
  */
 
 const BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
+const API_KEY = import.meta.env.VITE_MANGO_SERVICES_API_KEY || '';
 
 function headers() {
-  return { Accept: 'application/json' };
+  const h = { Accept: 'application/json' };
+  if (API_KEY) h['x-api-key'] = API_KEY;
+  return h;
 }
 
 async function fetchJson(url) {
@@ -16,9 +19,14 @@ async function fetchJson(url) {
     signal: AbortSignal.timeout(15000),
   });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) {
+    return { tier: 'None', isWhitelisted: false, tierLevel: 0 };
+  }
   if (!res.ok) throw new Error(data?.error || data?.message || `API error: ${res.status}`);
   return data;
 }
+
+const DEFAULT_WHITELIST = { tier: 'None', isWhitelisted: false, tierLevel: 0 };
 
 /**
  * Get whitelist status for an address.
@@ -29,6 +37,7 @@ async function fetchJson(url) {
 export async function getWhitelistStatus(address, chainId) {
   if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) throw new Error('Invalid address');
+  if (!API_KEY) return DEFAULT_WHITELIST;
   const params = new URLSearchParams({ address });
   if (chainId != null) params.set('chainId', String(chainId));
   const data = await fetchJson(`${BASE}/api/v1/whitelist/status?${params.toString()}`);

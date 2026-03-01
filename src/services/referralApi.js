@@ -19,6 +19,7 @@ async function fetchOk(url, options = {}) {
     signal: AbortSignal.timeout(15000),
   });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) throw new Error('Referral API requires authentication. Set VITE_MANGO_SERVICES_API_KEY.');
   if (!res.ok) throw new Error(data?.error || data?.message || `API error: ${res.status}`);
   return data;
 }
@@ -26,6 +27,7 @@ async function fetchOk(url, options = {}) {
 export async function getReferralChain(address, opts = {}) {
   if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) throw new Error('Invalid address');
+  if (!API_KEY) return null;
   const params = new URLSearchParams();
   if (opts.chainId != null) params.set('chainId', String(opts.chainId));
   if (opts.allChains === true) params.set('allChains', 'true');

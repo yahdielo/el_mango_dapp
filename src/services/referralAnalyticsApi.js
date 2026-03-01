@@ -19,6 +19,7 @@ async function fetchOk(url) {
     signal: AbortSignal.timeout(15000),
   });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) throw new Error('Analytics requires API key. Set VITE_MANGO_SERVICES_API_KEY.');
   if (!res.ok) throw new Error(data?.error || data?.message || `API error: ${res.status}`);
   return data;
 }
@@ -27,6 +28,7 @@ async function fetchOk(url) {
 export async function getReferralTree(address, maxDepth = 5) {
   if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) throw new Error('Invalid address');
+  if (!API_KEY) return null;
   const url = `${BASE}/api/v1/referral-analytics/tree/${encodeURIComponent(address)}?maxDepth=${maxDepth}`;
   const json = await fetchOk(url);
   return json.success ? json.data : null;
@@ -36,6 +38,7 @@ export async function getReferralTree(address, maxDepth = 5) {
 export async function getReferralPerformance(address) {
   if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) throw new Error('Invalid address');
+  if (!API_KEY) return null;
   const url = `${BASE}/api/v1/referral-analytics/performance/${encodeURIComponent(address)}`;
   const json = await fetchOk(url);
   return json.data ?? null;
@@ -44,6 +47,7 @@ export async function getReferralPerformance(address) {
 /** GET /api/v1/referral-analytics/insights?address=0x... */
 export async function getReferralInsights(address) {
   if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!API_KEY) return [];
   const qs = address ? `?address=${encodeURIComponent(address)}` : '';
   const url = `${BASE}/api/v1/referral-analytics/insights${qs}`;
   const json = await fetchOk(url);
@@ -53,6 +57,7 @@ export async function getReferralInsights(address) {
 /** GET /api/v1/referral-analytics/top-referrers?limit=10 */
 export async function getTopReferrers(limit = 10) {
   if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!API_KEY) return [];
   const url = `${BASE}/api/v1/referral-analytics/top-referrers?limit=${limit}`;
   const json = await fetchOk(url);
   return json.data ?? [];

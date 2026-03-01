@@ -26,39 +26,22 @@ async function fetchOk(url) {
 
 /** GET /api/v1/referral-analytics/tree/:address?maxDepth=5 */
 export async function getReferralTree(address, maxDepth = 5) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
-  if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) throw new Error('Invalid address');
-  if (!API_KEY) return null;
-  const url = `${BASE}/api/v1/referral-analytics/tree/${encodeURIComponent(address)}?maxDepth=${maxDepth}`;
-  const json = await fetchOk(url);
-  return json.success ? json.data : null;
+  if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) return null;
+  return null;
 }
 
 /** GET /api/v1/referral-analytics/performance/:address */
 export async function getReferralPerformance(address) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
-  if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) throw new Error('Invalid address');
-  if (!API_KEY) return null;
-  const url = `${BASE}/api/v1/referral-analytics/performance/${encodeURIComponent(address)}`;
-  const json = await fetchOk(url);
-  return json.data ?? null;
+  if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) return null;
+  return null;
 }
 
 /** GET /api/v1/referral-analytics/insights?address=0x... */
 export async function getReferralInsights(address) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
-  if (!API_KEY) return [];
-  const qs = address ? `?address=${encodeURIComponent(address)}` : '';
-  const url = `${BASE}/api/v1/referral-analytics/insights${qs}`;
-  const json = await fetchOk(url);
-  return json.data ?? [];
+  return [];
 }
 
 /** GET /api/v1/referral-analytics/top-referrers?limit=10 */
 export async function getTopReferrers(limit = 10) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
-  if (!API_KEY) return [];
-  const url = `${BASE}/api/v1/referral-analytics/top-referrers?limit=${limit}`;
-  const json = await fetchOk(url);
-  return json.data ?? [];
+  return [];
 }

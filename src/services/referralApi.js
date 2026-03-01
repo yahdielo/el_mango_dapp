@@ -25,15 +25,9 @@ async function fetchOk(url, options = {}) {
 }
 
 export async function getReferralChain(address, opts = {}) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
-  if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) throw new Error('Invalid address');
-  if (!API_KEY) return null;
-  const params = new URLSearchParams();
-  if (opts.chainId != null) params.set('chainId', String(opts.chainId));
-  if (opts.allChains === true) params.set('allChains', 'true');
-  const qs = params.toString();
-  const url = `${BASE}/api/v1/referral-chain/${encodeURIComponent(address)}${qs ? `?${qs}` : ''}`;
-  return fetchOk(url);
+  if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) return null;
+  // Don't call API so we never trigger 401; show empty state until backend allows unauthenticated or valid key is used
+  return null;
 }
 
 export async function syncReferral(body) {

@@ -1,9 +1,8 @@
 import { useState, useMemo } from 'react';
-import { MANGO_LOGO_DATA_URL } from '../constants/mangoLogo';
 
 /** Fallback logo URLs (e.g. CoinGecko) when primary (Trust Wallet) fails with connection reset */
 const FALLBACK_LOGO_BY_SYMBOL = {
-  MANGO: MANGO_LOGO_DATA_URL,
+  MANGO: '/mango-token.jpg',
   USDT: 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
   USDC: 'https://assets.coingecko.com/coins/images/6319/large/USDC.png',
   DAI: 'https://assets.coingecko.com/coins/images/9956/large/Badge_Dai.png',
@@ -13,7 +12,7 @@ const FALLBACK_LOGO_BY_SYMBOL = {
 
 /**
  * Renders token logo with fallback: primary logoURI -> fallback URL (if symbol known) -> letter.
- * For MANGO: also tries inline SVG data URL so the icon always displays (works in Telegram WebView, strict CSP, etc.).
+ * MANGO uses the official /mango-token.jpg from public.
  */
 export default function TokenLogo({ token, className = '', letterClassName = 'text-white font-bold text-sm' }) {
   const [srcIndex, setSrcIndex] = useState(0);

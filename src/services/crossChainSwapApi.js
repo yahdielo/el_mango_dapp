@@ -74,5 +74,5 @@ export async function initiateCrossChainViaBackend({
 }
 
 export function isCrossChainViaBackendAvailable() {
-  return Boolean(BASE);
+  return Boolean(BASE && API_KEY && API_KEY.trim() !== '');
 }

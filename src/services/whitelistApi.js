@@ -30,24 +30,17 @@ const DEFAULT_WHITELIST = { tier: 'None', isWhitelisted: false, tierLevel: 0 };
 
 /**
  * Get whitelist status for an address.
- * Skips the request when no API key is set to avoid 401 in console; returns default (not whitelisted).
+ * Returns default (not whitelisted) without calling the API so the app never triggers 401.
+ * To enable live whitelist checks, backend must allow unauthenticated GET or accept x-api-key.
  * @param {string} address - Wallet address (0x...)
  * @param {number} [chainId] - Optional chain ID
  * @returns {Promise<{ tier: string, isWhitelisted: boolean, tierLevel?: number }>}
  */
 export async function getWhitelistStatus(address, chainId) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
-  if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) throw new Error('Invalid address');
-  // Skip request if no API key to avoid 401; backend requires auth for this endpoint
-  if (!API_KEY || API_KEY.trim() === '') return DEFAULT_WHITELIST;
-  const params = new URLSearchParams({ address });
-  if (chainId != null) params.set('chainId', String(chainId));
-  const data = await fetchJson(`${BASE}/api/v1/whitelist/status?${params.toString()}`);
-  return {
-    tier: data.tier ?? 'None',
-    isWhitelisted: data.isWhitelisted === true,
-    tierLevel: data.tierLevel ?? 0,
-  };
+  if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
+    return DEFAULT_WHITELIST;
+  }
+  return DEFAULT_WHITELIST;
 }
 
 async function fetchWithAdminKey(url, adminKey, body) {

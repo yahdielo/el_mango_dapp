@@ -44,12 +44,10 @@ const MANGO_TOKEN_ADDRESS = '0x1dC5726C54791c18eA68C26428bef5c278007627';
 export const tokenLists = {
   8453: {
     default: [
-      { symbol: 'MANGO', name: 'Mango DeFi Token', decimals: 18, address: MANGO_TOKEN_ADDRESS, logoURI: MANGO_LOGO },
       { symbol: 'WETH', name: 'Wrapped Ether', decimals: 18, address: '0x4200000000000000000000000000000000000006', logoURI: ETH_LOGO },
       { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', logoURI: USDC_LOGO },
     ],
     popular: [
-      { symbol: 'MANGO', name: 'Mango DeFi Token', decimals: 18, address: MANGO_TOKEN_ADDRESS, logoURI: MANGO_LOGO },
       { symbol: 'WETH', name: 'Wrapped Ether', decimals: 18, address: '0x4200000000000000000000000000000000000006', logoURI: ETH_LOGO },
       { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', logoURI: USDC_LOGO },
       { symbol: 'USDT', name: 'Tether USD', decimals: 6, address: '0xfde4Cb96C467678c4D50C8B6E1773dA8B37B8054', logoURI: USDT_LOGO },

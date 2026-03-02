@@ -39,11 +39,18 @@ WalletConnect (QR code, mobile) will return **403** and **WebSocket 3000 (Unauth
 ### Make swap fully functional
 
 1. **Reown** – Set `VITE_REOWN_PROJECT_ID` and add your app URL to Project Domains (see above).
-2. **Quotes** – Set `VITE_MANGO_SERVICES_URL` to your mangoServices base URL (same-chain swap uses `/api/v1/swap/quote`). It must be reachable from the browser; use a **public HTTPS** URL when the app is on HTTPS (e.g. Vercel). A local IP (e.g. `http://193.31.31.199:3000`) will cause "Quote server unreachable" in production.
+2. **Backend (mangoServices)** – Set `VITE_MANGO_SERVICES_URL` to your mangoServices base URL. Used for: same-chain quote (`/api/v1/swap/quote`), cross-chain initiate (`/api/v1/swap/cross-chain` when set), referral and whitelist APIs, and USD price fallback. Must be reachable from the browser; use a **public HTTPS** URL in production. Optionally set `VITE_MANGO_SERVICES_API_KEY` if the backend requires `x-api-key`.
 3. **Routers** – Set router addresses in `src/chains.json` per chain, or use env: `VITE_BASE_ROUTER`, `VITE_ETHEREUM_ROUTER`, etc. (see `.env.example`).
 4. **Vercel** – After changing env vars, redeploy. Ensure `/assets/*` is not rewritten to `index.html` (see `vercel.json`).
 
 Copy `.env.example` to `.env` for local dev; in production set the same variables in Vercel.
+
+### Features (see [docs/FEATURE_STATUS_IN_MANGODAPP.md](docs/FEATURE_STATUS_IN_MANGODAPP.md))
+
+- **Swap** (`/`) – Same-chain swap; referrer from `?ref=0x...` or env.
+- **Cross-chain** (`/cross-chain`) – LayerSwap bridge; when `VITE_MANGO_SERVICES_URL` is set, initiate goes via mangoServices (referral sync + reward scheduling).
+- **Referral** (`/referral`) – My referrer, referral link, tree, performance, insights; sync to other chains.
+- **Whitelist** – Tier badge (Standard/VIP/Premium) in header when whitelisted; **Whitelist admin** (`/whitelist-admin`) for batch-add (requires admin key).
 
 ## Stack
 

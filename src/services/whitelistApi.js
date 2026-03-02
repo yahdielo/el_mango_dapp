@@ -43,13 +43,17 @@ export async function getWhitelistStatus(address, chainId) {
   return DEFAULT_WHITELIST;
 }
 
-async function fetchWithAdminKey(url, adminKey, body) {
+/**
+ * POST whitelist/batch with admin key in body to avoid CORS preflight (x-admin-key header is often not in Access-Control-Allow-Headers).
+ * Backend should accept adminKey in the request body.
+ */
+async function fetchWithAdminKey(url, adminKey, payload) {
+  const body = { ...payload, adminKey };
   const res = await fetch(url, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-      'x-admin-key': adminKey,
     },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(30000),
@@ -62,14 +66,14 @@ async function fetchWithAdminKey(url, adminKey, body) {
 /**
  * Batch add addresses to the whitelist.
  * @param {Array<{ address: string, tier: string }>} users - List of { address, tier } (tier: Standard, VIP, Premium)
- * @param {string} adminKey - Admin key for x-admin-key header
+ * @param {string} adminKey - Admin key (sent in body to avoid CORS)
  * @returns {Promise<{ added: number, failed: number, results?: Array }>}
  */
 export async function batchAddWhitelist(users, adminKey) {
   if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   if (!adminKey || typeof adminKey !== 'string') throw new Error('Admin key is required');
-  const body = { users: users.map((u) => ({ address: u.address, tier: u.tier || 'Standard' })) };
-  const data = await fetchWithAdminKey(`${BASE}/api/v1/whitelist/batch`, adminKey, body);
+  const payload = { users: users.map((u) => ({ address: u.address, tier: u.tier || 'Standard' })) };
+  const data = await fetchWithAdminKey(`${BASE}/api/v1/whitelist/batch`, adminKey, payload);
   return {
     added: data.added ?? data.addedCount ?? 0,
     failed: data.failed ?? data.failedCount ?? 0,

@@ -42,12 +42,26 @@ async function fetchJson(url) {
   }
 }
 
+/** WETH address per chain so quote API gets a valid token (backend may 500 on sellToken=0x0) */
+const WETH_BY_CHAIN = {
+  1: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+  8453: '0x4200000000000000000000000000000000000006',
+  42161: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+  10: '0x4200000000000000000000000000000000000006',
+  137: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
+  56: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+  43114: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7',
+};
+
 /**
- * Map token to address for API (native = 0x0)
+ * Map token to address for API. Use WETH address for native ETH so backend does not 500.
  */
-function toTokenAddress(token) {
+function toTokenAddress(token, chainId) {
   if (!token) return ZERO_ADDRESS;
-  if (isNativeToken(token)) return ZERO_ADDRESS;
+  if (isNativeToken(token)) {
+    const weth = chainId != null && WETH_BY_CHAIN[chainId];
+    return weth || ZERO_ADDRESS;
+  }
   return token.address || ZERO_ADDRESS;
 }
 
@@ -72,8 +86,8 @@ export async function getQuote({ chainId, tokenIn, tokenOut, amountIn }) {
 
   const decimalsIn = tokenIn?.decimals ?? 18;
   const amountWei = parseUnits(String(amt), decimalsIn).toString();
-  const sellToken = toTokenAddress(tokenIn);
-  const buyToken = toTokenAddress(tokenOut);
+  const sellToken = toTokenAddress(tokenIn, chainId);
+  const buyToken = toTokenAddress(tokenOut, chainId);
 
   const params = new URLSearchParams({
     chainId: String(chainId),
@@ -143,12 +157,8 @@ export async function getTokenPriceUsd({ chainId, token }) {
   const usdcAddr = USDC_BY_CHAIN[chainId];
   if (!usdcAddr) return 0;
 
-  let tokenAddr = toTokenAddress(token);
+  let tokenAddr = toTokenAddress(token, chainId);
   if (tokenAddr === usdcAddr) return 1;
-  // For native token, try wrapped address so quote API can return price
-  if (isNativeToken(token) && WRAPPED_NATIVE_BY_CHAIN[chainId]) {
-    tokenAddr = WRAPPED_NATIVE_BY_CHAIN[chainId];
-  }
 
   try {
     const decimals = token?.decimals ?? 18;

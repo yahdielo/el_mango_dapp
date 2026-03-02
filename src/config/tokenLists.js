@@ -50,7 +50,7 @@ export const tokenLists = {
     popular: [
       { symbol: 'WETH', name: 'Wrapped Ether', decimals: 18, address: '0x4200000000000000000000000000000000000006', logoURI: ETH_LOGO },
       { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', logoURI: USDC_LOGO },
-      { symbol: 'USDT', name: 'Tether USD', decimals: 6, address: '0xfde4Cb96C467678c4D50C8B6E1773dA8B37B8054', logoURI: USDT_LOGO },
+      { symbol: 'USDT', name: 'Tether USD', decimals: 6, address: '0xfde4c96c8593536E31F229EA8f37b2ADa2699bb2', logoURI: USDT_LOGO },
       { symbol: 'DAI', name: 'Dai Stablecoin', decimals: 18, address: '0x50c5725949A6F0c72E6C4a641F24049A917E0CB3', logoURI: DAI_LOGO },
       { symbol: 'SHIB', name: 'Shiba Inu', decimals: 18, address: '0x4Fb99590cA95fc3255D9fA66a1cA46c43C34b09a', logoURI: SHIB_LOGO },
       { symbol: 'PEPE', name: 'Pepe', decimals: 18, address: '0x6982508145454Ce325dDbE47a25d4ec3d2311933', logoURI: PEPE_LOGO },

@@ -30,6 +30,13 @@ import { useWhitelist } from '../hooks/useWhitelist';
 
 const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
 
+/** Non-EVM chains require a destination address in that chain's format (e.g. bc1... for BTC, not 0x...) */
+const NON_EVM_DEST_CHAINS = [0, 501111, 728126428, 144, 101];
+
+function isNonEvmDest(chainId) {
+  return NON_EVM_DEST_CHAINS.includes(Number(chainId));
+}
+
 export default function CrossChainPage() {
   const { address } = useAccount();
   const { handleConnect } = useConnectWallet();
@@ -57,6 +64,8 @@ export default function CrossChainPage() {
   const [showDestChainModal, setShowDestChainModal] = useState(false);
   const [showTokenInModal, setShowTokenInModal] = useState(false);
   const [showTokenOutModal, setShowTokenOutModal] = useState(false);
+  /** For non-EVM dest (BTC, SOL, XRP, etc.), user must enter receive address in that chain's format */
+  const [destinationAddress, setDestinationAddress] = useState('');
 
   const tokensIn = useMemo(
     () => getTokensForChain(sourceChainId).filter((t) => t.symbol !== 'MANGO'),
@@ -182,6 +191,7 @@ export default function CrossChainPage() {
     const id = parseInt(chain.chainId);
     setDestChainId(id);
     setDestChain(chain);
+    setDestinationAddress(''); // reset when switching dest chain
     const tokens = getTokensForChain(id).filter((t) => t.symbol !== 'MANGO');
     setTokenOut(tokens[0] || null);
   }, []);
@@ -210,6 +220,7 @@ export default function CrossChainPage() {
     setTokenOut(tokenIn);
     setAmountIn(amountOut);
     setAmountOut(amountIn);
+    setDestinationAddress('');
   };
 
   useEffect(() => {
@@ -231,13 +242,16 @@ export default function CrossChainPage() {
         const primaryReferrer = raw?.primaryReferrer ?? raw?.referral?.referrer ?? null;
         const sourceReferrer = referrals.find((r) => Number(r.chainId) === sourceChainId)?.referrer ?? primaryReferrer;
 
+        const recipient = isNonEvmDest(destChainId)
+          ? (destinationAddress || '').trim()
+          : address;
         await startSwap({
           sourceChainId,
           destChainId,
           tokenIn,
           tokenOut,
           amountIn,
-          recipient: address,
+          recipient,
           referrer: sourceReferrer || undefined,
         });
 
@@ -255,6 +269,7 @@ export default function CrossChainPage() {
     }
   }, [
     address,
+    destinationAddress,
     handleConnect,
     isCrossChain,
     routeSupported,
@@ -266,10 +281,13 @@ export default function CrossChainPage() {
     amountIn,
   ]);
 
+  const destAddrRequired = isNonEvmDest(destChainId);
+  const destAddrValid = !destAddrRequired || (destinationAddress || '').trim().length > 0;
   const canConfirmCrossChain =
     isCrossChain &&
     routeSupported !== false &&
     canSwap &&
+    destAddrValid &&
     !bridgeLoading;
   const canConfirm = isCrossChain ? canConfirmCrossChain : false;
   const showUnsupportedWarning = isCrossChain && routeSupported === false && !routeLoading;
@@ -376,6 +394,26 @@ export default function CrossChainPage() {
           />
         </div>
 
+        {destAddrRequired && (
+          <div className="mt-4">
+            <label className="block text-gray-400 text-sm mb-2">
+              {destChainId === 0 && 'Bitcoin receive address (bc1..., 1..., or 3...)'}
+              {destChainId === 501111 && 'Solana receive address'}
+              {destChainId === 728126428 && 'Tron receive address (T...)'}
+              {destChainId === 144 && 'XRP receive address (r...)'}
+              {destChainId === 101 && 'Sui receive address'}
+            </label>
+            <input
+              type="text"
+              value={destinationAddress}
+              onChange={(e) => setDestinationAddress(e.target.value)}
+              placeholder={destChainId === 0 ? 'bc1q... or 1...' : destChainId === 501111 ? 'e.g. 7xKX...' : 'Enter address'}
+              className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:border-transparent"
+              spellCheck={false}
+            />
+          </div>
+        )}
+
         <div className="mt-16">
           {bridgeStatus && (
             <CrossChainSwapStatusBanner
@@ -405,6 +443,11 @@ export default function CrossChainPage() {
           {showRouteUnknownMessage && (
             <p className="text-gray-500 text-xs text-center mb-2">
               Route check unavailable — you can still slide to continue; swap completes on LayerSwap.
+            </p>
+          )}
+          {destAddrRequired && !destAddrValid && amountIn && parseFloat(amountIn) > 0 && (
+            <p className="text-amber-400 text-sm text-center mb-2">
+              Enter your {destChain?.chainName || 'destination'} receive address above to continue.
             </p>
           )}
           {(bridgeError || validationError || effectiveQuoteError) && !bridgeStatus && (

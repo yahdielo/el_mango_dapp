@@ -442,7 +442,7 @@ export default function CrossChainPage() {
           )}
           {showRouteUnknownMessage && (
             <p className="text-gray-500 text-xs text-center mb-2">
-              Route check unavailable — you can still slide to continue; swap completes on LayerSwap.
+              Route check unavailable — you can still slide to continue; swap completes via the bridge.
             </p>
           )}
           {destAddrRequired && !destAddrValid && amountIn && parseFloat(amountIn) > 0 && (

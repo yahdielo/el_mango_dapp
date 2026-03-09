@@ -1,0 +1,83 @@
+import { ZERO_ADDRESS } from '../utils/chainConfig';
+import { isNativeToken } from '../hooks/useTokenBalance';
+
+const RAW_BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
+const API_KEY = import.meta.env.VITE_MANGO_SERVICES_API_KEY || '';
+const BRIDGE_PROVIDER = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
+
+function getBaseUrl() {
+  const raw = RAW_BASE;
+  if (typeof window !== 'undefined' && window.location?.protocol === 'https:' && raw.startsWith('http://')) {
+    return raw.replace(/^http:\/\//i, 'https://');
+  }
+  return raw;
+}
+
+function headers() {
+  const h = { Accept: 'application/json' };
+  if (API_KEY) h['x-api-key'] = API_KEY;
+  if (BRIDGE_PROVIDER) h['x-bridge-provider'] = BRIDGE_PROVIDER;
+  return h;
+}
+
+function toTokenAddress(token, chainId) {
+  if (!token) return ZERO_ADDRESS;
+  if (isNativeToken(token)) {
+    return ZERO_ADDRESS;
+  }
+  return token.address || ZERO_ADDRESS;
+}
+
+/**
+ * Get cross-chain estimate (min/max, fees) via mangoServices.
+ * This is only used when a backend bridge provider is configured (e.g. Rango).
+ * @param {{ sourceChainId: number, destChainId: number, tokenIn: any, tokenOut: any, amountInWei: string, recipient?: string }} params
+ */
+export async function getCrossChainEstimate({
+  sourceChainId,
+  destChainId,
+  tokenIn,
+  tokenOut,
+  amountInWei,
+  recipient,
+}) {
+  const baseUrl = getBaseUrl();
+  if (!baseUrl) {
+    throw new Error('VITE_MANGO_SERVICES_URL not configured');
+  }
+  if (!API_KEY) {
+    throw new Error('VITE_MANGO_SERVICES_API_KEY not set');
+  }
+
+  const tokenInAddr = toTokenAddress(tokenIn, sourceChainId);
+  const tokenOutAddr = toTokenAddress(tokenOut, destChainId);
+
+  const params = new URLSearchParams({
+    sourceChainId: String(sourceChainId),
+    destChainId: String(destChainId),
+    tokenIn: tokenInAddr,
+    tokenOut: tokenOutAddr,
+    amountIn: String(amountInWei),
+  });
+
+  if (recipient) {
+    params.set('recipient', recipient);
+  }
+
+  const url = `${baseUrl}/api/v1/swap/estimate?${params.toString()}`;
+
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: headers(),
+    signal: AbortSignal.timeout(15000),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data?.error || data?.message || `Failed to get cross-chain estimate (${res.status})`);
+  }
+
+  return data;
+}
+

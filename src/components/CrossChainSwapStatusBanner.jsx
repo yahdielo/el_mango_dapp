@@ -10,6 +10,7 @@ export default function CrossChainSwapStatusBanner({
   status,
   swapId,
   depositActions,
+  rangoTx,
   sourceChainId,
   sourceChain,
   tokenIn,
@@ -42,7 +43,7 @@ export default function CrossChainSwapStatusBanner({
     textClass = 'text-red-300';
     label = status === 'expired' ? 'Swap expired' : status === 'refunded' ? 'Refunded' : 'Swap failed';
   } else if (status === 'user_transfer_pending') {
-    label = 'Waiting for deposit';
+    label = rangoTx ? 'Sign transaction to bridge' : 'Waiting for deposit';
   } else if (status === 'ls_transfer_pending') {
     label = 'Bridging...';
   }
@@ -52,8 +53,15 @@ export default function CrossChainSwapStatusBanner({
   const isNativeDeposit = NATIVE_SYMBOLS.includes((depositAction?.token?.symbol || '').toUpperCase());
   const isEvmSource = sourceChainId != null && EVM_CHAIN_IDS.includes(Number(sourceChainId));
 
+  const canSignRangoTx =
+    status === 'user_transfer_pending' &&
+    rangoTx &&
+    (rangoTx.txTo || rangoTx.txData) &&
+    isEvmSource;
+
   const canSendNative =
     status === 'user_transfer_pending' &&
+    !canSignRangoTx &&
     depositAction?.to_address &&
     depositAction?.amount &&
     isNativeDeposit &&
@@ -61,6 +69,7 @@ export default function CrossChainSwapStatusBanner({
 
   const canSendErc20 =
     status === 'user_transfer_pending' &&
+    !canSignRangoTx &&
     depositAction?.to_address &&
     depositAction?.amount &&
     !isNativeDeposit &&
@@ -68,8 +77,23 @@ export default function CrossChainSwapStatusBanner({
     tokenIn?.address &&
     (tokenIn?.decimals != null || tokenIn?.decimals === 0);
 
-  const canSendInApp = canSendNative || canSendErc20;
+  const canSendInApp = canSignRangoTx || canSendNative || canSendErc20;
   const isSendPendingAny = isSendPending || isWritePending;
+
+  // Auto-trigger Rango tx when chain matches
+  useEffect(() => {
+    if (!canSignRangoTx || !rangoTx?.txTo || needsSwitch) return;
+    if (!hasTriggeredSend.current) {
+      hasTriggeredSend.current = true;
+      const value = rangoTx.value ? BigInt(rangoTx.value) : 0n;
+      sendTransaction({
+        to: rangoTx.txTo,
+        data: rangoTx.txData ? (rangoTx.txData.startsWith('0x') ? rangoTx.txData : `0x${rangoTx.txData}`) : undefined,
+        value,
+        gas: rangoTx.gasLimit ? BigInt(rangoTx.gasLimit) : undefined,
+      });
+    }
+  }, [canSignRangoTx, rangoTx, needsSwitch, sendTransaction]);
 
   // Auto-trigger deposit when swipe completes: switch chain if needed, then send
   useEffect(() => {
@@ -92,11 +116,21 @@ export default function CrossChainSwapStatusBanner({
   }, [canSendNative, needsSwitch, depositAction, sourceChainId, chainId, switchChain, sendTransaction]);
 
   const handleSendDeposit = useCallback(async () => {
-    if (!depositAction?.to_address || !depositAction?.amount) return;
     if (needsSwitch && sourceChainId != null) {
       switchChain?.({ chainId: Number(sourceChainId) });
       return;
     }
+    if (canSignRangoTx && rangoTx?.txTo) {
+      const value = rangoTx.value ? BigInt(rangoTx.value) : 0n;
+      sendTransaction({
+        to: rangoTx.txTo,
+        data: rangoTx.txData ? (rangoTx.txData.startsWith('0x') ? rangoTx.txData : `0x${rangoTx.txData}`) : undefined,
+        value,
+        gas: rangoTx.gasLimit ? BigInt(rangoTx.gasLimit) : undefined,
+      });
+      return;
+    }
+    if (!depositAction?.to_address || !depositAction?.amount) return;
     if (canSendNative) {
       const value = parseEther(String(depositAction.amount));
       sendTransaction({
@@ -116,7 +150,7 @@ export default function CrossChainSwapStatusBanner({
         chainId: Number(sourceChainId),
       });
     }
-  }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransaction, canSendNative, canSendErc20, tokenIn, writeContractAsync]);
+  }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransaction, canSignRangoTx, rangoTx, canSendNative, canSendErc20, tokenIn, writeContractAsync]);
 
   return (
     <div className={`mb-4 p-4 rounded-xl border ${bgClass}`}>
@@ -124,7 +158,10 @@ export default function CrossChainSwapStatusBanner({
       {swapId && (
         <p className="text-gray-400 text-xs mt-1 truncate">ID: {swapId}</p>
       )}
-      {status === 'user_transfer_pending' && depositAction && (
+      {status === 'user_transfer_pending' && canSignRangoTx && (
+        <p className="text-gray-300 text-xs mt-2">Sign the transaction to execute the cross-chain swap.</p>
+      )}
+      {status === 'user_transfer_pending' && depositAction && !canSignRangoTx && (
         <p className="text-gray-300 text-xs mt-2 break-all">
           Send {depositAction.amount} {depositAction.token?.symbol || ''} to: {depositAction.to_address}
         </p>
@@ -138,7 +175,9 @@ export default function CrossChainSwapStatusBanner({
         >
           {needsSwitch
             ? `Switch to ${sourceChain?.chainName || 'source chain'}`
-            : `Send ${depositAction.amount} ${depositAction.token?.symbol || ''}`}
+            : canSignRangoTx
+            ? 'Sign transaction'
+            : `Send ${depositAction?.amount ?? ''} ${depositAction?.token?.symbol ?? ''}`}
         </button>
       )}
       {isSuccess || isFailed ? (

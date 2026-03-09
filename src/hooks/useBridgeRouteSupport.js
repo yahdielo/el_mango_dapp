@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react';
 import { isRouteSupported } from '../services/bridgeApi';
+import {
+  isRouteSupportedViaBackend,
+  isCrossChainViaBackendAvailable,
+} from '../services/crossChainSwapApi';
+
+const BRIDGE_PROVIDER = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
 /**
  * Check if cross-chain route is supported by bridge
+ * Uses backend /routes when BRIDGE_PROVIDER=rango; otherwise LayerSwap /sources
  * @param {number} sourceChainId
  * @param {number} destChainId
  * @param {Object} tokenIn
@@ -25,8 +32,11 @@ export function useBridgeRouteSupport(sourceChainId, destChainId, tokenIn, token
       return;
     }
 
+    const useBackend = BRIDGE_PROVIDER === 'rango' && isCrossChainViaBackendAvailable();
+    const checkFn = useBackend ? isRouteSupportedViaBackend : isRouteSupported;
+
     setLoading(true);
-    isRouteSupported(sourceChainId, destChainId, tokenIn, tokenOut)
+    checkFn(sourceChainId, destChainId, tokenIn, tokenOut)
       .then(setIsSupported)
       .catch(() => setIsSupported(null))
       .finally(() => setLoading(false));

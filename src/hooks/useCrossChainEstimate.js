@@ -1,0 +1,140 @@
+import { useState, useEffect } from 'react';
+import { parseUnits, formatUnits } from 'viem';
+import { getCrossChainEstimate } from '../services/crossChainEstimateApi';
+
+/**
+ * Cross-chain estimate hook for backend bridge providers (e.g. Rango).
+ * Computes min/max in human units and flags when the amount is out of range.
+ */
+export function useCrossChainEstimate({
+  enabled,
+  sourceChainId,
+  destChainId,
+  tokenIn,
+  tokenOut,
+  amountIn,
+  recipient,
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [minAmount, setMinAmount] = useState(null);
+  const [maxAmount, setMaxAmount] = useState(null);
+  const [amountTooLow, setAmountTooLow] = useState(false);
+  const [amountTooHigh, setAmountTooHigh] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function run() {
+      if (
+        !enabled ||
+        !sourceChainId ||
+        !destChainId ||
+        sourceChainId === destChainId ||
+        !tokenIn?.decimals ||
+        !tokenOut ||
+        !amountIn ||
+        parseFloat(amountIn) <= 0
+      ) {
+        if (!cancelled) {
+          setLoading(false);
+          setError(null);
+          setMinAmount(null);
+          setMaxAmount(null);
+          setAmountTooLow(false);
+          setAmountTooHigh(false);
+        }
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        setAmountTooLow(false);
+        setAmountTooHigh(false);
+
+        const decimals = tokenIn.decimals ?? 18;
+        let amountWei;
+        try {
+          amountWei = parseUnits(String(amountIn), decimals);
+        } catch {
+          throw new Error('Invalid amount');
+        }
+
+        const data = await getCrossChainEstimate({
+          sourceChainId,
+          destChainId,
+          tokenIn,
+          tokenOut,
+          amountInWei: amountWei.toString(),
+          recipient,
+        });
+
+        const backendError = data?.error || null;
+        const rawMin = data?.minAmount ?? data?.route?.minAmount ?? null;
+        const rawMax = data?.maxAmount ?? data?.route?.maxAmount ?? null;
+
+        let minHuman = null;
+        let maxHuman = null;
+        let tooLow = false;
+        let tooHigh = false;
+
+        if (rawMin) {
+          try {
+            const minWei = BigInt(rawMin);
+            minHuman = formatUnits(minWei, decimals);
+            if (amountWei < minWei) tooLow = true;
+          } catch {
+            // ignore parse issues
+          }
+        }
+
+        if (rawMax) {
+          try {
+            const maxWei = BigInt(rawMax);
+            maxHuman = formatUnits(maxWei, decimals);
+            if (amountWei > maxWei) tooHigh = true;
+          } catch {
+            // ignore parse issues
+          }
+        }
+
+        if (!cancelled) {
+          setMinAmount(minHuman);
+          setMaxAmount(maxHuman);
+          setAmountTooLow(tooLow);
+          setAmountTooHigh(tooHigh);
+          setError(backendError);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError(e?.message || 'Failed to get cross-chain estimate');
+          setMinAmount(null);
+          setMaxAmount(null);
+          setAmountTooLow(false);
+          setAmountTooHigh(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, sourceChainId, destChainId, tokenIn?.decimals, tokenOut, amountIn, recipient]);
+
+  return {
+    loading,
+    error,
+    minAmount,
+    maxAmount,
+    amountTooLow,
+    amountTooHigh,
+  };
+}
+

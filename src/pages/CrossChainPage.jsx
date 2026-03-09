@@ -18,6 +18,7 @@ import { useSwapValidation } from '../hooks/useSwapValidation';
 import { useQuote } from '../hooks/useQuote';
 import { useGasEstimate } from '../hooks/useGasEstimate';
 import { useCrossChainSwap } from '../hooks/useCrossChainSwap';
+import { useCrossChainEstimate } from '../hooks/useCrossChainEstimate';
 import { useCrossChainUsdPrices } from '../hooks/useCrossChainUsdPrices';
 import { useBridgeRouteSupport } from '../hooks/useBridgeRouteSupport';
 import { LAYERSWAP_CHAIN_IDS } from '../services/bridgeApi';
@@ -135,6 +136,7 @@ export default function CrossChainPage() {
     swapId,
     status: bridgeStatus,
     depositActions,
+    rangoTx,
     error: bridgeError,
     isLoading: bridgeLoading,
     reset: resetBridge,
@@ -146,6 +148,8 @@ export default function CrossChainPage() {
     balance: balanceTokenIn,
     address,
   });
+
+  const bridgeProvider = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
   const handleMaxClick = useCallback(() => {
     if (balanceTokenIn == null || balanceTokenIn <= 0n) return;
@@ -283,11 +287,38 @@ export default function CrossChainPage() {
 
   const destAddrRequired = isNonEvmDest(destChainId);
   const destAddrValid = !destAddrRequired || (destinationAddress || '').trim().length > 0;
+  const recipientForEstimate = destAddrRequired ? (destinationAddress || '').trim() : (address || '');
+
+  const {
+    loading: crossChainEstimateLoading,
+    error: crossChainEstimateError,
+    minAmount,
+    maxAmount,
+    amountTooLow,
+    amountTooHigh,
+  } = useCrossChainEstimate({
+    enabled:
+      isCrossChain &&
+      bridgeProvider === 'rango' &&
+      isCrossChainViaBackendAvailable() &&
+      !!amountIn &&
+      parseFloat(amountIn) > 0 &&
+      !!tokenIn &&
+      !!tokenOut,
+    sourceChainId,
+    destChainId,
+    tokenIn,
+    tokenOut,
+    amountIn,
+    recipient: recipientForEstimate,
+  });
   const canConfirmCrossChain =
     isCrossChain &&
     routeSupported !== false &&
     canSwap &&
     destAddrValid &&
+    !amountTooLow &&
+    !amountTooHigh &&
     !bridgeLoading;
   const canConfirm = isCrossChain ? canConfirmCrossChain : false;
   const showUnsupportedWarning = isCrossChain && routeSupported === false && !routeLoading;
@@ -312,12 +343,30 @@ export default function CrossChainPage() {
     return (priceOut > 0 ? parseFloat(amountOut) * priceOut : (tokenOut?.symbol === 'USDC' || tokenOut?.symbol === 'USDT' ? amt : 0));
   }, [amountOut, isCrossChain, crossChainPriceOut, tokenOut?.symbol, priceOut]);
 
+  const rawBridgeError = bridgeError || validationError || effectiveQuoteError || crossChainEstimateError;
+  const rawBridgeMsg = String(
+    rawBridgeError?.message || rawBridgeError?.shortMessage || rawBridgeError || ''
+  );
+  const lowerBridgeMsg = rawBridgeMsg.toLowerCase();
+  const isRangoRouteUnavailable =
+    bridgeProvider === 'rango' && /route not available|no route/i.test(lowerBridgeMsg);
+  const isRangoBelowMinimum =
+    bridgeProvider === 'rango' && /amount below minimum|below minimum/i.test(lowerBridgeMsg);
+
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center" style={{ fontFamily: "'Afacad', sans-serif" }}>
       <div className="w-full max-w-[402px] flex flex-col px-5 pt-[80px] pb-8 min-h-screen">
         <SwapHeader address={address} onConnect={handleConnect} whitelistTier={whitelist?.tier ?? null} />
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-white text-[32px] font-medium">Cross-Chain Swap</h1>
+          <div>
+            <h1 className="text-white text-[32px] font-medium">Cross-Chain Swap</h1>
+            {import.meta.env.VITE_BRIDGE_PROVIDER && (
+              <p className="text-xs text-gray-400 mt-1">
+                Powered by{' '}
+                {import.meta.env.VITE_BRIDGE_PROVIDER === 'rango' ? 'Rango' : 'LayerSwap'}
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -348,6 +397,25 @@ export default function CrossChainPage() {
             onAmountChange={handleAmountChange}
             onMaxClick={handleMaxClick}
           />
+
+          {bridgeProvider === 'rango' && minAmount && (
+            <p className="mt-2 text-xs text-gray-400 text-right">
+              Min: {minAmount} {tokenIn?.symbol}
+              {maxAmount && (
+                <>
+                  {' '}
+                  • Max: {maxAmount} {tokenIn?.symbol}
+                </>
+              )}
+            </p>
+          )}
+          {bridgeProvider === 'rango' && (amountTooLow || amountTooHigh) && (
+            <p className="mt-1 text-xs text-amber-400 text-right">
+              {amountTooLow
+                ? 'Amount below bridge minimum for this route.'
+                : 'Amount above bridge maximum for this route.'}
+            </p>
+          )}
 
           <div className="flex justify-center relative z-10 -mt-[33px] -mb-[34px]">
             <button type="button" onClick={handleSwapDirection} className="relative cursor-pointer focus:outline-none">
@@ -420,6 +488,7 @@ export default function CrossChainPage() {
               status={bridgeStatus}
               swapId={swapId}
               depositActions={depositActions}
+              rangoTx={rangoTx}
               sourceChainId={sourceChainId}
               sourceChain={sourceChain}
               tokenIn={tokenIn}
@@ -442,7 +511,7 @@ export default function CrossChainPage() {
           )}
           {showRouteUnknownMessage && (
             <p className="text-gray-500 text-xs text-center mb-2">
-              Route check unavailable — you can still slide to continue; swap completes via the bridge.
+              Route check unavailable — you can still slide to continue; swap completes on LayerSwap.
             </p>
           )}
           {destAddrRequired && !destAddrValid && amountIn && parseFloat(amountIn) > 0 && (
@@ -450,10 +519,19 @@ export default function CrossChainPage() {
               Enter your {destChain?.chainName || 'destination'} receive address above to continue.
             </p>
           )}
-          {(bridgeError || validationError || effectiveQuoteError) && !bridgeStatus && (
-            <p className="text-red-400 text-sm text-center mb-2">
-              {mapErrorToUserMessage(bridgeError || validationError || effectiveQuoteError)}
-            </p>
+          {rawBridgeError && !bridgeStatus && (
+            <>
+              <p className="text-red-400 text-sm text-center mb-2">
+                {mapErrorToUserMessage(rawBridgeError)}
+              </p>
+              {bridgeProvider === 'rango' && (isRangoRouteUnavailable || isRangoBelowMinimum) && (
+                <p className="text-xs text-gray-400 text-center mb-2">
+                  {isRangoRouteUnavailable
+                    ? 'Rango has no route for this chain/token pair right now. Try a different token or chain.'
+                    : 'Rango requires a higher amount for this route. Increase the amount until it is above the minimum.'}
+                </p>
+              )}
+            </>
           )}
           <SlideToSwapButton
             onSwap={address ? handleConfirmSwap : undefined}

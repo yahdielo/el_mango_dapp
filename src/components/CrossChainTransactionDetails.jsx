@@ -23,7 +23,7 @@ export default function CrossChainTransactionDetails({ amountIn, amountOut, sour
         )}
         <div className="flex justify-between text-gray-400">
           <span>Bridge</span>
-          <span className="text-[#3CF902]">Bridge</span>
+          <span className="text-[#3CF902]">LayerSwap</span>
         </div>
         {gasCostFormatted && (
           <div className="flex justify-between text-gray-400">

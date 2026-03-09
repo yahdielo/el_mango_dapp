@@ -5,10 +5,12 @@
 
 const BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
 const API_KEY = import.meta.env.VITE_MANGO_SERVICES_API_KEY || '';
+const BRIDGE_PROVIDER = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
 function headers() {
   const h = { Accept: 'application/json', 'Content-Type': 'application/json' };
   if (API_KEY) h['x-api-key'] = API_KEY;
+  if (BRIDGE_PROVIDER) h['x-bridge-provider'] = BRIDGE_PROVIDER;
   return h;
 }
 
@@ -70,9 +72,75 @@ export async function initiateCrossChainViaBackend({
     estimatedCompletion: data.estimatedCompletion,
     sourceChainId: data.sourceChainId,
     destChainId: data.destChainId,
+    provider: data.provider,
+    rangoTx: data.rangoTx,
+    rangoRequestId: data.rangoRequestId,
+  };
+}
+
+/**
+ * Get swap status from backend (used when BRIDGE_PROVIDER=rango)
+ * @param {string} swapId - Our internal swap UUID
+ * @returns {Promise<{ status: string, depositActions?: Array }>}
+ */
+export async function getSwapStatusFromBackend(swapId) {
+  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  const res = await fetch(`${BASE}/api/v1/swap/${encodeURIComponent(swapId)}/status`, {
+    method: 'GET',
+    headers: headers(),
+    signal: AbortSignal.timeout(15000),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || `Status ${res.status}`);
+  return {
+    status: data.status ?? 'unknown',
+    depositActions: data.depositActions ?? [],
+    sourceTxHash: data.sourceTxHash,
+    destTxHash: data.destTxHash,
+    completedAt: data.completedAt,
   };
 }
 
 export function isCrossChainViaBackendAvailable() {
   return Boolean(BASE && API_KEY && API_KEY.trim() !== '');
+}
+
+/**
+ * Get cross-chain routes from backend (used when BRIDGE_PROVIDER=rango)
+ * @param {number} sourceChainId
+ * @param {number} destChainId
+ * @param {Object} tokenIn - { address, symbol }
+ * @param {Object} tokenOut - { address, symbol }
+ * @returns {Promise<{ routes: Array, provider?: string }>}
+ */
+export async function getRoutesFromBackend(sourceChainId, destChainId, tokenIn, tokenOut) {
+  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  const tokenInAddr = tokenIn?.address ?? tokenIn ?? '0x0000000000000000000000000000000000000000';
+  const tokenOutAddr = tokenOut?.address ?? tokenOut ?? '0x0000000000000000000000000000000000000000';
+  const params = new URLSearchParams({
+    sourceChainId: String(sourceChainId),
+    destChainId: String(destChainId),
+    tokenIn: tokenInAddr,
+    tokenOut: tokenOutAddr,
+  });
+  const res = await fetch(`${BASE}/api/v1/swap/routes?${params}`, {
+    method: 'GET',
+    headers: headers(),
+    signal: AbortSignal.timeout(15000),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) return { routes: [], error: data?.error };
+  return { routes: data.routes ?? [], provider: data.provider };
+}
+
+/**
+ * Check if route is supported via backend (used when Rango is bridge provider)
+ */
+export async function isRouteSupportedViaBackend(sourceChainId, destChainId, tokenIn, tokenOut) {
+  try {
+    const { routes } = await getRoutesFromBackend(sourceChainId, destChainId, tokenIn, tokenOut);
+    return Array.isArray(routes) && routes.length > 0;
+  } catch {
+    return false;
+  }
 }

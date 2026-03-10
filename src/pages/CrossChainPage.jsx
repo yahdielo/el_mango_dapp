@@ -409,7 +409,7 @@ export default function CrossChainPage() {
             {import.meta.env.VITE_BRIDGE_PROVIDER && (
               <p className="text-xs text-gray-400 mt-1">
                 Powered by{' '}
-                {import.meta.env.VITE_BRIDGE_PROVIDER === 'rango' ? 'Rango' : 'LayerSwap'}
+                {import.meta.env.VITE_BRIDGE_PROVIDER === 'rango' ? 'Rango' : 'Auto'}
               </p>
             )}
           </div>
@@ -557,7 +557,7 @@ export default function CrossChainPage() {
           )}
           {showRouteUnknownMessage && (
             <p className="text-gray-500 text-xs text-center mb-2">
-              Route check unavailable — you can still slide to continue; swap completes on LayerSwap.
+              Route check unavailable — you can still slide to continue; swap completes via the bridge.
             </p>
           )}
           {destAddrRequired && !destAddrValid && amountIn && parseFloat(amountIn) > 0 && (

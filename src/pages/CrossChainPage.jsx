@@ -68,14 +68,33 @@ export default function CrossChainPage() {
   /** For non-EVM dest (BTC, SOL, XRP, etc.), user must enter receive address in that chain's format */
   const [destinationAddress, setDestinationAddress] = useState('');
 
-  const tokensIn = useMemo(
-    () => getTokensForChain(sourceChainId).filter((t) => t.symbol !== 'MANGO'),
-    [sourceChainId]
-  );
-  const tokensOut = useMemo(
-    () => getTokensForChain(destChainId).filter((t) => t.symbol !== 'MANGO'),
-    [destChainId]
-  );
+  const tokensIn = useMemo(() => {
+    const base = getTokensForChain(sourceChainId).filter((t) => t.symbol !== 'MANGO');
+    if (bridgeProvider !== 'rango' || !rangoTokensByChain) return base;
+    const rangoTokens = getTokensForRangoChain(sourceChainId);
+    if (!rangoTokens.length) return base;
+    const allowed = new Set(
+      rangoTokens.map((t) => (t.address ? t.address.toLowerCase() : t.symbol.toUpperCase()))
+    );
+    return base.filter((t) => {
+      const key = t.address ? t.address.toLowerCase() : (t.symbol || '').toUpperCase();
+      return allowed.has(key);
+    });
+  }, [sourceChainId, bridgeProvider, rangoTokensByChain, getTokensForRangoChain]);
+
+  const tokensOut = useMemo(() => {
+    const base = getTokensForChain(destChainId).filter((t) => t.symbol !== 'MANGO');
+    if (bridgeProvider !== 'rango' || !rangoTokensByChain) return base;
+    const rangoTokens = getTokensForRangoChain(destChainId);
+    if (!rangoTokens.length) return base;
+    const allowed = new Set(
+      rangoTokens.map((t) => (t.address ? t.address.toLowerCase() : t.symbol.toUpperCase()))
+    );
+    return base.filter((t) => {
+      const key = t.address ? t.address.toLowerCase() : (t.symbol || '').toUpperCase();
+      return allowed.has(key);
+    });
+  }, [destChainId, bridgeProvider, rangoTokensByChain, getTokensForRangoChain]);
 
   const { balance: balanceTokenIn } = useTokenBalance({
     address,

@@ -68,6 +68,8 @@ export default function CrossChainPage() {
   /** For non-EVM dest (BTC, SOL, XRP, etc.), user must enter receive address in that chain's format */
   const [destinationAddress, setDestinationAddress] = useState('');
 
+  const bridgeProvider = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
+
   const tokensIn = useMemo(() => {
     const base = getTokensForChain(sourceChainId).filter((t) => t.symbol !== 'MANGO');
     if (bridgeProvider !== 'rango' || !rangoTokensByChain) return base;
@@ -167,8 +169,6 @@ export default function CrossChainPage() {
     balance: balanceTokenIn,
     address,
   });
-
-  const bridgeProvider = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
   // Rango support matrix (enabled chains + tokens) for display and filtering.
   const {

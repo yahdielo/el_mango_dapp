@@ -20,6 +20,7 @@ import { useGasEstimate } from '../hooks/useGasEstimate';
 import { useCrossChainSwap } from '../hooks/useCrossChainSwap';
 import { useCrossChainEstimate } from '../hooks/useCrossChainEstimate';
 import { useCrossChainUsdPrices } from '../hooks/useCrossChainUsdPrices';
+import { useRangoSupportMatrix } from '../hooks/useRangoSupportMatrix';
 import { useBridgeRouteSupport } from '../hooks/useBridgeRouteSupport';
 import { LAYERSWAP_CHAIN_IDS } from '../services/bridgeApi';
 import { getReferralChain, syncReferral } from '../services/referralApi';
@@ -43,9 +44,8 @@ export default function CrossChainPage() {
   const { handleConnect } = useConnectWallet();
   const navigate = useNavigate();
   const allChains = useMemo(() => getAllChains(), []);
-  const chains = useMemo(
-    () => allChains.filter((c) => LAYERSWAP_CHAIN_IDS.includes(parseInt(c.chainId, 10))),
-    [allChains]
+  const [chains, setChains] = useState(
+    () => allChains.filter((c) => LAYERSWAP_CHAIN_IDS.includes(parseInt(c.chainId, 10)))
   );
 
   const [sourceChainId, setSourceChainId] = useState(8453);
@@ -150,6 +150,33 @@ export default function CrossChainPage() {
   });
 
   const bridgeProvider = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
+
+  // Rango support matrix (enabled chains + tokens) for display and filtering.
+  const {
+    chains: rangoChains,
+    tokensByChain: rangoTokensByChain,
+    loading: rangoSupportLoading,
+    error: rangoSupportError,
+    isChainEnabled: isRangoChainEnabled,
+    getTokensForRangoChain,
+  } = useRangoSupportMatrix();
+
+  // When using Rango, restrict visible chains to those Rango reports as enabled.
+  useEffect(() => {
+    if (bridgeProvider !== 'rango' || !rangoChains.length) {
+      setChains(allChains.filter((c) => LAYERSWAP_CHAIN_IDS.includes(parseInt(c.chainId, 10))));
+      return;
+    }
+    const enabledIds = new Set(
+      rangoChains.filter((c) => c.enabled).map((c) => Number(c.chainId))
+    );
+    setChains(
+      allChains.filter((c) => {
+        const id = parseInt(c.chainId, 10);
+        return LAYERSWAP_CHAIN_IDS.includes(id) && enabledIds.has(id);
+      })
+    );
+  }, [allChains, bridgeProvider, rangoChains]);
 
   const handleMaxClick = useCallback(() => {
     if (balanceTokenIn == null || balanceTokenIn <= 0n) return;

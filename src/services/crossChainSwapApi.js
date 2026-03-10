@@ -144,3 +144,21 @@ export async function isRouteSupportedViaBackend(sourceChainId, destChainId, tok
     return false;
   }
 }
+
+/**
+ * Get Rango support matrix (enabled chains + tokens) from backend.
+ * Backend proxies Rango's /basic/meta so API key stays server-side.
+ */
+export async function getRangoSupportMatrix() {
+  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  const res = await fetch(`${BASE}/api/v1/swap/rango/meta`, {
+    method: 'GET',
+    headers: headers(),
+    signal: AbortSignal.timeout(15000),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.error || `Failed to load Rango support matrix (${res.status})`);
+  }
+  return data;
+}

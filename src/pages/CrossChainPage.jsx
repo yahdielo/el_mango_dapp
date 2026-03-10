@@ -70,6 +70,16 @@ export default function CrossChainPage() {
 
   const bridgeProvider = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
+  // Rango support matrix (enabled chains + tokens) for display and filtering.
+  const {
+    chains: rangoChains,
+    tokensByChain: rangoTokensByChain,
+    loading: rangoSupportLoading,
+    error: rangoSupportError,
+    isChainEnabled: isRangoChainEnabled,
+    getTokensForRangoChain,
+  } = useRangoSupportMatrix();
+
   const tokensIn = useMemo(() => {
     const base = getTokensForChain(sourceChainId).filter((t) => t.symbol !== 'MANGO');
     if (bridgeProvider !== 'rango' || !rangoTokensByChain) return base;
@@ -169,16 +179,6 @@ export default function CrossChainPage() {
     balance: balanceTokenIn,
     address,
   });
-
-  // Rango support matrix (enabled chains + tokens) for display and filtering.
-  const {
-    chains: rangoChains,
-    tokensByChain: rangoTokensByChain,
-    loading: rangoSupportLoading,
-    error: rangoSupportError,
-    isChainEnabled: isRangoChainEnabled,
-    getTokensForRangoChain,
-  } = useRangoSupportMatrix();
 
   // When using Rango, restrict visible chains to those Rango reports as enabled.
   useEffect(() => {

@@ -5,11 +5,11 @@ import {
   isCrossChainViaBackendAvailable,
 } from '../services/crossChainSwapApi';
 
-const BRIDGE_PROVIDER = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
-
 /**
- * Check if cross-chain route is supported by bridge
- * Uses backend /routes when BRIDGE_PROVIDER=rango; otherwise LayerSwap /sources
+ * Check if cross-chain route is supported by bridge.
+ * Prefer backend GET /api/v1/swap/routes when backend is configured, so the UI
+ * matches the actual provider (Rango / auto / LayerSwap). Otherwise fall back to
+ * LayerSwap /sources for route support.
  * @param {number} sourceChainId
  * @param {number} destChainId
  * @param {Object} tokenIn
@@ -32,7 +32,7 @@ export function useBridgeRouteSupport(sourceChainId, destChainId, tokenIn, token
       return;
     }
 
-    const useBackend = BRIDGE_PROVIDER === 'rango' && isCrossChainViaBackendAvailable();
+    const useBackend = isCrossChainViaBackendAvailable();
     const checkFn = useBackend ? isRouteSupportedViaBackend : isRouteSupported;
 
     setLoading(true);

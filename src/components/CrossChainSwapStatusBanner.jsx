@@ -1,10 +1,15 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback } from 'react';
 import { useChainId, useSwitchChain, useSendTransaction, useWriteContract } from 'wagmi';
-import { parseEther, parseUnits } from 'viem';
+import { parseEther, parseUnits, isAddress } from 'viem';
 import { ERC20_ABI } from '../config/abis';
 
 const EVM_CHAIN_IDS = [1, 8453, 42161, 10, 137, 43114, 56];
 const NATIVE_SYMBOLS = ['ETH', 'AVAX', 'MATIC', 'BNB'];
+
+function isValidDepositAction(action) {
+  if (!action?.to_address || !action?.amount) return false;
+  return isAddress(action.to_address) && parseFloat(String(action.amount)) > 0;
+}
 
 export default function CrossChainSwapStatusBanner({
   status,
@@ -20,8 +25,6 @@ export default function CrossChainSwapStatusBanner({
   const { switchChain, isPending: isSwitchPending } = useSwitchChain();
   const { sendTransaction, isPending: isSendPending } = useSendTransaction();
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
-  const hasTriggeredSwitch = useRef(false);
-  const hasTriggeredSend = useRef(false);
 
   if (!status) return null;
 
@@ -57,98 +60,70 @@ export default function CrossChainSwapStatusBanner({
     status === 'user_transfer_pending' &&
     rangoTx &&
     (rangoTx.txTo || rangoTx.txData) &&
+    (!rangoTx.txTo || isAddress(rangoTx.txTo)) &&
     isEvmSource;
 
   const canSendNative =
     status === 'user_transfer_pending' &&
     !canSignRangoTx &&
-    depositAction?.to_address &&
-    depositAction?.amount &&
+    isValidDepositAction(depositAction) &&
     isNativeDeposit &&
     isEvmSource;
 
   const canSendErc20 =
     status === 'user_transfer_pending' &&
     !canSignRangoTx &&
-    depositAction?.to_address &&
-    depositAction?.amount &&
+    isValidDepositAction(depositAction) &&
     !isNativeDeposit &&
     isEvmSource &&
     tokenIn?.address &&
+    isAddress(tokenIn.address) &&
     (tokenIn?.decimals != null || tokenIn?.decimals === 0);
 
   const canSendInApp = canSignRangoTx || canSendNative || canSendErc20;
   const isSendPendingAny = isSendPending || isWritePending;
 
-  // Auto-trigger Rango tx when chain matches
-  useEffect(() => {
-    if (!canSignRangoTx || !rangoTx?.txTo || needsSwitch) return;
-    if (!hasTriggeredSend.current) {
-      hasTriggeredSend.current = true;
-      const value = rangoTx.value ? BigInt(rangoTx.value) : 0n;
-      sendTransaction({
-        to: rangoTx.txTo,
-        data: rangoTx.txData ? (rangoTx.txData.startsWith('0x') ? rangoTx.txData : `0x${rangoTx.txData}`) : undefined,
-        value,
-        gas: rangoTx.gasLimit ? BigInt(rangoTx.gasLimit) : undefined,
-      });
-    }
-  }, [canSignRangoTx, rangoTx, needsSwitch, sendTransaction]);
-
-  // Auto-trigger deposit when swipe completes: switch chain if needed, then send
-  useEffect(() => {
-    if (!canSendNative || !depositAction?.to_address || !depositAction?.amount) return;
-    if (needsSwitch) {
-      if (!hasTriggeredSwitch.current && switchChain) {
-        hasTriggeredSwitch.current = true;
-        switchChain({ chainId: Number(sourceChainId) });
-      }
-      return;
-    }
-    if (!hasTriggeredSend.current) {
-      hasTriggeredSend.current = true;
-      const value = parseEther(String(depositAction.amount));
-      sendTransaction({
-        to: depositAction.to_address,
-        value,
-      });
-    }
-  }, [canSendNative, needsSwitch, depositAction, sourceChainId, chainId, switchChain, sendTransaction]);
+  // Note: Auto-trigger disabled to avoid "data is missing" viem errors; user clicks button to send.
 
   const handleSendDeposit = useCallback(async () => {
-    if (needsSwitch && sourceChainId != null) {
-      switchChain?.({ chainId: Number(sourceChainId) });
-      return;
-    }
-    if (canSignRangoTx && rangoTx?.txTo) {
-      const value = rangoTx.value ? BigInt(rangoTx.value) : 0n;
-      sendTransaction({
-        to: rangoTx.txTo,
-        data: rangoTx.txData ? (rangoTx.txData.startsWith('0x') ? rangoTx.txData : `0x${rangoTx.txData}`) : undefined,
-        value,
-        gas: rangoTx.gasLimit ? BigInt(rangoTx.gasLimit) : undefined,
-      });
-      return;
-    }
-    if (!depositAction?.to_address || !depositAction?.amount) return;
-    if (canSendNative) {
-      const value = parseEther(String(depositAction.amount));
-      sendTransaction({
-        to: depositAction.to_address,
-        value,
-      });
-      return;
-    }
-    if (canSendErc20 && tokenIn?.address) {
-      const decimals = tokenIn.decimals ?? 18;
-      const amountWei = parseUnits(String(depositAction.amount), decimals);
-      await writeContractAsync({
-        address: tokenIn.address,
-        abi: ERC20_ABI,
-        functionName: 'transfer',
-        args: [depositAction.to_address, amountWei],
-        chainId: Number(sourceChainId),
-      });
+    try {
+      if (needsSwitch && sourceChainId != null) {
+        await switchChain?.({ chainId: Number(sourceChainId) });
+        return;
+      }
+      if (canSignRangoTx && rangoTx?.txTo) {
+        const value = rangoTx.value ? BigInt(rangoTx.value) : 0n;
+        sendTransaction({
+          to: rangoTx.txTo,
+          data: rangoTx.txData ? (rangoTx.txData.startsWith('0x') ? rangoTx.txData : `0x${rangoTx.txData}`) : undefined,
+          value,
+          gas: rangoTx.gasLimit ? BigInt(rangoTx.gasLimit) : undefined,
+        });
+        return;
+      }
+      if (!isValidDepositAction(depositAction)) return;
+      if (canSendNative) {
+        const value = parseEther(String(depositAction.amount));
+        sendTransaction({
+          to: depositAction.to_address,
+          value,
+        });
+        return;
+      }
+      if (canSendErc20 && tokenIn?.address) {
+        const decimals = tokenIn.decimals ?? 18;
+        const amountWei = parseUnits(String(depositAction.amount), decimals);
+        await writeContractAsync({
+          address: tokenIn.address,
+          abi: ERC20_ABI,
+          functionName: 'transfer',
+          args: [depositAction.to_address, amountWei],
+          chainId: Number(sourceChainId),
+        });
+      }
+    } catch (err) {
+      // Catch viem/RPC "data is missing" and similar errors; wagmi surfaces them via mutation
+      console.warn('Deposit/send failed:', err?.message || err);
     }
   }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransaction, canSignRangoTx, rangoTx, canSendNative, canSendErc20, tokenIn, writeContractAsync]);
 

@@ -6,9 +6,19 @@ import { ERC20_ABI } from '../config/abis';
 const EVM_CHAIN_IDS = [1, 8453, 42161, 10, 137, 43114, 56];
 const NATIVE_SYMBOLS = ['ETH', 'AVAX', 'MATIC', 'BNB'];
 
+/** Normalize CAIP address (eip155:8453:0x...) to raw 0x... for sendTransaction */
+function toRawEthereumAddress(addr) {
+  if (!addr || typeof addr !== 'string') return '';
+  const s = addr.trim();
+  const caipMatch = s.match(/^eip155:\d+:((0x[a-fA-F0-9]{40}))$/);
+  if (caipMatch) return caipMatch[1];
+  return s;
+}
+
 function isValidDepositAction(action) {
   if (!action?.to_address || !action?.amount) return false;
-  return isAddress(action.to_address) && parseFloat(String(action.amount)) > 0;
+  const raw = toRawEthereumAddress(action.to_address);
+  return isAddress(raw) && parseFloat(String(action.amount)) > 0;
 }
 
 export default function CrossChainSwapStatusBanner({
@@ -102,10 +112,11 @@ export default function CrossChainSwapStatusBanner({
         return;
       }
       if (!isValidDepositAction(depositAction)) return;
+      const rawToAddress = toRawEthereumAddress(depositAction.to_address);
       if (canSendNative) {
         const value = parseEther(String(depositAction.amount));
         sendTransaction({
-          to: depositAction.to_address,
+          to: rawToAddress,
           value,
         });
         return;
@@ -117,7 +128,7 @@ export default function CrossChainSwapStatusBanner({
           address: tokenIn.address,
           abi: ERC20_ABI,
           functionName: 'transfer',
-          args: [depositAction.to_address, amountWei],
+          args: [rawToAddress, amountWei],
           chainId: Number(sourceChainId),
         });
       }
@@ -138,7 +149,7 @@ export default function CrossChainSwapStatusBanner({
       )}
       {status === 'user_transfer_pending' && depositAction && !canSignRangoTx && (
         <p className="text-gray-300 text-xs mt-2 break-all">
-          Send {depositAction.amount} {depositAction.token?.symbol || ''} to: {depositAction.to_address}
+          Send {depositAction.amount} {depositAction.token?.symbol || ''} to: {toRawEthereumAddress(depositAction.to_address) || depositAction.to_address}
         </p>
       )}
       {canSendInApp && (

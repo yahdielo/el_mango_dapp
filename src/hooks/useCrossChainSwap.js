@@ -9,6 +9,13 @@ import {
 const POLL_INTERVAL_MS = 4000;
 const TERMINAL_STATUSES = ['completed', 'failed', 'expired', 'refunded', 'refund_pending'];
 
+function toRawEthereumAddress(addr) {
+  if (!addr || typeof addr !== 'string') return '';
+  const s = addr.trim();
+  const m = s.match(/^eip155:\d+:((0x[a-fA-F0-9]{40}))$/);
+  return m ? m[1] : s;
+}
+
 /**
  * Cross-chain swap: uses mangoServices POST /api/v1/swap/cross-chain when VITE_MANGO_SERVICES_URL is set.
  * When initiated via backend: always poll backend (swapId). Backend has LayerSwap API access; frontend does not.
@@ -47,7 +54,13 @@ export function useCrossChainSwap() {
       try {
         const result = await getSwapStatusFromBackend(swapId);
         setStatus(result.status);
-        if (result.depositActions?.length) setDepositActions(result.depositActions);
+        if (result.depositActions?.length) {
+          const normalized = result.depositActions.map((a) => ({
+            ...a,
+            to_address: toRawEthereumAddress(a.to_address) || a.to_address,
+          }));
+          setDepositActions(normalized);
+        }
         if (TERMINAL_STATUSES.includes(result.status)) stopPolling();
       } catch (err) {
         setError(err?.message || 'Failed to fetch status');
@@ -80,10 +93,11 @@ export function useCrossChainSwap() {
         setStatus(result.status || 'user_transfer_pending');
         // Build depositActions: use amountToDeposit (after fees) so LayerSwap order matches
         const depositAmount = result.amountToDeposit ?? params.amountIn;
+        const rawDepositAddress = result.depositAddress ? toRawEthereumAddress(result.depositAddress) : null;
         const acts = result.depositActions?.length
-          ? result.depositActions
-          : result.depositAddress
-            ? [{ to_address: result.depositAddress, amount: depositAmount, token: { symbol: params.tokenIn?.symbol || 'ETH' } }]
+          ? result.depositActions.map((a) => ({ ...a, to_address: toRawEthereumAddress(a.to_address) || a.to_address }))
+          : rawDepositAddress
+            ? [{ to_address: rawDepositAddress, amount: depositAmount, token: { symbol: params.tokenIn?.symbol || 'ETH' } }]
             : [];
         setDepositActions(acts);
         setRangoTx(result.rangoTx ?? null);

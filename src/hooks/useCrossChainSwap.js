@@ -8,11 +8,10 @@ import {
 
 const POLL_INTERVAL_MS = 4000;
 const TERMINAL_STATUSES = ['completed', 'failed', 'expired', 'refunded', 'refund_pending'];
-const BRIDGE_PROVIDER = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
 /**
  * Cross-chain swap: uses mangoServices POST /api/v1/swap/cross-chain when VITE_MANGO_SERVICES_URL is set.
- * When BRIDGE_PROVIDER=rango: poll backend status (swapId). When layerswap: poll LayerSwap (layerswapOrderId).
+ * When initiated via backend: always poll backend (swapId). Backend has LayerSwap API access; frontend does not.
  */
 export function useCrossChainSwap() {
   const [swapId, setSwapId] = useState(null);
@@ -76,14 +75,18 @@ export function useCrossChainSwap() {
           recipient: params.recipient,
           referrer: params.referrer,
         });
-        const isRango = (result.provider || BRIDGE_PROVIDER) === 'rango';
-        useBackendStatusRef.current = isRango;
-        const idToUse = isRango ? result.swapId : result.layerswapOrderId;
-        setSwapId(idToUse);
+        useBackendStatusRef.current = true; // Always poll backend when initiated via backend
+        setSwapId(result.swapId);
         setStatus(result.status || 'user_transfer_pending');
-        setDepositActions([]);
+        // Build depositActions from depositAddress so user gets "Send" button + wallet popup
+        const acts = result.depositActions?.length
+          ? result.depositActions
+          : result.depositAddress
+          ? [{ to_address: result.depositAddress, amount: params.amountIn, token: { symbol: params.tokenIn?.symbol || 'ETH' } }]
+          : [];
+        setDepositActions(acts);
         setRangoTx(result.rangoTx ?? null);
-        return { swapId: idToUse, depositActions: [], rangoTx: result.rangoTx };
+        return { swapId: result.swapId, depositActions: acts, rangoTx: result.rangoTx };
       }
       useBackendStatusRef.current = false;
       const result = await initiateSwap(params);

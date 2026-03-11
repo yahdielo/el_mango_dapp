@@ -145,6 +145,7 @@ export default function CrossChainPage() {
     amountIn,
     chainId: sourceChainId,
     slippageBps,
+    enabled: !isCrossChain,
   });
 
   const { isSupported: routeSupported, loading: routeLoading } = useBridgeRouteSupport(
@@ -496,7 +497,7 @@ export default function CrossChainPage() {
           sourceChain={sourceChain}
           destChain={destChain}
           estimated={effectiveQuoteEstimated}
-          gasCostFormatted={gasCostFormatted}
+          gasCostFormatted={isCrossChain && !gasCostFormatted ? '~<0.0001 ETH' : gasCostFormatted}
         />
 
         <div className="mt-6">

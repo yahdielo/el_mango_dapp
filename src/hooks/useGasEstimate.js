@@ -6,7 +6,8 @@ import { ZERO_ADDRESS, getRouterAddress, getGasSettings, getNativeCurrency } fro
 import { isNativeToken } from './useTokenBalance';
 
 /**
- * Estimate gas for swap and compute approximate cost in native currency
+ * Estimate gas for swap and compute approximate cost in native currency.
+ * Only for same-chain swaps; cross-chain uses bridge deposit (disable to avoid viem errors).
  * @param {Object} params
  * @param {Object} params.tokenIn
  * @param {Object} params.tokenOut
@@ -14,9 +15,10 @@ import { isNativeToken } from './useTokenBalance';
  * @param {number} params.chainId
  * @param {number} params.slippageBps
  * @param {string} [params.referrer]
+ * @param {boolean} [params.enabled=true] - Set false for cross-chain (tokenOut is on another chain)
  * @returns {{ gasEstimate: bigint|null, gasCostWei: bigint|null, gasCostFormatted: string|null, loading: boolean }}
  */
-export function useGasEstimate({ tokenIn, tokenOut, amountIn, chainId, slippageBps, referrer = ZERO_ADDRESS }) {
+export function useGasEstimate({ tokenIn, tokenOut, amountIn, chainId, slippageBps, referrer = ZERO_ADDRESS, enabled = true }) {
   const [gasEstimate, setGasEstimate] = useState(null);
   const [gasCostWei, setGasCostWei] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -29,6 +31,7 @@ export function useGasEstimate({ tokenIn, tokenOut, amountIn, chainId, slippageB
   useEffect(() => {
     const amt = amountIn?.trim?.() ?? '';
     if (
+      !enabled ||
       !tokenIn?.symbol ||
       !tokenOut?.symbol ||
       !amt ||
@@ -91,6 +94,7 @@ export function useGasEstimate({ tokenIn, tokenOut, amountIn, chainId, slippageB
 
     run();
   }, [
+    enabled,
     tokenIn,
     tokenOut,
     amountIn,

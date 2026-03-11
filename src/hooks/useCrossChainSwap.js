@@ -78,12 +78,13 @@ export function useCrossChainSwap() {
         useBackendStatusRef.current = true; // Always poll backend when initiated via backend
         setSwapId(result.swapId);
         setStatus(result.status || 'user_transfer_pending');
-        // Build depositActions from depositAddress so user gets "Send" button + wallet popup
+        // Build depositActions: use amountToDeposit (after fees) so LayerSwap order matches
+        const depositAmount = result.amountToDeposit ?? params.amountIn;
         const acts = result.depositActions?.length
           ? result.depositActions
           : result.depositAddress
-          ? [{ to_address: result.depositAddress, amount: params.amountIn, token: { symbol: params.tokenIn?.symbol || 'ETH' } }]
-          : [];
+            ? [{ to_address: result.depositAddress, amount: depositAmount, token: { symbol: params.tokenIn?.symbol || 'ETH' } }]
+            : [];
         setDepositActions(acts);
         setRangoTx(result.rangoTx ?? null);
         return { swapId: result.swapId, depositActions: acts, rangoTx: result.rangoTx };

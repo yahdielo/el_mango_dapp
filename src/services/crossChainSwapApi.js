@@ -69,6 +69,7 @@ export async function initiateCrossChainViaBackend({
     layerswapOrderId: data.layerswapOrderId,
     status: data.status,
     depositAddress: data.depositAddress,
+    amountToDeposit: data.amountToDeposit,
     estimatedCompletion: data.estimatedCompletion,
     sourceChainId: data.sourceChainId,
     destChainId: data.destChainId,

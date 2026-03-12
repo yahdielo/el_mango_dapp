@@ -85,7 +85,7 @@ const ROUTER_PATTERNS = [
   /invalid pair|invalid pool/i,
 ];
 
-// Bridge / LayerSwap
+// Bridge / LayerSwap / Rango
 const BRIDGE_PATTERNS = [
   /missing required parameters for bridge/i,
   /no swap id returned/i,
@@ -97,6 +97,8 @@ const BRIDGE_PATTERNS = [
   /circuit breaker/i,
   /429/i,
   /layerswap.*unavailable/i,
+  /bridge temporarily unavailable/i,
+  /503/i,
 ];
 
 // Config / validation
@@ -122,7 +124,11 @@ export function mapErrorToUserMessage(err) {
   if (LIQUIDITY_PATTERNS.some((p) => p.test(msg))) return 'Insufficient liquidity';
   if (ROUTER_PATTERNS.some((p) => p.test(msg))) return 'Swap failed: no route or pool';
   if (QUOTE_PATTERNS.some((p) => p.test(msg))) return 'Quote unavailable. Check network and mangoServices.';
-  if (BRIDGE_PATTERNS.some((p) => p.test(msg))) return msg.includes('rate limit') || msg.includes('429') ? 'Bridge rate limited. Try again later.' : 'Bridge error. Route may be unavailable.';
+  if (BRIDGE_PATTERNS.some((p) => p.test(msg))) {
+    if (msg.includes('rate limit') || msg.includes('429')) return 'Bridge rate limited. Try again later.';
+    if (msg.includes('temporarily unavailable') || msg.includes('503')) return 'Bridge temporarily unavailable. Try again in a minute.';
+    return 'Bridge error. Route may be unavailable.';
+  }
   if (CONFIG_PATTERNS.some((p) => p.test(msg))) return msg; // keep config messages as-is (short)
   if (NETWORK_PATTERNS.some((p) => p.test(msg))) return 'Network error. Try again.';
 

@@ -102,6 +102,33 @@ export async function getSwapStatusFromBackend(swapId) {
   };
 }
 
+/**
+ * Notify backend about the source-chain transaction hash for a swap.
+ * This is used by Rango (and other bridge providers) to poll status.
+ * @param {string} swapId
+ * @param {string} txHash
+ */
+export async function notifySourceTxHash(swapId, txHash) {
+  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!swapId) throw new Error('swapId required');
+  if (!txHash) throw new Error('txHash required');
+
+  const res = await fetch(
+    `${BASE}/api/v1/swap/${encodeURIComponent(swapId)}/source-tx`,
+    {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ txHash }),
+      signal: AbortSignal.timeout(15000),
+    }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.error || `Status ${res.status}`);
+  }
+  return data;
+}
+
 export function isCrossChainViaBackendAvailable() {
   return Boolean(BASE && API_KEY && API_KEY.trim() !== '');
 }

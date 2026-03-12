@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useChainId, useSwitchChain, useSendTransaction, useWriteContract } from 'wagmi';
 import { parseEther, parseUnits, isAddress } from 'viem';
 import { ERC20_ABI } from '../config/abis';
+import { notifySourceTxHash } from '../services/crossChainSwapApi';
 
 const EVM_CHAIN_IDS = [1, 8453, 42161, 10, 137, 43114, 56];
 const NATIVE_SYMBOLS = ['ETH', 'AVAX', 'MATIC', 'BNB'];
@@ -33,7 +34,7 @@ export default function CrossChainSwapStatusBanner({
 }) {
   const chainId = useChainId();
   const { switchChain, isPending: isSwitchPending } = useSwitchChain();
-  const { sendTransaction, isPending: isSendPending } = useSendTransaction();
+  const { sendTransactionAsync, isPending: isSendPending } = useSendTransaction();
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
 
   if (!status) return null;
@@ -103,12 +104,19 @@ export default function CrossChainSwapStatusBanner({
       }
       if (canSignRangoTx && rangoTx?.txTo) {
         const value = rangoTx.value ? BigInt(rangoTx.value) : 0n;
-        sendTransaction({
+        const tx = await sendTransactionAsync({
           to: rangoTx.txTo,
           data: rangoTx.txData ? (rangoTx.txData.startsWith('0x') ? rangoTx.txData : `0x${rangoTx.txData}`) : undefined,
           value,
           gas: rangoTx.gasLimit ? BigInt(rangoTx.gasLimit) : undefined,
         });
+        if (tx?.hash && swapId) {
+          try {
+            await notifySourceTxHash(swapId, tx.hash);
+          } catch (notifyError) {
+            console.warn('Failed to notify backend of source tx hash:', notifyError);
+          }
+        }
         return;
       }
       if (!isValidDepositAction(depositAction)) return;
@@ -136,7 +144,7 @@ export default function CrossChainSwapStatusBanner({
       // Catch viem/RPC "data is missing" and similar errors; wagmi surfaces them via mutation
       console.warn('Deposit/send failed:', err?.message || err);
     }
-  }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransaction, canSignRangoTx, rangoTx, canSendNative, canSendErc20, tokenIn, writeContractAsync]);
+  }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransactionAsync, canSignRangoTx, rangoTx, canSendNative, canSendErc20, tokenIn, writeContractAsync, swapId]);
 
   return (
     <div className={`mb-4 p-4 rounded-xl border ${bgClass}`}>

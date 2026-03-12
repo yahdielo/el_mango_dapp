@@ -31,6 +31,7 @@ export default function CrossChainSwapStatusBanner({
   sourceChain,
   tokenIn,
   onDismiss,
+  provider,
 }) {
   const chainId = useChainId();
   const { switchChain, isPending: isSwitchPending } = useSwitchChain();
@@ -158,6 +159,18 @@ export default function CrossChainSwapStatusBanner({
       <p className={`text-sm font-medium ${textClass}`}>{label}</p>
       {swapId && (
         <p className="text-gray-400 text-xs mt-1 truncate">ID: {swapId}</p>
+      )}
+      {provider && (
+        <p className="text-gray-400 text-xs mt-1">
+          Powered by{' '}
+          {provider === 'layerswap'
+            ? 'LayerSwap'
+            : provider === 'rango'
+            ? 'Rango'
+            : provider === 'lifi'
+            ? 'LiFi'
+            : provider}
+        </p>
       )}
       {status === 'user_transfer_pending' && canSignRangoTx && (
         <p className="text-gray-300 text-xs mt-2">Sign the transaction to execute the cross-chain swap.</p>

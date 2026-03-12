@@ -18,6 +18,7 @@ import { useSwapValidation } from '../hooks/useSwapValidation';
 import { useQuote } from '../hooks/useQuote';
 import { useGasEstimate } from '../hooks/useGasEstimate';
 import { useCrossChainSwap } from '../hooks/useCrossChainSwap';
+import { useBridgeMeta } from '../hooks/useBridgeMeta';
 import { useCrossChainEstimate } from '../hooks/useCrossChainEstimate';
 import { useCrossChainUsdPrices } from '../hooks/useCrossChainUsdPrices';
 import { useRangoSupportMatrix } from '../hooks/useRangoSupportMatrix';
@@ -169,6 +170,7 @@ export default function CrossChainPage() {
     status: bridgeStatus,
     depositActions,
     rangoTx,
+    provider: activeProvider,
     error: bridgeError,
     isLoading: bridgeLoading,
     reset: resetBridge,
@@ -181,22 +183,35 @@ export default function CrossChainPage() {
     address,
   });
 
+  const { chains: bridgeMetaChains } = useBridgeMeta();
+
   // When using Rango, restrict visible chains to those Rango reports as enabled.
   useEffect(() => {
-    if (bridgeProvider !== 'rango' || !rangoChains.length) {
-      setChains(allChains.filter((c) => LAYERSWAP_CHAIN_IDS.includes(parseInt(c.chainId, 10))));
+    const base = allChains.filter((c) => LAYERSWAP_CHAIN_IDS.includes(parseInt(c.chainId, 10)));
+
+    // If we have unified bridge meta, prefer chains that appear there at all.
+    if (bridgeMetaChains && bridgeMetaChains.length) {
+      const allowedIds = new Set(
+        bridgeMetaChains
+          .map((c) => c.chainId)
+          .filter((id) => typeof id === 'number')
+      );
+      setChains(base.filter((c) => allowedIds.has(Number(c.chainId))));
       return;
     }
-    const enabledIds = new Set(
-      rangoChains.filter((c) => c.enabled).map((c) => Number(c.chainId))
-    );
-    setChains(
-      allChains.filter((c) => {
-        const id = parseInt(c.chainId, 10);
-        return LAYERSWAP_CHAIN_IDS.includes(id) && enabledIds.has(id);
-      })
-    );
-  }, [allChains, bridgeProvider, rangoChains]);
+
+    if (bridgeProvider === 'rango' && rangoChains.length) {
+      const enabledIds = new Set(
+        rangoChains.filter((c) => c.enabled).map((c) => Number(c.chainId))
+      );
+      setChains(
+        base.filter((c) => enabledIds.has(parseInt(c.chainId, 10)))
+      );
+      return;
+    }
+
+    setChains(base);
+  }, [allChains, bridgeProvider, rangoChains, bridgeMetaChains]);
 
   const handleMaxClick = useCallback(() => {
     if (balanceTokenIn == null || balanceTokenIn <= 0n) return;
@@ -407,10 +422,16 @@ export default function CrossChainPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-white text-[32px] font-medium">Cross-Chain Swap</h1>
-            {import.meta.env.VITE_BRIDGE_PROVIDER && (
+            {bridgeStatus && activeProvider && (
               <p className="text-xs text-gray-400 mt-1">
                 Powered by{' '}
-                {import.meta.env.VITE_BRIDGE_PROVIDER === 'rango' ? 'Rango' : 'Auto'}
+                {activeProvider === 'layerswap'
+                  ? 'LayerSwap'
+                  : activeProvider === 'rango'
+                  ? 'Rango'
+                  : activeProvider === 'lifi'
+                  ? 'LiFi'
+                  : activeProvider}
               </p>
             )}
           </div>
@@ -539,6 +560,7 @@ export default function CrossChainPage() {
               sourceChainId={sourceChainId}
               sourceChain={sourceChain}
               tokenIn={tokenIn}
+              provider={activeProvider}
               onDismiss={() => {
                 resetBridge();
                 setAmountIn('');

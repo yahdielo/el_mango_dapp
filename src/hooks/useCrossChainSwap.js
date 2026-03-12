@@ -25,6 +25,7 @@ export function useCrossChainSwap() {
   const [status, setStatus] = useState(null);
   const [depositActions, setDepositActions] = useState([]);
   const [rangoTx, setRangoTx] = useState(null);
+  const [provider, setProvider] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const pollRef = useRef(null);
@@ -97,6 +98,7 @@ export function useCrossChainSwap() {
         useBackendStatusRef.current = true; // Always poll backend when initiated via backend
         setSwapId(result.swapId);
         setStatus(result.status || 'user_transfer_pending');
+        setProvider(result.provider || null);
         // Build depositActions: use amountToDeposit (after fees) so LayerSwap order matches
         const depositAmount = result.amountToDeposit ?? params.amountIn;
         const rawDepositAddress = result.depositAddress ? toRawEthereumAddress(result.depositAddress) : null;
@@ -114,6 +116,7 @@ export function useCrossChainSwap() {
       setSwapId(result.swapId);
       setStatus('user_transfer_pending');
       setDepositActions(result.depositActions || []);
+      setProvider(result.provider || null);
       return result;
     } catch (err) {
       setError(err?.message || 'Failed to initiate swap');
@@ -129,6 +132,7 @@ export function useCrossChainSwap() {
     setStatus(null);
     setDepositActions([]);
     setRangoTx(null);
+    setProvider(null);
     setError(null);
   }, [stopPolling]);
 
@@ -138,6 +142,7 @@ export function useCrossChainSwap() {
     status,
     depositActions,
     rangoTx,
+    provider,
     error,
     isLoading,
     reset,

@@ -74,6 +74,7 @@ export async function initiateCrossChainViaBackend({
     sourceChainId: data.sourceChainId,
     destChainId: data.destChainId,
     provider: data.provider,
+    providerSwapId: data.providerSwapId,
     rangoTx: data.rangoTx,
     rangoRequestId: data.rangoRequestId,
   };
@@ -131,6 +132,24 @@ export async function notifySourceTxHash(swapId, txHash) {
 
 export function isCrossChainViaBackendAvailable() {
   return Boolean(BASE && API_KEY && API_KEY.trim() !== '');
+}
+
+/**
+ * Fetch merged bridge metadata (chains + tokens + providers) from backend.
+ * @returns {Promise<{ chains: Array, tokens: Array }>}
+ */
+export async function getBridgeMeta() {
+  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  const res = await fetch(`${BASE}/api/v1/bridge/meta`, {
+    method: 'GET',
+    headers: headers(),
+    signal: AbortSignal.timeout(15000),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.error || `Failed to load bridge meta (${res.status})`);
+  }
+  return data;
 }
 
 /**

@@ -123,10 +123,17 @@ export default function CrossChainSwapStatusBanner({
       const rawToAddress = toRawEthereumAddress(depositAction.to_address);
       if (canSendNative) {
         const value = parseEther(String(depositAction.amount));
-        sendTransaction({
+        const tx = await sendTransactionAsync({
           to: rawToAddress,
           value,
         });
+        if (tx?.hash && swapId) {
+          try {
+            await notifySourceTxHash(swapId, tx.hash);
+          } catch (notifyError) {
+            console.warn('Failed to notify backend of source tx hash:', notifyError);
+          }
+        }
         return;
       }
       if (canSendErc20 && tokenIn?.address) {

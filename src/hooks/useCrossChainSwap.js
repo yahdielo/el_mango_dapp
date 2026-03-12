@@ -6,7 +6,7 @@ import {
   getSwapStatusFromBackend,
 } from '../services/crossChainSwapApi';
 
-const POLL_INTERVAL_MS = 4000;
+const POLL_INTERVAL_MS = 3000; // Shorter interval so UI updates soon after deposit is detected
 const TERMINAL_STATUSES = ['completed', 'failed', 'expired', 'refunded', 'refund_pending'];
 
 function toRawEthereumAddress(addr) {
@@ -44,16 +44,22 @@ export function useCrossChainSwap() {
     }
 
     const pollLayerSwap = async () => {
-      const result = await getStatus(swapId);
-      setStatus(result.status);
-      if (result.depositActions?.length) setDepositActions(result.depositActions);
-      if (TERMINAL_STATUSES.includes(result.status)) stopPolling();
+      try {
+        const result = await getStatus(swapId);
+        setStatus(result.status);
+        setError(null); // Clear any previous error so UI reflects current state
+        if (result.depositActions?.length) setDepositActions(result.depositActions);
+        if (TERMINAL_STATUSES.includes(result.status)) stopPolling();
+      } catch (err) {
+        setError(err?.message || 'Failed to fetch status');
+      }
     };
 
     const pollBackend = async () => {
       try {
         const result = await getSwapStatusFromBackend(swapId);
         setStatus(result.status);
+        setError(null); // Clear any previous error so UI updates after deposit
         if (result.depositActions?.length) {
           const normalized = result.depositActions.map((a) => ({
             ...a,

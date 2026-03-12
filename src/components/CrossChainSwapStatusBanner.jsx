@@ -148,9 +148,14 @@ export default function CrossChainSwapStatusBanner({
         <p className="text-gray-300 text-xs mt-2">Sign the transaction to execute the cross-chain swap.</p>
       )}
       {status === 'user_transfer_pending' && depositAction && !canSignRangoTx && (
-        <p className="text-gray-300 text-xs mt-2 break-all">
-          Send {depositAction.amount} {depositAction.token?.symbol || ''} to: {toRawEthereumAddress(depositAction.to_address) || depositAction.to_address}
-        </p>
+        <>
+          <p className="text-gray-300 text-xs mt-2 break-all">
+            Send {depositAction.amount} {depositAction.token?.symbol || ''} to: {toRawEthereumAddress(depositAction.to_address) || depositAction.to_address}
+          </p>
+          <p className="text-gray-400 text-xs mt-1">
+            Status updates every few seconds. If your transaction failed in your wallet, try sending again with the button below.
+          </p>
+        </>
       )}
       {canSendInApp && (
         <button

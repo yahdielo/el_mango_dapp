@@ -383,7 +383,8 @@ export default function CrossChainPage() {
     !amountTooHigh &&
     !bridgeLoading;
   const canConfirm = isCrossChain ? canConfirmCrossChain : false;
-  const showUnsupportedWarning = isCrossChain && routeSupported === false && !routeLoading;
+  const showUnsupportedWarning =
+    isCrossChain && routeSupported === false && !routeLoading && amountIn && parseFloat(amountIn) > 0;
   const showRouteUnknownMessage = isCrossChain && routeSupported === null && !routeLoading && amountIn && parseFloat(amountIn) > 0;
 
   const usdIn = useMemo(() => {

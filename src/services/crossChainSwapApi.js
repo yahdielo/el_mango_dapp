@@ -89,7 +89,8 @@ export async function initiateCrossChainViaBackend({
   if (!res.ok) {
     // Log full response so DevTools shows the real reason for 400/5xx
     console.error('[Cross-chain API]', res.status, res.statusText, data);
-    const msg = data?.message || data?.error || (data?.suggestion ? `${data.error || 'Error'}. ${data.suggestion}` : null) || `API error: ${res.status}`;
+    const rawMsg = data?.message ?? data?.error;
+    const msg = typeof rawMsg === 'string' ? rawMsg : (data?.suggestion ? `${data.error || 'Error'}. ${data.suggestion}` : null) || `API error: ${res.status}`;
     throw new Error(msg);
   }
   return {

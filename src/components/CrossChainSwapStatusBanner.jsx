@@ -78,16 +78,31 @@ export default function CrossChainSwapStatusBanner({
   const isNativeDeposit = NATIVE_SYMBOLS.includes(nativeSymbolCandidate);
   const isEvmSource = sourceChainId != null && EVM_CHAIN_IDS.includes(Number(sourceChainId));
 
-  // For now, always allow manual send from the banner when we have a valid depositAction.
-  const canSignRangoTx = false;
+  const canSignRangoTx =
+    status === 'user_transfer_pending' &&
+    rangoTx &&
+    (rangoTx.txTo || rangoTx.txData) &&
+    (rangoTx.txTo == null || rangoTx.txTo === '' || isAddress(rangoTx.txTo)) &&
+    isEvmSource;
+
   const canSendNative =
     status === 'user_transfer_pending' &&
+    !canSignRangoTx &&
     isValidDepositAction(depositAction) &&
     isNativeDeposit &&
     isEvmSource;
-  const canSendErc20 = false;
 
-  const canSendInApp = canSendNative;
+  const canSendErc20 =
+    status === 'user_transfer_pending' &&
+    !canSignRangoTx &&
+    isValidDepositAction(depositAction) &&
+    !isNativeDeposit &&
+    isEvmSource &&
+    tokenIn?.address &&
+    isAddress(tokenIn.address) &&
+    (tokenIn?.decimals != null || tokenIn?.decimals === 0);
+
+  const canSendInApp = canSignRangoTx || canSendNative || canSendErc20;
   const isSendPendingAny = isSendPending || isWritePending;
 
   // If user needs to manually send a deposit, make the banner label explicit.
@@ -100,17 +115,26 @@ export default function CrossChainSwapStatusBanner({
 
   const handleSendDeposit = useCallback(async () => {
     try {
-      console.log('[CrossChain] Send button clicked', {
-        status,
-        sourceChainId,
-        chainId,
-        depositAction,
-        isNativeDeposit,
-        isEvmSource,
-      });
-
       if (needsSwitch && sourceChainId != null) {
         await switchChain?.({ chainId: Number(sourceChainId) });
+        return;
+      }
+      if (canSignRangoTx && rangoTx?.txTo) {
+        const value = rangoTx.value ? BigInt(rangoTx.value) : 0n;
+        const tx = await sendTransactionAsync({
+          to: rangoTx.txTo,
+          data: rangoTx.txData ? (rangoTx.txData.startsWith('0x') ? rangoTx.txData : `0x${rangoTx.txData}`) : undefined,
+          value,
+          gas: rangoTx.gasLimit ? BigInt(rangoTx.gasLimit) : undefined,
+        });
+        if (tx?.hash && swapId) {
+          try {
+            await notifySourceTxHash(swapId, tx.hash);
+          } catch (notifyError) {
+            console.warn('Failed to notify backend of source tx hash:', notifyError);
+          }
+        }
+        if (onDismiss) onDismiss();
         return;
       }
       if (!isValidDepositAction(depositAction)) {
@@ -134,11 +158,22 @@ export default function CrossChainSwapStatusBanner({
         if (onDismiss) onDismiss();
         return;
       }
+      if (canSendErc20 && tokenIn?.address) {
+        const decimals = tokenIn.decimals ?? 18;
+        const amountWei = parseUnits(String(depositAction.amount), decimals);
+        await writeContractAsync({
+          address: tokenIn.address,
+          abi: ERC20_ABI,
+          functionName: 'transfer',
+          args: [rawToAddress, amountWei],
+          chainId: Number(sourceChainId),
+        });
+        if (onDismiss) onDismiss();
+      }
     } catch (err) {
-      // Catch viem/RPC "data is missing" and similar errors; wagmi surfaces them via mutation
       console.warn('Deposit/send failed:', err?.message || err);
     }
-  }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransactionAsync, canSendNative, swapId, onDismiss, status, chainId, isNativeDeposit, isEvmSource]);
+  }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransactionAsync, canSignRangoTx, rangoTx, canSendNative, canSendErc20, tokenIn, writeContractAsync, swapId, onDismiss]);
 
   return (
     <div className={`mb-4 p-4 rounded-xl border ${bgClass}`}>

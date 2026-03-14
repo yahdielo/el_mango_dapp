@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useChainId, useSwitchChain, useSendTransaction, useWriteContract } from 'wagmi';
 import { parseEther, parseUnits, isAddress } from 'viem';
 import { ERC20_ABI } from '../config/abis';
@@ -47,6 +47,19 @@ export default function CrossChainSwapStatusBanner({
     status === 'processing';
   const isSuccess = status === 'completed';
   const isFailed = ['failed', 'expired', 'refunded', 'refund_pending'].includes(status);
+
+  // When swap completes, auto-dismiss after a brief delay so user sees "Swap completed" then form resets for next swap
+  const dismissOnCompleteRef = useRef(false);
+  useEffect(() => {
+    if (status === 'completed' && onDismiss && !dismissOnCompleteRef.current) {
+      dismissOnCompleteRef.current = true;
+      const t = setTimeout(() => {
+        onDismiss();
+      }, 2500);
+      return () => clearTimeout(t);
+    }
+    if (status !== 'completed') dismissOnCompleteRef.current = false;
+  }, [status, onDismiss]);
 
   let bgClass = 'bg-amber-500/20 border-amber-500/50';
   let textClass = 'text-amber-200';
@@ -134,7 +147,7 @@ export default function CrossChainSwapStatusBanner({
             console.warn('Failed to notify backend of source tx hash:', notifyError);
           }
         }
-        if (onDismiss) onDismiss();
+        // Keep polling; do not dismiss until status becomes completed
         return;
       }
       if (!canSendInApp || (!canSignRangoTx && !isValidDepositAction(depositAction))) {
@@ -159,7 +172,7 @@ export default function CrossChainSwapStatusBanner({
             console.warn('Failed to notify backend of source tx hash:', notifyError);
           }
         }
-        if (onDismiss) onDismiss();
+        // Keep polling; do not dismiss until status becomes completed
         return;
       }
       if (canSendErc20 && tokenIn?.address) {
@@ -172,7 +185,7 @@ export default function CrossChainSwapStatusBanner({
           args: [rawToAddress, amountWei],
           chainId: Number(sourceChainId),
         });
-        if (onDismiss) onDismiss();
+        // Keep polling; do not dismiss until status becomes completed
       }
     } catch (err) {
       console.warn('Deposit/send failed:', err?.message || err);
@@ -232,7 +245,7 @@ export default function CrossChainSwapStatusBanner({
           onClick={onDismiss}
           className="mt-2 block text-sm text-[#3CF902] hover:underline"
         >
-          Dismiss
+          {isSuccess ? 'Swap again' : 'Dismiss'}
         </button>
       ) : null}
     </div>

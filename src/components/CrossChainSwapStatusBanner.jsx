@@ -30,6 +30,7 @@ export default function CrossChainSwapStatusBanner({
   sourceChainId,
   sourceChain,
   tokenIn,
+  amountIn,
   onDismiss,
   provider,
 }) {
@@ -60,7 +61,13 @@ export default function CrossChainSwapStatusBanner({
     textClass = 'text-red-300';
     label = status === 'expired' ? 'Swap expired' : status === 'refunded' ? 'Refunded' : 'Swap failed';
   } else if (status === 'user_transfer_pending') {
-    label = rangoTx ? 'Sign transaction to bridge' : 'Waiting for deposit';
+    const amt = amountIn != null && amountIn !== '' ? String(amountIn) : null;
+    const sym = (tokenIn?.symbol || '').trim() || 'ETH';
+    if (rangoTx) {
+      label = amt ? `Send ${amt} ${sym}` : 'Sign transaction to bridge';
+    } else {
+      label = amt ? `Send ${amt} ${sym}` : 'Waiting for deposit';
+    }
   } else if (status === 'ls_transfer_pending' || status === 'processing') {
     label = 'Bridging...';
   }
@@ -74,7 +81,7 @@ export default function CrossChainSwapStatusBanner({
     status === 'user_transfer_pending' &&
     rangoTx &&
     (rangoTx.txTo || rangoTx.txData) &&
-    (!rangoTx.txTo || isAddress(rangoTx.txTo)) &&
+    (rangoTx.txTo == null || rangoTx.txTo === '' || isAddress(rangoTx.txTo)) &&
     isEvmSource;
 
   const canSendNative =
@@ -207,7 +214,7 @@ export default function CrossChainSwapStatusBanner({
           {needsSwitch
             ? `Switch to ${sourceChain?.chainName || 'source chain'}`
             : canSignRangoTx
-            ? 'Sign transaction'
+            ? (amountIn != null && amountIn !== '' ? `Send ${amountIn} ${(tokenIn?.symbol || 'ETH').trim()}` : 'Send ETH')
             : `Send ${depositAction?.amount ?? ''} ${depositAction?.token?.symbol ?? ''}`}
         </button>
       )}

@@ -560,6 +560,7 @@ export default function CrossChainPage() {
               sourceChainId={sourceChainId}
               sourceChain={sourceChain}
               tokenIn={tokenIn}
+              amountIn={amountIn}
               provider={activeProvider}
               onDismiss={() => {
                 resetBridge();

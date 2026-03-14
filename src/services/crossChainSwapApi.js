@@ -125,6 +125,21 @@ export async function getSwapStatusFromBackend(swapId) {
 }
 
 /**
+ * Fetch deposit instructions (to_address, amount) for a swap. Use when status didn't include depositActions.
+ */
+export async function getDepositFromBackend(swapId) {
+  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  const res = await fetch(`${BASE}/api/v1/swap/${encodeURIComponent(swapId)}/deposit`, {
+    method: 'GET',
+    headers: headers(),
+    signal: AbortSignal.timeout(10000),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || `Deposit ${res.status}`);
+  return { depositActions: data.depositActions ?? [] };
+}
+
+/**
  * Notify backend about the source-chain transaction hash for a swap.
  * This is used by Rango (and other bridge providers) to poll status.
  * @param {string} swapId

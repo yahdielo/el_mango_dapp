@@ -4,6 +4,7 @@ import {
   initiateCrossChainViaBackend,
   isCrossChainViaBackendAvailable,
   getSwapStatusFromBackend,
+  getDepositFromBackend,
 } from '../services/crossChainSwapApi';
 
 const POLL_INTERVAL_MS = 2000; // Poll every 2s so "Swap completed" updates soon after LayerSwap finishes
@@ -67,6 +68,20 @@ export function useCrossChainSwap() {
             to_address: toRawEthereumAddress(a.to_address) || a.to_address,
           }));
           setDepositActions(normalized);
+        } else if (result.status === 'user_transfer_pending') {
+          // Fallback: fetch deposit from dedicated endpoint (e.g. Rango swap where status didn't include depositActions)
+          try {
+            const dep = await getDepositFromBackend(swapId);
+            if (dep.depositActions?.length) {
+              const normalized = dep.depositActions.map((a) => ({
+                ...a,
+                to_address: toRawEthereumAddress(a.to_address) || a.to_address,
+              }));
+              setDepositActions(normalized);
+            }
+          } catch {
+            // ignore
+          }
         }
         if (result.rangoTx != null) setRangoTx(result.rangoTx);
         if (TERMINAL_STATUSES.includes(result.status)) stopPolling();

@@ -74,7 +74,8 @@ export default function CrossChainSwapStatusBanner({
 
   const depositAction = depositActions?.[0];
   const needsSwitch = sourceChainId != null && chainId !== sourceChainId;
-  const isNativeDeposit = NATIVE_SYMBOLS.includes((depositAction?.token?.symbol || '').toUpperCase());
+  const nativeSymbolCandidate = (depositAction?.token?.symbol || tokenIn?.symbol || '').toUpperCase().replace(/^W/, '');
+  const isNativeDeposit = NATIVE_SYMBOLS.includes(nativeSymbolCandidate);
   const isEvmSource = sourceChainId != null && EVM_CHAIN_IDS.includes(Number(sourceChainId));
 
   const canSignRangoTx =

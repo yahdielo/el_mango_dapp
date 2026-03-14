@@ -79,6 +79,8 @@ export async function initiateCrossChainViaBackend({
     throw new Error('Cross-chain API requires authentication. Set VITE_MANGO_SERVICES_API_KEY in your build environment.');
   }
   if (!res.ok) {
+    // Log full response so DevTools shows the real reason for 400/5xx
+    console.error('[Cross-chain API]', res.status, res.statusText, data);
     const msg = data?.message || data?.error || (data?.suggestion ? `${data.error || 'Error'}. ${data.suggestion}` : null) || `API error: ${res.status}`;
     throw new Error(msg);
   }

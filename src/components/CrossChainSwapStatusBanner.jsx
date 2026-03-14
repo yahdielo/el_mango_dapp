@@ -41,7 +41,9 @@ export default function CrossChainSwapStatusBanner({
   if (!status) return null;
 
   const isPending =
-    status === 'user_transfer_pending' || status === 'ls_transfer_pending';
+    status === 'user_transfer_pending' ||
+    status === 'ls_transfer_pending' ||
+    status === 'processing';
   const isSuccess = status === 'completed';
   const isFailed = ['failed', 'expired', 'refunded', 'refund_pending'].includes(status);
 
@@ -59,7 +61,7 @@ export default function CrossChainSwapStatusBanner({
     label = status === 'expired' ? 'Swap expired' : status === 'refunded' ? 'Refunded' : 'Swap failed';
   } else if (status === 'user_transfer_pending') {
     label = rangoTx ? 'Sign transaction to bridge' : 'Waiting for deposit';
-  } else if (status === 'ls_transfer_pending') {
+  } else if (status === 'ls_transfer_pending' || status === 'processing') {
     label = 'Bridging...';
   }
 
@@ -118,6 +120,8 @@ export default function CrossChainSwapStatusBanner({
             console.warn('Failed to notify backend of source tx hash:', notifyError);
           }
         }
+        // UX: once user signs, immediately clear banner so they can swap again
+        if (onDismiss) onDismiss();
         return;
       }
       if (!isValidDepositAction(depositAction)) return;
@@ -135,6 +139,7 @@ export default function CrossChainSwapStatusBanner({
             console.warn('Failed to notify backend of source tx hash:', notifyError);
           }
         }
+        if (onDismiss) onDismiss();
         return;
       }
       if (canSendErc20 && tokenIn?.address) {
@@ -147,12 +152,13 @@ export default function CrossChainSwapStatusBanner({
           args: [rawToAddress, amountWei],
           chainId: Number(sourceChainId),
         });
+        if (onDismiss) onDismiss();
       }
     } catch (err) {
       // Catch viem/RPC "data is missing" and similar errors; wagmi surfaces them via mutation
       console.warn('Deposit/send failed:', err?.message || err);
     }
-  }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransactionAsync, canSignRangoTx, rangoTx, canSendNative, canSendErc20, tokenIn, writeContractAsync, swapId]);
+  }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransactionAsync, canSignRangoTx, rangoTx, canSendNative, canSendErc20, tokenIn, writeContractAsync, swapId, onDismiss]);
 
   return (
     <div className={`mb-4 p-4 rounded-xl border ${bgClass}`}>

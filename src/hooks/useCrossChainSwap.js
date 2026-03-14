@@ -6,7 +6,7 @@ import {
   getSwapStatusFromBackend,
 } from '../services/crossChainSwapApi';
 
-const POLL_INTERVAL_MS = 3000; // Shorter interval so UI updates soon after deposit is detected
+const POLL_INTERVAL_MS = 2000; // Poll every 2s so "Swap completed" updates soon after LayerSwap finishes
 const TERMINAL_STATUSES = ['completed', 'failed', 'expired', 'refunded', 'refund_pending'];
 
 function toRawEthereumAddress(addr) {

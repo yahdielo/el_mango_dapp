@@ -24,6 +24,14 @@ function toBridgeTokenAddress(addr, chainId) {
   return addr;
 }
 
+/** Normalize CAIP-10 (eip155:chainId:0x...) to raw 0x... - prevents "value too long for varchar(42)" */
+function toRawAddress(addr) {
+  if (!addr || typeof addr !== 'string') return addr;
+  const s = addr.trim();
+  const m = s.match(/^eip155:\d+:(0x[a-fA-F0-9]{40})$/);
+  return m ? m[1] : s;
+}
+
 function headers() {
   const h = { Accept: 'application/json', 'Content-Type': 'application/json' };
   if (API_KEY) h['x-api-key'] = API_KEY;
@@ -61,12 +69,12 @@ export async function initiateCrossChainViaBackend({
   const body = {
     sourceChainId: Number(sourceChainId),
     destChainId: Number(destChainId),
-    tokenIn: tokenInAddr,
-    tokenOut: tokenOutAddr,
+    tokenIn: typeof tokenInAddr === 'string' ? toRawAddress(tokenInAddr) || tokenInAddr : tokenInAddr,
+    tokenOut: typeof tokenOutAddr === 'string' ? toRawAddress(tokenOutAddr) || tokenOutAddr : tokenOutAddr,
     amountIn: String(amountIn),
-    recipient,
+    recipient: toRawAddress(recipient) || recipient,
   };
-  if (referrer && typeof referrer === 'string') body.referrer = referrer;
+  if (referrer && typeof referrer === 'string') body.referrer = toRawAddress(referrer) || referrer;
 
   const res = await fetch(`${BASE}/api/v1/swap/cross-chain`, {
     method: 'POST',

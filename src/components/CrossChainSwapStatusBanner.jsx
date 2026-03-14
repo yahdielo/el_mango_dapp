@@ -137,8 +137,12 @@ export default function CrossChainSwapStatusBanner({
         if (onDismiss) onDismiss();
         return;
       }
-      if (!isValidDepositAction(depositAction)) {
-        console.warn('[CrossChain] Invalid depositAction, cannot send', depositAction);
+      if (!canSendInApp || (!canSignRangoTx && !isValidDepositAction(depositAction))) {
+        if (!canSendInApp) {
+          console.warn('[CrossChain] Send not ready: missing deposit details or transaction. Try again in a moment.');
+        } else {
+          console.warn('[CrossChain] Invalid depositAction, cannot send', depositAction);
+        }
         return;
       }
       const rawToAddress = toRawEthereumAddress(depositAction.to_address);
@@ -210,14 +214,16 @@ export default function CrossChainSwapStatusBanner({
         <button
           type="button"
           onClick={handleSendDeposit}
-          disabled={isSwitchPending || isSendPendingAny}
+          disabled={isSwitchPending || isSendPendingAny || !canSendInApp}
           className="mt-2 w-full py-2 px-3 rounded-lg bg-[#3CF902]/20 border border-[#3CF902]/50 text-[#3CF902] text-sm font-medium hover:bg-[#3CF902]/30 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {needsSwitch
             ? `Switch to ${sourceChain?.chainName || 'source chain'}`
+            : !canSendInApp
+            ? 'Preparing transaction...'
             : canSignRangoTx
             ? (amountIn != null && amountIn !== '' ? `Send ${amountIn} ${(tokenIn?.symbol || 'ETH').trim()}` : 'Send ETH')
-            : `Send ${depositAction?.amount ?? ''} ${depositAction?.token?.symbol ?? ''}`}
+            : `Send ${depositAction?.amount ?? ''} ${depositAction?.token?.symbol ?? ''}`.trim() || 'Send'}
         </button>
       )}
       {isSuccess || isFailed ? (

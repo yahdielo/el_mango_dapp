@@ -136,7 +136,10 @@ export async function getDepositFromBackend(swapId) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error || `Deposit ${res.status}`);
-  return { depositActions: data.depositActions ?? [] };
+  return {
+    depositActions: data.depositActions ?? [],
+    rangoTx: data.rangoTx ?? null,
+  };
 }
 
 /**

@@ -69,7 +69,7 @@ export function useCrossChainSwap() {
           }));
           setDepositActions(normalized);
         } else if (result.status === 'user_transfer_pending') {
-          // Fallback: fetch deposit from dedicated endpoint (e.g. Rango swap where status didn't include depositActions)
+          // Fallback: fetch deposit from dedicated endpoint (e.g. Rango swap where status didn't include depositActions/rangoTx)
           try {
             const dep = await getDepositFromBackend(swapId);
             if (dep.depositActions?.length) {
@@ -79,6 +79,7 @@ export function useCrossChainSwap() {
               }));
               setDepositActions(normalized);
             }
+            if (dep.rangoTx != null) setRangoTx(dep.rangoTx);
           } catch {
             // ignore
           }

@@ -204,15 +204,17 @@ export default function CrossChainSwapStatusBanner({
           </p>
         </>
       )}
-      {canSendInApp && (
+      {status === 'user_transfer_pending' && isEvmSource && (
         <button
           type="button"
           onClick={handleSendDeposit}
-          disabled={isSwitchPending || isSendPendingAny}
-          className="mt-2 w-full py-2 px-3 rounded-lg bg-[#3CF902]/20 border border-[#3CF902]/50 text-[#3CF902] text-sm font-medium hover:bg-[#3CF902]/30 disabled:opacity-50"
+          disabled={!canSendInApp || isSwitchPending || isSendPendingAny}
+          className="mt-2 w-full py-2 px-3 rounded-lg bg-[#3CF902]/20 border border-[#3CF902]/50 text-[#3CF902] text-sm font-medium hover:bg-[#3CF902]/30 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {needsSwitch
             ? `Switch to ${sourceChain?.chainName || 'source chain'}`
+            : !canSendInApp
+            ? 'Loading transaction...'
             : canSignRangoTx
             ? (amountIn != null && amountIn !== '' ? `Send ${amountIn} ${(tokenIn?.symbol || 'ETH').trim()}` : 'Send ETH')
             : `Send ${depositAction?.amount ?? ''} ${depositAction?.token?.symbol ?? ''}`}

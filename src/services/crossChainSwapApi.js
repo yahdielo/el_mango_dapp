@@ -117,6 +117,7 @@ export async function getSwapStatusFromBackend(swapId) {
   return {
     status: data.status ?? 'unknown',
     depositActions: data.depositActions ?? [],
+    rangoTx: data.rangoTx ?? null,
     sourceTxHash: data.sourceTxHash,
     destTxHash: data.destTxHash,
     completedAt: data.completedAt,

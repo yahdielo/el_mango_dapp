@@ -68,6 +68,7 @@ export function useCrossChainSwap() {
           }));
           setDepositActions(normalized);
         }
+        if (result.rangoTx != null) setRangoTx(result.rangoTx);
         if (TERMINAL_STATUSES.includes(result.status)) stopPolling();
       } catch (err) {
         setError(err?.message || 'Failed to fetch status');

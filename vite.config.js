@@ -20,9 +20,10 @@ export default defineConfig({
           if (id.includes('node_modules')) {
             if (id.includes('@reown/appkit') || id.includes('@reown/appkit-adapter')) return 'reown';
             if (id.includes('wagmi') || id.includes('viem')) return 'wagmi-viem';
-            if (id.includes('@tanstack/react-query')) return 'react-query';
-            if (id.includes('react-dom') || id.includes('react-router')) return 'react-vendor';
             if (id.includes('metamask')) return 'metamask-sdk';
+            // Keep React, react-dom, react-router, and @tanstack/react-query together so
+            // react-query always has React (createContext) available; splitting them caused
+            // "Cannot read properties of undefined (reading 'createContext')".
             return 'vendor';
           }
         },

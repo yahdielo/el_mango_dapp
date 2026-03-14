@@ -53,6 +53,8 @@ export default function CrossChainPage() {
   const [destChainId, setDestChainId] = useState(1);
   const [sourceChain, setSourceChain] = useState(() => getChain(8453));
   const [destChain, setDestChain] = useState(() => getChain(1));
+  // Mode: 'swap' (default) or 'send' (send to a custom recipient)
+  const [mode, setMode] = useState('swap');
   const [tokenIn, setTokenIn] = useState(null);
   const [tokenOut, setTokenOut] = useState(null);
   const [amountIn, setAmountIn] = useState('');
@@ -70,6 +72,8 @@ export default function CrossChainPage() {
   const [destinationAddress, setDestinationAddress] = useState('');
 
   const bridgeProvider = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
+
+  const isSendMode = mode === 'send';
 
   // Rango support matrix (enabled chains + tokens) for display and filtering.
   const {
@@ -308,7 +312,7 @@ export default function CrossChainPage() {
         const primaryReferrer = raw?.primaryReferrer ?? raw?.referral?.referrer ?? null;
         const sourceReferrer = referrals.find((r) => Number(r.chainId) === sourceChainId)?.referrer ?? primaryReferrer;
 
-        const recipient = isNonEvmDest(destChainId)
+        const recipient = isNonEvmDest(destChainId) || isSendMode
           ? (destinationAddress || '').trim()
           : address;
         await startSwap({
@@ -335,6 +339,7 @@ export default function CrossChainPage() {
     }
   }, [
     address,
+    isSendMode,
     destinationAddress,
     handleConnect,
     isCrossChain,
@@ -347,7 +352,7 @@ export default function CrossChainPage() {
     amountIn,
   ]);
 
-  const destAddrRequired = isNonEvmDest(destChainId);
+  const destAddrRequired = isNonEvmDest(destChainId) || isSendMode;
   const destAddrValid = !destAddrRequired || (destinationAddress || '').trim().length > 0;
   const recipientForEstimate = destAddrRequired ? (destinationAddress || '').trim() : (address || '');
 
@@ -453,6 +458,27 @@ export default function CrossChainPage() {
           </div>
         </div>
 
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <button
+            type="button"
+            onClick={() => setMode('swap')}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium ${
+              !isSendMode ? 'bg-[#3CF902] text-black' : 'bg-[#1a1a1a] text-gray-300'
+            }`}
+          >
+            Swap
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('send')}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium ${
+              isSendMode ? 'bg-[#3CF902] text-black' : 'bg-[#1a1a1a] text-gray-300'
+            }`}
+          >
+            Send
+          </button>
+        </div>
+
         <div className="relative flex flex-col">
           <CrossChainSwapCard
             label="You Pay"
@@ -533,17 +559,26 @@ export default function CrossChainPage() {
         {destAddrRequired && (
           <div className="mt-4">
             <label className="block text-gray-400 text-sm mb-2">
-              {destChainId === 0 && 'Bitcoin receive address (bc1..., 1..., or 3...)'}
-              {destChainId === 501111 && 'Solana receive address'}
-              {destChainId === 728126428 && 'Tron receive address (T...)'}
-              {destChainId === 144 && 'XRP receive address (r...)'}
-              {destChainId === 101 && 'Sui receive address'}
+              {isNonEvmDest(destChainId) && destChainId === 0 && 'Bitcoin receive address (bc1..., 1..., or 3...)'}
+              {isNonEvmDest(destChainId) && destChainId === 501111 && 'Solana receive address'}
+              {isNonEvmDest(destChainId) && destChainId === 728126428 && 'Tron receive address (T...)'}
+              {isNonEvmDest(destChainId) && destChainId === 144 && 'XRP receive address (r...)'}
+              {isNonEvmDest(destChainId) && destChainId === 101 && 'Sui receive address'}
+              {!isNonEvmDest(destChainId) && isSendMode && 'Destination wallet address (0x...)'}
             </label>
             <input
               type="text"
               value={destinationAddress}
               onChange={(e) => setDestinationAddress(e.target.value)}
-              placeholder={destChainId === 0 ? 'bc1q... or 1...' : destChainId === 501111 ? 'e.g. 7xKX...' : 'Enter address'}
+              placeholder={
+                isNonEvmDest(destChainId)
+                  ? destChainId === 0
+                    ? 'bc1q... or 1...'
+                    : destChainId === 501111
+                    ? 'e.g. 7xKX...'
+                    : 'Enter address'
+                  : '0x... destination address'
+              }
               className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:border-transparent"
               spellCheck={false}
             />

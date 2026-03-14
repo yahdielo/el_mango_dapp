@@ -14,21 +14,8 @@ export default defineConfig({
     },
   },
   build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('@reown/appkit') || id.includes('@reown/appkit-adapter')) return 'reown';
-            if (id.includes('wagmi') || id.includes('viem')) return 'wagmi-viem';
-            if (id.includes('metamask')) return 'metamask-sdk';
-            // Keep React, react-dom, react-router, and @tanstack/react-query together so
-            // react-query always has React (createContext) available; splitting them caused
-            // "Cannot read properties of undefined (reading 'createContext')".
-            return 'vendor';
-          }
-        },
-      },
-    },
+    // Avoid manualChunks: splitting wagmi/viem caused "Cannot access 'pT' before initialization";
+    // splitting react/react-query caused "createContext" of undefined. Use default chunking.
     chunkSizeWarningLimit: 600,
   },
 });

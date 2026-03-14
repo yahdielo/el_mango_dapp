@@ -7,6 +7,23 @@ const BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
 const API_KEY = import.meta.env.VITE_MANGO_SERVICES_API_KEY || '';
 const BRIDGE_PROVIDER = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
+const ZERO = '0x0000000000000000000000000000000000000000';
+const WETH_BY_CHAIN = {
+  1: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+  8453: '0x4200000000000000000000000000000000000006',
+  42161: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+  10: '0x4200000000000000000000000000000000000006',
+  137: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
+  56: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+  43114: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7',
+};
+function toBridgeTokenAddress(addr, chainId) {
+  if (!addr || (typeof addr === 'string' && addr.toLowerCase() === ZERO.toLowerCase())) {
+    return (chainId != null && WETH_BY_CHAIN[Number(chainId)]) || addr;
+  }
+  return addr;
+}
+
 function headers() {
   const h = { Accept: 'application/json', 'Content-Type': 'application/json' };
   if (API_KEY) h['x-api-key'] = API_KEY;
@@ -36,8 +53,8 @@ export async function initiateCrossChainViaBackend({
   referrer,
 }) {
   if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
-  const tokenInAddr = tokenIn?.address ?? tokenIn;
-  const tokenOutAddr = tokenOut?.address ?? tokenOut;
+  const tokenInAddr = toBridgeTokenAddress(tokenIn?.address ?? tokenIn, sourceChainId);
+  const tokenOutAddr = toBridgeTokenAddress(tokenOut?.address ?? tokenOut, destChainId);
   if (!tokenInAddr || !tokenOutAddr || !recipient || !amountIn) {
     throw new Error('Missing required fields: tokenIn, tokenOut, amountIn, recipient');
   }
@@ -131,8 +148,9 @@ export async function notifySourceTxHash(swapId, txHash) {
   return data;
 }
 
+/** Backend is used for cross-chain when BASE is set. API key is optional (backend allows test.mangoswap.io / mangoswap.io without key). */
 export function isCrossChainViaBackendAvailable() {
-  return Boolean(BASE && API_KEY && API_KEY.trim() !== '');
+  return Boolean(BASE && BASE.trim() !== '');
 }
 
 /**
@@ -163,8 +181,8 @@ export async function getBridgeMeta() {
  */
 export async function getRoutesFromBackend(sourceChainId, destChainId, tokenIn, tokenOut) {
   if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
-  const tokenInAddr = tokenIn?.address ?? tokenIn ?? '0x0000000000000000000000000000000000000000';
-  const tokenOutAddr = tokenOut?.address ?? tokenOut ?? '0x0000000000000000000000000000000000000000';
+  const tokenInAddr = toBridgeTokenAddress(tokenIn?.address ?? tokenIn ?? ZERO, sourceChainId);
+  const tokenOutAddr = toBridgeTokenAddress(tokenOut?.address ?? tokenOut ?? ZERO, destChainId);
   const params = new URLSearchParams({
     sourceChainId: String(sourceChainId),
     destChainId: String(destChainId),

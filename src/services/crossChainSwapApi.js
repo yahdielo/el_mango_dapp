@@ -62,7 +62,8 @@ export async function initiateCrossChainViaBackend({
     throw new Error('Cross-chain API requires authentication. Set VITE_MANGO_SERVICES_API_KEY in your build environment.');
   }
   if (!res.ok) {
-    throw new Error(data?.error || data?.message || `API error: ${res.status}`);
+    const msg = data?.message || data?.error || (data?.suggestion ? `${data.error || 'Error'}. ${data.suggestion}` : null) || `API error: ${res.status}`;
+    throw new Error(msg);
   }
   return {
     swapId: data.swapId,

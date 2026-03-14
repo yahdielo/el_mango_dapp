@@ -97,6 +97,12 @@ export default function CrossChainSwapStatusBanner({
   const canSendInApp = canSignRangoTx || canSendNative || canSendErc20;
   const isSendPendingAny = isSendPending || isWritePending;
 
+  // If user needs to manually send a deposit, make the banner label explicit.
+  if (status === 'user_transfer_pending' && depositAction && !canSignRangoTx) {
+    const sym = depositAction.token?.symbol || '';
+    label = `Send ${depositAction.amount} ${sym}`.trim();
+  }
+
   // Note: Auto-trigger disabled to avoid "data is missing" viem errors; user clicks button to send.
 
   const handleSendDeposit = useCallback(async () => {

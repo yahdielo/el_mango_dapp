@@ -58,6 +58,7 @@ export async function initiateCrossChainViaBackend({
   tokenOut,
   amountIn,
   recipient,
+  userAddress,
   referrer,
 }) {
   if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
@@ -74,6 +75,7 @@ export async function initiateCrossChainViaBackend({
     amountIn: String(amountIn),
     recipient: toRawAddress(recipient) || recipient,
   };
+  if (userAddress != null && String(userAddress).trim()) body.userAddress = toRawAddress(userAddress) || userAddress;
   if (referrer && typeof referrer === 'string') body.referrer = toRawAddress(referrer) || referrer;
 
   const res = await fetch(`${BASE}/api/v1/swap/cross-chain`, {

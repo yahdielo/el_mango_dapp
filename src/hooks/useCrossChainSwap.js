@@ -125,6 +125,7 @@ export function useCrossChainSwap() {
           tokenOut: params.tokenOut,
           amountIn: params.amountIn,
           recipient: params.recipient,
+          userAddress: params.userAddress,
           referrer: params.referrer,
         });
         useBackendStatusRef.current = true; // Always poll backend when initiated via backend

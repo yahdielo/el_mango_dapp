@@ -319,6 +319,7 @@ export default function CrossChainPage() {
           tokenOut,
           amountIn,
           recipient,
+          userAddress: address,
           referrer: sourceReferrer || undefined,
         });
 

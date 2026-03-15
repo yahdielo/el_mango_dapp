@@ -7,7 +7,22 @@ import {
   getDepositFromBackend,
 } from '../services/crossChainSwapApi';
 
-const POLL_INTERVAL_MS = 2000; // Poll every 2s so "Swap completed" updates soon after LayerSwap finishes
+const POLL_INTERVAL_MS = 2000;
+
+/** Normalize Rango tx from API (may use to/data) to shape the banner expects (txTo/txData). */
+function normalizeRangoTx(tx) {
+  if (!tx || typeof tx !== 'object') return null;
+  const to = tx.txTo ?? tx.to ?? tx.txToAddress;
+  const data = tx.txData ?? tx.data;
+  if (!to && !data) return null;
+  return {
+    txTo: to || undefined,
+    txData: data != null ? String(data) : undefined,
+    value: tx.value != null ? String(tx.value) : undefined,
+    gasLimit: tx.gasLimit ?? tx.gas ?? tx.gas_limit,
+    chainId: tx.chainId ?? tx.chain_id,
+  };
+} // Poll every 2s so "Swap completed" updates soon after LayerSwap finishes
 const TERMINAL_STATUSES = ['completed', 'failed', 'expired', 'refunded', 'refund_pending'];
 
 function toRawEthereumAddress(addr) {
@@ -79,12 +94,12 @@ export function useCrossChainSwap() {
               }));
               setDepositActions(normalized);
             }
-            if (dep.rangoTx != null) setRangoTx(dep.rangoTx);
+            if (dep.rangoTx != null) setRangoTx(normalizeRangoTx(dep.rangoTx));
           } catch {
             // ignore
           }
         }
-        if (result.rangoTx != null) setRangoTx(result.rangoTx);
+        if (result.rangoTx != null) setRangoTx(normalizeRangoTx(result.rangoTx));
         if (TERMINAL_STATUSES.includes(result.status)) stopPolling();
       } catch (err) {
         setError(err?.message || 'Failed to fetch status');
@@ -125,8 +140,25 @@ export function useCrossChainSwap() {
             ? [{ to_address: rawDepositAddress, amount: depositAmount, token: { symbol: params.tokenIn?.symbol || 'ETH' } }]
             : [];
         setDepositActions(acts);
-        setRangoTx(result.rangoTx ?? null);
-        return { swapId: result.swapId, depositActions: acts, rangoTx: result.rangoTx };
+        // Normalize rangoTx so frontend always has txTo/txData (backend may send to/data)
+        const rtx = result.rangoTx != null ? normalizeRangoTx(result.rangoTx) : null;
+        setRangoTx(rtx);
+        // If initiate response missing tx/deposit, fetch once so "Preparing transaction..." doesn't stick
+        if ((result.status === 'user_transfer_pending' || !result.status) && !rtx && !rawDepositAddress && result.swapId) {
+          getDepositFromBackend(result.swapId)
+            .then((dep) => {
+              if (dep.rangoTx != null) setRangoTx(normalizeRangoTx(dep.rangoTx));
+              if (dep.depositActions?.length) {
+                const normalized = dep.depositActions.map((a) => ({
+                  ...a,
+                  to_address: toRawEthereumAddress(a.to_address) || a.to_address,
+                }));
+                setDepositActions(normalized);
+              }
+            })
+            .catch(() => {});
+        }
+        return { swapId: result.swapId, depositActions: acts, rangoTx: rtx };
       }
       useBackendStatusRef.current = false;
       const result = await initiateSwap(params);

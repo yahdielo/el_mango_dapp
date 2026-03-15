@@ -127,8 +127,9 @@ export function mapErrorToUserMessage(err) {
   if (BRIDGE_PATTERNS.some((p) => p.test(msg))) {
     if (msg.includes('rate limit') || msg.includes('429')) return 'Bridge rate limited. Try again later.';
     if (msg.includes('temporarily unavailable') || msg.includes('503')) return 'Bridge temporarily unavailable. Try again in a minute.';
-    // Prefer the API message if it's short and readable (e.g. "Route not available", "Amount below minimum")
+    // For route-not-available, show full message so API suggestion (e.g. ETH→TRX workaround) is visible
     const raw = String(err?.message || err || '').trim();
+    if (/route not available|no route|no cross-chain route/i.test(msg) && raw.length > 0 && !/^\s*api error:\s*\d+/i.test(raw)) return raw;
     if (raw.length > 0 && raw.length <= 120 && !/^\s*api error:\s*\d+/i.test(raw)) return raw;
     return 'Bridge error. Route may be unavailable.';
   }

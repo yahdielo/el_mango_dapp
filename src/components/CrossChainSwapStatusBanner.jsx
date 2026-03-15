@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useChainId, useSwitchChain, useSendTransaction, useWriteContract } from 'wagmi';
 import { parseEther, parseUnits, isAddress } from 'viem';
 import { ERC20_ABI } from '../config/abis';
@@ -38,6 +38,12 @@ export default function CrossChainSwapStatusBanner({
   const { switchChain, isPending: isSwitchPending } = useSwitchChain();
   const { sendTransactionAsync, isPending: isSendPending } = useSendTransaction();
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
+  const [txConfirmed, setTxConfirmed] = useState(false);
+
+  // Reset txConfirmed when swap changes (new swapId) or status leaves user_transfer_pending
+  useEffect(() => {
+    if (!swapId || status !== 'user_transfer_pending') setTxConfirmed(false);
+  }, [swapId, status]);
 
   if (!status) return null;
 
@@ -74,12 +80,16 @@ export default function CrossChainSwapStatusBanner({
     textClass = 'text-red-300';
     label = status === 'expired' ? 'Swap expired' : status === 'refunded' ? 'Refunded' : 'Swap failed';
   } else if (status === 'user_transfer_pending') {
-    const amt = amountIn != null && amountIn !== '' ? String(amountIn) : null;
-    const sym = (tokenIn?.symbol || '').trim() || 'ETH';
-    if (rangoTx) {
-      label = amt ? `Send ${amt} ${sym}` : 'Sign transaction to bridge';
+    if (txConfirmed) {
+      label = 'Transaction sent – bridging in progress';
     } else {
-      label = amt ? `Send ${amt} ${sym}` : 'Waiting for deposit';
+      const amt = amountIn != null && amountIn !== '' ? String(amountIn) : null;
+      const sym = (tokenIn?.symbol || '').trim() || 'ETH';
+      if (rangoTx) {
+        label = amt ? `Send ${amt} ${sym}` : 'Sign transaction to bridge';
+      } else {
+        label = amt ? `Send ${amt} ${sym}` : 'Waiting for deposit';
+      }
     }
   } else if (status === 'ls_transfer_pending' || status === 'processing') {
     label = 'Bridging...';
@@ -147,7 +157,7 @@ export default function CrossChainSwapStatusBanner({
             console.warn('Failed to notify backend of source tx hash:', notifyError);
           }
         }
-        // Keep polling; do not dismiss until status becomes completed
+        setTxConfirmed(true);
         return;
       }
       if (!canSendInApp || (!canSignRangoTx && !isValidDepositAction(depositAction))) {
@@ -172,7 +182,7 @@ export default function CrossChainSwapStatusBanner({
             console.warn('Failed to notify backend of source tx hash:', notifyError);
           }
         }
-        // Keep polling; do not dismiss until status becomes completed
+        setTxConfirmed(true);
         return;
       }
       if (canSendErc20 && tokenIn?.address) {
@@ -185,7 +195,7 @@ export default function CrossChainSwapStatusBanner({
           args: [rawToAddress, amountWei],
           chainId: Number(sourceChainId),
         });
-        // Keep polling; do not dismiss until status becomes completed
+        setTxConfirmed(true);
       }
     } catch (err) {
       console.warn('Deposit/send failed:', err?.message || err);
@@ -210,10 +220,10 @@ export default function CrossChainSwapStatusBanner({
             : provider}
         </p>
       )}
-      {status === 'user_transfer_pending' && canSignRangoTx && (
+      {status === 'user_transfer_pending' && !txConfirmed && canSignRangoTx && (
         <p className="text-gray-300 text-xs mt-2">Sign the transaction to execute the cross-chain swap.</p>
       )}
-      {status === 'user_transfer_pending' && depositAction && !canSignRangoTx && (
+      {status === 'user_transfer_pending' && !txConfirmed && depositAction && !canSignRangoTx && (
         <>
           <p className="text-gray-300 text-xs mt-2 break-all">
             Send {depositAction.amount} {depositAction.token?.symbol || ''} to: {toRawEthereumAddress(depositAction.to_address) || depositAction.to_address}
@@ -225,27 +235,39 @@ export default function CrossChainSwapStatusBanner({
       )}
       {status === 'user_transfer_pending' && isEvmSource && (
         <div className="mt-2 space-y-2">
-          <button
-            type="button"
-            onClick={handleSendDeposit}
-            disabled={isSwitchPending || isSendPendingAny || !canSendInApp}
-            className="w-full py-2 px-3 rounded-lg bg-[#3CF902]/20 border border-[#3CF902]/50 text-[#3CF902] text-sm font-medium hover:bg-[#3CF902]/30 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {needsSwitch
-              ? `Switch to ${sourceChain?.chainName || 'source chain'}`
-              : !canSendInApp
-              ? 'Preparing transaction...'
-              : canSignRangoTx
-              ? (amountIn != null && amountIn !== '' ? `Send ${amountIn} ${(tokenIn?.symbol || 'ETH').trim()}` : 'Send ETH')
-              : `Send ${depositAction?.amount ?? ''} ${depositAction?.token?.symbol ?? ''}`.trim() || 'Send'}
-          </button>
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="block w-full text-sm text-gray-400 hover:text-white transition-colors"
-          >
-            Transaction sent? Start new swap
-          </button>
+          {!txConfirmed ? (
+            <>
+              <button
+                type="button"
+                onClick={handleSendDeposit}
+                disabled={isSwitchPending || isSendPendingAny || !canSendInApp}
+                className="w-full py-2 px-3 rounded-lg bg-[#3CF902]/20 border border-[#3CF902]/50 text-[#3CF902] text-sm font-medium hover:bg-[#3CF902]/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {needsSwitch
+                  ? `Switch to ${sourceChain?.chainName || 'source chain'}`
+                  : !canSendInApp
+                  ? 'Preparing transaction...'
+                  : canSignRangoTx
+                  ? (amountIn != null && amountIn !== '' ? `Send ${amountIn} ${(tokenIn?.symbol || 'ETH').trim()}` : 'Send ETH')
+                  : `Send ${depositAction?.amount ?? ''} ${depositAction?.token?.symbol ?? ''}`.trim() || 'Send'}
+              </button>
+              <button
+                type="button"
+                onClick={onDismiss}
+                className="block w-full text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Transaction sent? Start new swap
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="block w-full text-sm text-[#3CF902] hover:underline"
+            >
+              Start new swap
+            </button>
+          )}
         </div>
       )}
       {isSuccess || isFailed ? (

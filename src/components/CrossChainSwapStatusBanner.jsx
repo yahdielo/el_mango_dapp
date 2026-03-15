@@ -16,10 +16,16 @@ function toRawEthereumAddress(addr) {
   return s;
 }
 
+/** Lenient EVM address check (0x + 40 hex) so Rango/bridge contract addresses always pass */
+function isEthereumAddressLike(addr) {
+  if (!addr || typeof addr !== 'string') return false;
+  return /^0x[a-fA-F0-9]{40}$/.test(addr.trim());
+}
+
 function isValidDepositAction(action) {
   if (!action?.to_address || !action?.amount) return false;
   const raw = toRawEthereumAddress(action.to_address);
-  return isAddress(raw) && parseFloat(String(action.amount)) > 0;
+  return (isAddress(raw) || isEthereumAddressLike(raw)) && parseFloat(String(action.amount)) > 0;
 }
 
 export default function CrossChainSwapStatusBanner({
@@ -105,7 +111,7 @@ export default function CrossChainSwapStatusBanner({
     status === 'user_transfer_pending' &&
     rangoTx &&
     (rangoTx.txTo || rangoTx.txData) &&
-    (rangoTx.txTo == null || rangoTx.txTo === '' || isAddress(rangoTx.txTo)) &&
+    (rangoTx.txTo == null || rangoTx.txTo === '' || isAddress(rangoTx.txTo) || isEthereumAddressLike(rangoTx.txTo)) &&
     isEvmSource;
 
   const canSendNative =

@@ -99,6 +99,7 @@ export async function initiateCrossChainViaBackend({
     status: data.status,
     depositAddress: data.depositAddress,
     amountToDeposit: data.amountToDeposit,
+    depositActions: data.depositActions,
     estimatedCompletion: data.estimatedCompletion,
     sourceChainId: data.sourceChainId,
     destChainId: data.destChainId,

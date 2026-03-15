@@ -389,23 +389,32 @@ export default function CrossChainPage() {
     isCrossChain && routeSupported === false && !routeLoading && amountIn && parseFloat(amountIn) > 0;
   const showRouteUnknownMessage = isCrossChain && routeSupported === null && !routeLoading && amountIn && parseFloat(amountIn) > 0;
 
+  // Sanity cap for USD so we never show overflow/weird values (e.g. -$1.96T) that can trigger MetaMask "likely to fail"
+  const SANE_USD_MAX = 1e9;
+  const isStablecoin = (s) => s === 'USDC' || s === 'USDT';
   const usdIn = useMemo(() => {
     if (!amountIn || parseFloat(amountIn) <= 0) return 0;
     const amt = parseFloat(amountIn);
+    let val = 0;
     if (isCrossChain) {
-      const price = crossChainPriceIn > 0 ? crossChainPriceIn : (tokenIn?.symbol === 'USDC' || tokenIn?.symbol === 'USDT' ? 1 : 0);
-      return price * amt;
+      const price = crossChainPriceIn > 0 && crossChainPriceIn < 1e6 ? crossChainPriceIn : (isStablecoin(tokenIn?.symbol) ? 1 : 0);
+      val = price * amt;
+    } else {
+      val = priceIn > 0 ? parseFloat(amountIn) * priceIn : (isStablecoin(tokenIn?.symbol) ? amt : 0);
     }
-    return (priceIn > 0 ? parseFloat(amountIn) * priceIn : (tokenIn?.symbol === 'USDC' || tokenIn?.symbol === 'USDT' ? amt : 0));
+    return Number.isFinite(val) && val >= 0 && val <= SANE_USD_MAX ? val : (isStablecoin(tokenIn?.symbol) ? amt : 0);
   }, [amountIn, isCrossChain, crossChainPriceIn, tokenIn?.symbol, priceIn]);
   const usdOut = useMemo(() => {
     if (!amountOut || parseFloat(amountOut) <= 0) return 0;
     const amt = parseFloat(amountOut);
+    let val = 0;
     if (isCrossChain) {
-      const price = crossChainPriceOut > 0 ? crossChainPriceOut : (tokenOut?.symbol === 'USDC' || tokenOut?.symbol === 'USDT' ? 1 : 0);
-      return price * amt;
+      const price = crossChainPriceOut > 0 && crossChainPriceOut < 1e6 ? crossChainPriceOut : (isStablecoin(tokenOut?.symbol) ? 1 : 0);
+      val = price * amt;
+    } else {
+      val = priceOut > 0 ? parseFloat(amountOut) * priceOut : (isStablecoin(tokenOut?.symbol) ? amt : 0);
     }
-    return (priceOut > 0 ? parseFloat(amountOut) * priceOut : (tokenOut?.symbol === 'USDC' || tokenOut?.symbol === 'USDT' ? amt : 0));
+    return Number.isFinite(val) && val >= 0 && val <= SANE_USD_MAX ? val : (isStablecoin(tokenOut?.symbol) ? amt : 0);
   }, [amountOut, isCrossChain, crossChainPriceOut, tokenOut?.symbol, priceOut]);
 
   const rawBridgeError = bridgeError || validationError || effectiveQuoteError || crossChainEstimateError;

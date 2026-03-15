@@ -9,7 +9,7 @@ import {
 
 const POLL_INTERVAL_MS = 2000;
 
-/** Normalize Rango tx from API (may use to/data) to shape the banner expects (txTo/txData). */
+/** Normalize Rango tx from API (may use to/data) to shape the banner expects (txTo/txData, approveTo/approveData). */
 function normalizeRangoTx(tx) {
   if (!tx || typeof tx !== 'object') return null;
   const to = tx.txTo ?? tx.to ?? tx.txToAddress;
@@ -21,6 +21,8 @@ function normalizeRangoTx(tx) {
     value: tx.value != null ? String(tx.value) : undefined,
     gasLimit: tx.gasLimit ?? tx.gas ?? tx.gas_limit,
     chainId: tx.chainId ?? tx.chain_id,
+    approveTo: tx.approveTo ?? tx.approve_to,
+    approveData: tx.approveData ?? tx.approve_data,
   };
 } // Poll every 2s so "Swap completed" updates soon after LayerSwap finishes
 const TERMINAL_STATUSES = ['completed', 'failed', 'expired', 'refunded', 'refund_pending'];

@@ -46,10 +46,14 @@ export default function CrossChainSwapStatusBanner({
   const { sendTransactionAsync, isPending: isSendPending } = useSendTransaction();
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
   const [txConfirmed, setTxConfirmed] = useState(false);
+  const [approvalTxDone, setApprovalTxDone] = useState(false);
 
-  // Reset txConfirmed when swap changes (new swapId) or status leaves user_transfer_pending
+  // Reset txConfirmed and approval when swap changes or status leaves user_transfer_pending
   useEffect(() => {
-    if (!swapId || status !== 'user_transfer_pending') setTxConfirmed(false);
+    if (!swapId || status !== 'user_transfer_pending') {
+      setTxConfirmed(false);
+      setApprovalTxDone(false);
+    }
   }, [swapId, status]);
 
   if (!status) return null;
@@ -150,6 +154,19 @@ export default function CrossChainSwapStatusBanner({
         return;
       }
       if (canSignRangoTx && rangoTx?.txTo) {
+        // If Rango requires an approval tx first (e.g. USDT), sign it before the main swap tx
+        const needsApproval = rangoTx.approveTo && rangoTx.approveData && !approvalTxDone;
+        if (needsApproval) {
+          const approveDataHex = rangoTx.approveData.startsWith('0x') ? rangoTx.approveData : `0x${rangoTx.approveData}`;
+          await sendTransactionAsync({
+            to: rangoTx.approveTo,
+            data: approveDataHex,
+            value: 0n,
+            gas: rangoTx.gasLimit ? BigInt(rangoTx.gasLimit) : undefined,
+          });
+          setApprovalTxDone(true);
+          return; // User clicks again to send the main tx
+        }
         const value = rangoTx.value ? BigInt(rangoTx.value) : 0n;
         const tx = await sendTransactionAsync({
           to: rangoTx.txTo,
@@ -207,7 +224,7 @@ export default function CrossChainSwapStatusBanner({
     } catch (err) {
       console.warn('Deposit/send failed:', err?.message || err);
     }
-  }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransactionAsync, canSignRangoTx, rangoTx, canSendNative, canSendErc20, tokenIn, writeContractAsync, swapId, onDismiss]);
+  }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransactionAsync, canSignRangoTx, rangoTx, approvalTxDone, canSendNative, canSendErc20, tokenIn, writeContractAsync, swapId, onDismiss]);
 
   return (
     <div className={`mb-4 p-4 rounded-xl border ${bgClass}`}>
@@ -223,7 +240,11 @@ export default function CrossChainSwapStatusBanner({
         </p>
       )}
       {status === 'user_transfer_pending' && !txConfirmed && canSignRangoTx && (
-        <p className="text-gray-300 text-xs mt-2">Sign the transaction to execute the cross-chain swap.</p>
+        <p className="text-gray-300 text-xs mt-2">
+          {rangoTx?.approveTo && rangoTx?.approveData && !approvalTxDone
+            ? 'Step 1: Approve the token for the bridge. Then click the button again to send the swap.'
+            : 'Sign the transaction to execute the cross-chain swap.'}
+        </p>
       )}
       {status === 'user_transfer_pending' && !txConfirmed && depositAction && !canSignRangoTx && (
         <>
@@ -250,7 +271,9 @@ export default function CrossChainSwapStatusBanner({
                   : !canSendInApp
                   ? 'Preparing transaction...'
                   : canSignRangoTx
-                  ? (amountIn != null && amountIn !== '' ? `Send ${amountIn} ${(tokenIn?.symbol || 'ETH').trim()}` : 'Send ETH')
+                  ? (rangoTx?.approveTo && rangoTx?.approveData && !approvalTxDone
+                    ? `Approve ${(tokenIn?.symbol || 'token').trim()}`
+                    : (amountIn != null && amountIn !== '' ? `Send ${amountIn} ${(tokenIn?.symbol || 'ETH').trim()}` : 'Send ETH'))
                   : `Send ${depositAction?.amount ?? ''} ${depositAction?.token?.symbol ?? ''}`.trim() || 'Send'}
               </button>
               <button

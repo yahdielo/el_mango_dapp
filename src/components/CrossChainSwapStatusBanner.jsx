@@ -38,6 +38,7 @@ export default function CrossChainSwapStatusBanner({
   tokenIn,
   amountIn,
   onDismiss,
+  onRefetchDeposit,
   provider,
 }) {
   const chainId = useChainId();
@@ -264,6 +265,15 @@ export default function CrossChainSwapStatusBanner({
               >
                 Transaction sent? Start new swap
               </button>
+              {!canSendInApp && swapId && onRefetchDeposit && (
+                <button
+                  type="button"
+                  onClick={onRefetchDeposit}
+                  className="block w-full text-sm text-[#3CF902]/80 hover:text-[#3CF902] transition-colors mt-1"
+                >
+                  Load transaction
+                </button>
+              )}
             </>
           ) : (
             <button

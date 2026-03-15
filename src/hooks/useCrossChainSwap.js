@@ -143,8 +143,12 @@ export function useCrossChainSwap() {
         // Normalize rangoTx so frontend always has txTo/txData (backend may send to/data)
         const rtx = result.rangoTx != null ? normalizeRangoTx(result.rangoTx) : null;
         setRangoTx(rtx);
-        // If initiate response missing tx/deposit, fetch once so "Preparing transaction..." doesn't stick
-        if ((result.status === 'user_transfer_pending' || !result.status) && !rtx && !rawDepositAddress && result.swapId) {
+        // If initiate response missing tx or deposit details, fetch once so "Preparing transaction..." doesn't stick
+        const missingTxOrDeposit =
+          (result.status === 'user_transfer_pending' || !result.status) &&
+          result.swapId &&
+          (!rtx || !rawDepositAddress || !(result.depositActions?.length));
+        if (missingTxOrDeposit) {
           getDepositFromBackend(result.swapId)
             .then((dep) => {
               if (dep.rangoTx != null) setRangoTx(normalizeRangoTx(dep.rangoTx));
@@ -185,6 +189,24 @@ export function useCrossChainSwap() {
     setError(null);
   }, [stopPolling]);
 
+  /** Refetch deposit/tx from backend when stuck on "Preparing transaction..." */
+  const refetchDeposit = useCallback(async () => {
+    if (!swapId || !useBackendStatusRef.current) return;
+    try {
+      const dep = await getDepositFromBackend(swapId);
+      if (dep.rangoTx != null) setRangoTx(normalizeRangoTx(dep.rangoTx));
+      if (dep.depositActions?.length) {
+        const normalized = dep.depositActions.map((a) => ({
+          ...a,
+          to_address: toRawEthereumAddress(a.to_address) || a.to_address,
+        }));
+        setDepositActions(normalized);
+      }
+    } catch {
+      // ignore
+    }
+  }, [swapId]);
+
   return {
     startSwap,
     swapId,
@@ -195,5 +217,6 @@ export function useCrossChainSwap() {
     error,
     isLoading,
     reset,
+    refetchDeposit,
   };
 }

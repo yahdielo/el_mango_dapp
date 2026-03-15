@@ -174,6 +174,7 @@ export default function CrossChainPage() {
     error: bridgeError,
     isLoading: bridgeLoading,
     reset: resetBridge,
+    refetchDeposit,
   } = useCrossChainSwap();
 
   const { canSwap, error: validationError } = useSwapValidation({
@@ -563,6 +564,7 @@ export default function CrossChainPage() {
               tokenIn={tokenIn}
               amountIn={amountIn}
               provider={activeProvider}
+              onRefetchDeposit={refetchDeposit}
               onDismiss={() => {
                 resetBridge();
                 setAmountIn('');

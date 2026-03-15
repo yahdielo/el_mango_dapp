@@ -224,20 +224,29 @@ export default function CrossChainSwapStatusBanner({
         </>
       )}
       {status === 'user_transfer_pending' && isEvmSource && (
-        <button
-          type="button"
-          onClick={handleSendDeposit}
-          disabled={isSwitchPending || isSendPendingAny || !canSendInApp}
-          className="mt-2 w-full py-2 px-3 rounded-lg bg-[#3CF902]/20 border border-[#3CF902]/50 text-[#3CF902] text-sm font-medium hover:bg-[#3CF902]/30 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {needsSwitch
-            ? `Switch to ${sourceChain?.chainName || 'source chain'}`
-            : !canSendInApp
-            ? 'Preparing transaction...'
-            : canSignRangoTx
-            ? (amountIn != null && amountIn !== '' ? `Send ${amountIn} ${(tokenIn?.symbol || 'ETH').trim()}` : 'Send ETH')
-            : `Send ${depositAction?.amount ?? ''} ${depositAction?.token?.symbol ?? ''}`.trim() || 'Send'}
-        </button>
+        <div className="mt-2 space-y-2">
+          <button
+            type="button"
+            onClick={handleSendDeposit}
+            disabled={isSwitchPending || isSendPendingAny || !canSendInApp}
+            className="w-full py-2 px-3 rounded-lg bg-[#3CF902]/20 border border-[#3CF902]/50 text-[#3CF902] text-sm font-medium hover:bg-[#3CF902]/30 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {needsSwitch
+              ? `Switch to ${sourceChain?.chainName || 'source chain'}`
+              : !canSendInApp
+              ? 'Preparing transaction...'
+              : canSignRangoTx
+              ? (amountIn != null && amountIn !== '' ? `Send ${amountIn} ${(tokenIn?.symbol || 'ETH').trim()}` : 'Send ETH')
+              : `Send ${depositAction?.amount ?? ''} ${depositAction?.token?.symbol ?? ''}`.trim() || 'Send'}
+          </button>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="block w-full text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            Transaction sent? Start new swap
+          </button>
+        </div>
       )}
       {isSuccess || isFailed ? (
         <button

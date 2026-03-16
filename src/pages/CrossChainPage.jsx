@@ -207,6 +207,9 @@ export default function CrossChainPage() {
           .map((c) => c.chainId)
           .filter((id) => typeof id === 'number')
       );
+      // Some non-EVM chains (BTC, SOL, TRON, XRP, SUI) may be missing from meta;
+      // always include them so the full 12-chain matrix is available.
+      NON_EVM_DEST_CHAINS.forEach((id) => allowedIds.add(Number(id)));
       setChains(base.filter((c) => allowedIds.has(Number(c.chainId))));
       return;
     }

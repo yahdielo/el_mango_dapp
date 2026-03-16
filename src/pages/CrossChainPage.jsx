@@ -68,6 +68,8 @@ export default function CrossChainPage() {
   const [showTokenOutModal, setShowTokenOutModal] = useState(false);
   /** For non-EVM dest (BTC, SOL, XRP, etc.), user must enter receive address in that chain's format */
   const [destinationAddress, setDestinationAddress] = useState('');
+  /** When source is Bitcoin, bridge needs sender's Bitcoin address (where BTC will be sent from) */
+  const [bitcoinSenderAddress, setBitcoinSenderAddress] = useState('');
 
   const bridgeProvider = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
@@ -312,6 +314,7 @@ export default function CrossChainPage() {
         const recipient = isNonEvmDest(destChainId)
           ? (destinationAddress || '').trim()
           : address;
+        const senderAddress = sourceChainId === 0 ? (bitcoinSenderAddress || '').trim() : address;
         await startSwap({
           sourceChainId,
           destChainId,
@@ -319,7 +322,7 @@ export default function CrossChainPage() {
           tokenOut,
           amountIn,
           recipient,
-          userAddress: address,
+          userAddress: senderAddress,
           referrer: sourceReferrer || undefined,
         });
 
@@ -338,6 +341,7 @@ export default function CrossChainPage() {
   }, [
     address,
     destinationAddress,
+    bitcoinSenderAddress,
     handleConnect,
     isCrossChain,
     routeSupported,
@@ -351,6 +355,8 @@ export default function CrossChainPage() {
 
   const destAddrRequired = isNonEvmDest(destChainId);
   const destAddrValid = !destAddrRequired || (destinationAddress || '').trim().length > 0;
+  const bitcoinSourceRequired = sourceChainId === 0;
+  const bitcoinSenderValid = !bitcoinSourceRequired || (bitcoinSenderAddress || '').trim().length > 0;
   const recipientForEstimate = destAddrRequired ? (destinationAddress || '').trim() : (address || '');
 
   const {
@@ -381,6 +387,7 @@ export default function CrossChainPage() {
     routeSupported !== false &&
     canSwap &&
     destAddrValid &&
+    bitcoinSenderValid &&
     !amountTooLow &&
     !amountTooHigh &&
     !bridgeLoading;
@@ -542,6 +549,21 @@ export default function CrossChainPage() {
           />
         </div>
 
+        {bitcoinSourceRequired && (
+          <div className="mt-4">
+            <label className="block text-gray-400 text-sm mb-2">
+              Bitcoin sender address (where you will send BTC from)
+            </label>
+            <input
+              type="text"
+              value={bitcoinSenderAddress}
+              onChange={(e) => setBitcoinSenderAddress(e.target.value)}
+              placeholder="bc1q... or 1... or 3..."
+              className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:border-transparent"
+              spellCheck={false}
+            />
+          </div>
+        )}
         {destAddrRequired && (
           <div className="mt-4">
             <label className="block text-gray-400 text-sm mb-2">
@@ -595,6 +617,11 @@ export default function CrossChainPage() {
           {showRouteUnknownMessage && (
             <p className="text-gray-500 text-xs text-center mb-2">
               Route check unavailable — you can still slide to continue; swap completes via the bridge.
+            </p>
+          )}
+          {bitcoinSourceRequired && !bitcoinSenderValid && amountIn && parseFloat(amountIn) > 0 && (
+            <p className="text-amber-400 text-sm text-center mb-2">
+              Enter your Bitcoin sender address (where you will send BTC from) to continue.
             </p>
           )}
           {destAddrRequired && !destAddrValid && amountIn && parseFloat(amountIn) > 0 && (

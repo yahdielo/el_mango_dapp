@@ -40,6 +40,14 @@ function isNonEvmDest(chainId) {
   return NON_EVM_DEST_CHAINS.includes(Number(chainId));
 }
 
+/** Bitcoin address format (matches backend: legacy, bech32, testnet bech32). Invalid chars like / cause route errors. */
+function isValidBitcoinAddress(addr) {
+  if (!addr || typeof addr !== 'string') return false;
+  const s = addr.trim();
+  if (!s) return false;
+  return /^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(s) || /^bc1[a-z0-9]{13,74}$/.test(s) || /^tb1[a-z0-9]{13,74}$/.test(s);
+}
+
 export default function CrossChainPage() {
   const { address } = useAccount();
   const { handleConnect } = useConnectWallet();
@@ -356,7 +364,9 @@ export default function CrossChainPage() {
   const destAddrRequired = isNonEvmDest(destChainId);
   const destAddrValid = !destAddrRequired || (destinationAddress || '').trim().length > 0;
   const bitcoinSourceRequired = sourceChainId === 0;
-  const bitcoinSenderValid = !bitcoinSourceRequired || (bitcoinSenderAddress || '').trim().length > 0;
+  const bitcoinSenderTrimmed = (bitcoinSenderAddress || '').trim();
+  const bitcoinSenderValid = !bitcoinSourceRequired || (bitcoinSenderTrimmed.length > 0 && isValidBitcoinAddress(bitcoinSenderTrimmed));
+  const bitcoinSenderInvalidFormat = bitcoinSourceRequired && bitcoinSenderTrimmed.length > 0 && !isValidBitcoinAddress(bitcoinSenderTrimmed);
   const recipientForEstimate = destAddrRequired ? (destinationAddress || '').trim() : (address || '');
 
   const {
@@ -559,9 +569,14 @@ export default function CrossChainPage() {
               value={bitcoinSenderAddress}
               onChange={(e) => setBitcoinSenderAddress(e.target.value)}
               placeholder="bc1q... or 1... or 3..."
-              className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:border-transparent"
+              className={`w-full bg-[#1a1a1a] border rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:border-transparent ${bitcoinSenderInvalidFormat ? 'border-amber-500' : 'border-gray-600'}`}
               spellCheck={false}
             />
+            {bitcoinSenderInvalidFormat && (
+              <p className="text-amber-400 text-xs mt-1">
+                Invalid format. Use bc1..., 1..., or 3... with no spaces or special characters (e.g. /).
+              </p>
+            )}
           </div>
         )}
         {destAddrRequired && (
@@ -621,7 +636,9 @@ export default function CrossChainPage() {
           )}
           {bitcoinSourceRequired && !bitcoinSenderValid && amountIn && parseFloat(amountIn) > 0 && (
             <p className="text-amber-400 text-sm text-center mb-2">
-              Enter your Bitcoin sender address (where you will send BTC from) to continue.
+              {bitcoinSenderInvalidFormat
+                ? 'Fix the Bitcoin sender address format (use bc1..., 1..., or 3... only).'
+                : 'Enter your Bitcoin sender address (where you will send BTC from) to continue.'}
             </p>
           )}
           {destAddrRequired && !destAddrValid && amountIn && parseFloat(amountIn) > 0 && (

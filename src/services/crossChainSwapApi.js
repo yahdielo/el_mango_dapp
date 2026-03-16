@@ -94,7 +94,14 @@ export async function initiateCrossChainViaBackend({
     const rawMsg = data?.message ?? data?.error;
     let msg = typeof rawMsg === 'string' ? rawMsg : (data?.suggestion ? `${data.error || 'Error'}. ${data.suggestion}` : null) || `API error: ${res.status}`;
     if (data?.suggestion && msg && !msg.includes(data.suggestion)) {
-      msg = `${msg}. ${data.suggestion}`;
+      msg = `${msg} ${data.suggestion}`;
+    }
+    // Include requested route when present (e.g. 400 Route not available)
+    const route = data?.route;
+    if (route && (route.sourceChainId != null || route.destChainId != null)) {
+      const src = route.sourceChainId != null ? route.sourceChainId : '?';
+      const dst = route.destChainId != null ? route.destChainId : '?';
+      msg = `${msg} Requested route: chain ${src} → chain ${dst}.`;
     }
     throw new Error(msg);
   }

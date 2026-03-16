@@ -6,6 +6,14 @@ import { notifySourceTxHash } from '../services/crossChainSwapApi';
 
 const EVM_CHAIN_IDS = [1, 8453, 42161, 10, 137, 43114, 56];
 const NATIVE_SYMBOLS = ['ETH', 'AVAX', 'MATIC', 'BNB'];
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
+function isERC20Token(tok) {
+  const addr = tok?.address;
+  if (!addr || typeof addr !== 'string') return false;
+  const raw = addr.trim().toLowerCase();
+  return raw !== ZERO_ADDRESS.toLowerCase() && (isAddress(addr) || isEthereumAddressLike(addr));
+}
 
 /** Normalize CAIP address (eip155:8453:0x...) to raw 0x... for sendTransaction */
 function toRawEthereumAddress(addr) {
@@ -155,14 +163,33 @@ export default function CrossChainSwapStatusBanner({
       }
       if (canSignRangoTx && rangoTx?.txTo) {
         // If Rango requires an approval tx first (e.g. USDT), sign it before the main swap tx
-        const needsApproval = rangoTx.approveTo && rangoTx.approveData && !approvalTxDone;
-        if (needsApproval) {
+        const hasRangoApproval = rangoTx.approveTo && rangoTx.approveData;
+        const needsApproval = !approvalTxDone && (
+          hasRangoApproval ||
+          (isERC20Token(tokenIn) && (tokenIn.decimals != null || tokenIn.decimals === 0) && amountIn && parseFloat(amountIn) > 0)
+        );
+        if (needsApproval && hasRangoApproval) {
           const approveDataHex = rangoTx.approveData.startsWith('0x') ? rangoTx.approveData : `0x${rangoTx.approveData}`;
           await sendTransactionAsync({
             to: rangoTx.approveTo,
             data: approveDataHex,
             value: 0n,
             gas: rangoTx.gasLimit ? BigInt(rangoTx.gasLimit) : undefined,
+          });
+          setApprovalTxDone(true);
+          return; // User clicks again to send the main tx
+        }
+        if (needsApproval && isERC20Token(tokenIn) && amountIn) {
+          // Fallback: Rango didn't return approval data; approve the bridge contract (txTo) to spend the swap amount
+          const decimals = tokenIn.decimals ?? 18;
+          const amountWei = parseUnits(String(amountIn), decimals);
+          const tokenAddress = toRawEthereumAddress(tokenIn.address) || tokenIn.address;
+          await writeContractAsync({
+            address: tokenAddress,
+            abi: ERC20_ABI,
+            functionName: 'approve',
+            args: [rangoTx.txTo, amountWei],
+            chainId: Number(sourceChainId),
           });
           setApprovalTxDone(true);
           return; // User clicks again to send the main tx
@@ -224,7 +251,7 @@ export default function CrossChainSwapStatusBanner({
     } catch (err) {
       console.warn('Deposit/send failed:', err?.message || err);
     }
-  }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransactionAsync, canSignRangoTx, rangoTx, approvalTxDone, canSendNative, canSendErc20, tokenIn, writeContractAsync, swapId, onDismiss]);
+  }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransactionAsync, canSignRangoTx, rangoTx, approvalTxDone, canSendNative, canSendErc20, tokenIn, amountIn, writeContractAsync, swapId, onDismiss]);
 
   return (
     <div className={`mb-4 p-4 rounded-xl border ${bgClass}`}>
@@ -241,7 +268,7 @@ export default function CrossChainSwapStatusBanner({
       )}
       {status === 'user_transfer_pending' && !txConfirmed && canSignRangoTx && (
         <p className="text-gray-300 text-xs mt-2">
-          {rangoTx?.approveTo && rangoTx?.approveData && !approvalTxDone
+          {!approvalTxDone && ((rangoTx?.approveTo && rangoTx?.approveData) || (isERC20Token(tokenIn) && amountIn && parseFloat(amountIn) > 0))
             ? 'Step 1: Approve the token for the bridge. Then click the button again to send the swap.'
             : 'Sign the transaction to execute the cross-chain swap.'}
         </p>
@@ -271,7 +298,7 @@ export default function CrossChainSwapStatusBanner({
                   : !canSendInApp
                   ? 'Preparing transaction...'
                   : canSignRangoTx
-                  ? (rangoTx?.approveTo && rangoTx?.approveData && !approvalTxDone
+                  ? (!approvalTxDone && ((rangoTx?.approveTo && rangoTx?.approveData) || (isERC20Token(tokenIn) && amountIn && parseFloat(amountIn) > 0))
                     ? `Approve ${(tokenIn?.symbol || 'token').trim()}`
                     : (amountIn != null && amountIn !== '' ? `Send ${amountIn} ${(tokenIn?.symbol || 'ETH').trim()}` : 'Send ETH'))
                   : `Send ${depositAction?.amount ?? ''} ${depositAction?.token?.symbol ?? ''}`.trim() || 'Send'}

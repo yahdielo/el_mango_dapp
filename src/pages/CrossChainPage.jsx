@@ -463,6 +463,10 @@ export default function CrossChainPage() {
                   ? 'Rango'
                   : activeProvider === 'lifi'
                   ? 'LiFi'
+                  : activeProvider === 'squid'
+                  ? 'Squid'
+                  : activeProvider === 'bungee'
+                  ? 'Bungee'
                   : activeProvider}
               </p>
             )}

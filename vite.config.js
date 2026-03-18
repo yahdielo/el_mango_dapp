@@ -4,6 +4,11 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.js', 'src/**/*.spec.js'],
+    globals: true,
+  },
   server: {
     host: '::',
     port: 3003,

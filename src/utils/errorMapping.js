@@ -114,7 +114,8 @@ const CONFIG_PATTERNS = [
  * @returns {string}
  */
 export function mapErrorToUserMessage(err) {
-  const msg = String(err?.message || err?.shortMessage || err || '').toLowerCase();
+  if (err != null && typeof err !== 'object' && typeof err !== 'string') return 'Transaction failed';
+  const msg = String(err?.message ?? err?.shortMessage ?? (typeof err === 'string' ? err : '') || '').toLowerCase();
 
   if (REJECT_PATTERNS.some((p) => p.test(msg))) return 'Transaction rejected';
   if (SLIPPAGE_PATTERNS.some((p) => p.test(msg))) return 'Slippage exceeded';
@@ -141,8 +142,14 @@ export function mapErrorToUserMessage(err) {
     return 'Quote server unreachable. Set VITE_MANGO_SERVICES_URL to a public HTTPS URL (not a local IP when the app is on HTTPS).';
   }
 
+  // RPC/viem decoding: "y is not an Object (evaluating 'data' in y)" when contract result shape is unexpected
+  const errStr = String(err?.message ?? err?.shortMessage ?? err ?? '');
+  if (/is not an object.*evaluating.*data.*in/i.test(errStr) || /evaluating\s*['"]data['"]\s*in/i.test(errStr)) {
+    return 'Quote or contract read failed. Try again or check your network.';
+  }
+
   // Fallback: shorten raw message
-  const raw = err?.shortMessage || err?.message || String(err);
+  const raw = err?.shortMessage ?? err?.message ?? (typeof err === 'string' ? err : String(err ?? ''));
   if (raw.length > 80) return 'Transaction failed';
   return raw || 'Transaction failed';
 }

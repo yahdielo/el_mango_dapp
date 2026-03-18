@@ -467,6 +467,8 @@ export default function CrossChainPage() {
                   ? 'Squid'
                   : activeProvider === 'bungee'
                   ? 'Bungee'
+                  : activeProvider === 'wormhole'
+                  ? 'Wormhole'
                   : activeProvider}
               </p>
             )}

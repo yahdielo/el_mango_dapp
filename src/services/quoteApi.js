@@ -29,7 +29,9 @@ async function fetchJson(url) {
       const text = await res.text();
       throw new Error(text || `API error: ${res.status}`);
     }
-    return res.json();
+    const body = await res.json().catch(() => null);
+    // Ensure we always return an object so callers never see a primitive (avoids "y is not an Object (evaluating 'data' in y)" in deps)
+    return body != null && typeof body === 'object' && !Array.isArray(body) ? body : {};
   } catch (e) {
     const baseUrl = getBaseUrl();
     const hint = baseUrl
@@ -99,7 +101,7 @@ export async function getQuote({ chainId, tokenIn, tokenOut, amountIn }) {
   const url = `${baseUrl}/api/v1/swap/quote?${params}`;
   const data = await fetchJson(url);
 
-  if (!data.amountOut) {
+  if (!data || typeof data !== 'object' || !data.amountOut) {
     throw new Error(data.error || 'No amountOut in quote response');
   }
 

@@ -263,7 +263,7 @@ export default function CrossChainSwapStatusBanner({
         <p className="text-gray-400 text-xs mt-1">
           {status === 'user_transfer_pending' && txConfirmed
             ? 'It may take a couple of minutes to see your deposit.'
-            : `Powered by ${provider === 'layerswap' ? 'LayerSwap' : provider === 'rango' ? 'Rango' : provider === 'lifi' ? 'LiFi' : provider === 'squid' ? 'Squid' : provider === 'bungee' ? 'Bungee' : provider}`}
+            : `Powered by ${provider === 'layerswap' ? 'LayerSwap' : provider === 'rango' ? 'Rango' : provider === 'lifi' ? 'LiFi' : provider === 'squid' ? 'Squid' : provider === 'bungee' ? 'Bungee' : provider === 'wormhole' ? 'Wormhole' : provider}`}
         </p>
       )}
       {status === 'user_transfer_pending' && !txConfirmed && canSignRangoTx && (

@@ -43,7 +43,7 @@ export function useQuote({ chainId, tokenIn, tokenOut, amountIn, skip }) {
           tokenOut,
           amountIn: amt,
         });
-        if (id === requestIdRef.current) {
+        if (id === requestIdRef.current && result != null && typeof result === 'object') {
           setAmountOut(result.amountOut ?? '');
           setEstimated(result.estimated ?? false);
           setPriceIn(result.priceIn ?? 0);
@@ -51,7 +51,7 @@ export function useQuote({ chainId, tokenIn, tokenOut, amountIn, skip }) {
         }
       } catch (err) {
         if (id === requestIdRef.current) {
-          setError(err.message || 'Quote failed');
+          setError(err?.message || 'Quote failed');
           setAmountOut('');
         }
       } finally {

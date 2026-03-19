@@ -37,16 +37,23 @@ export function getChain(chainId) {
 }
 
 /**
- * Get referrer address for swap (VITE_REFERRER_ADDRESS or chain.contracts.referral)
+ * Get referrer address for swap.
+ *
+ * IMPORTANT:
+ * `chains.json` stores `contracts.referral` as the deployed `MangoReferral` contract address.
+ * The router `swap(..., referrer)` parameter expects the referrer *address* (e.g. an
+ * evangelist/affiliate wallet), not the referral contract.
+ *
+ * To avoid blocking swaps when referral is not configured/funded, default to ZERO_ADDRESS
+ * unless the app explicitly provides `VITE_REFERRER_ADDRESS`.
  * @param {number} chainId
  * @returns {string} Referrer address or ZERO_ADDRESS if not configured
  */
 export function getReferrerAddress(chainId) {
   const envAddr = import.meta.env.VITE_REFERRER_ADDRESS;
   if (envAddr && typeof envAddr === 'string' && envAddr.startsWith('0x')) return envAddr;
-  const chain = getChain(chainId);
-  const addr = chain?.contracts?.referral ?? chain?.contracts?.referrer ?? null;
-  return addr && typeof addr === 'string' ? addr : ZERO_ADDRESS;
+  // Default: no referral.
+  return ZERO_ADDRESS;
 }
 
 /**

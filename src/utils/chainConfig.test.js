@@ -33,10 +33,10 @@ describe('chainConfig (regular swap + referral)', () => {
           referrer,
           `chainId ${chainId} should have referrer (or ZERO_ADDRESS)`
         ).not.toBeNull();
-        expect(
-          referrer,
-          `chainId ${chainId} referrer should be 0x address`
-        ).toMatch(ETH_ADDRESS_REGEX);
+        // Default is ZERO_ADDRESS unless VITE_REFERRER_ADDRESS is explicitly set in the test environment.
+        if (referrer !== ZERO_ADDRESS) {
+          expect(referrer, `chainId ${chainId} referrer should be 0x address`).toMatch(ETH_ADDRESS_REGEX);
+        }
       }
     });
 

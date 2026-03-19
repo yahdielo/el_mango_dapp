@@ -115,7 +115,8 @@ const CONFIG_PATTERNS = [
  */
 export function mapErrorToUserMessage(err) {
   if (err != null && typeof err !== 'object' && typeof err !== 'string') return 'Transaction failed';
-  const msg = String(err?.message ?? err?.shortMessage ?? (typeof err === 'string' ? err : '') || '').toLowerCase();
+  // Parentheses required: mixing nullish coalescing `??` with `||` without grouping breaks parsing in some bundlers.
+  const msg = String((err?.message ?? err?.shortMessage ?? (typeof err === 'string' ? err : '')) || '').toLowerCase();
 
   if (REJECT_PATTERNS.some((p) => p.test(msg))) return 'Transaction rejected';
   if (SLIPPAGE_PATTERNS.some((p) => p.test(msg))) return 'Slippage exceeded';

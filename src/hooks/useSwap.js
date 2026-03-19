@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { parseUnits } from 'viem';
-import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
+import { useWriteContract, useWaitForTransactionReceipt, useReadContract, usePublicClient } from 'wagmi';
 import { ERC20_ABI, ROUTER_ABI } from '../config/abis';
 import { ZERO_ADDRESS, getRouterAddress, getExplorerUrl, getGasSettings } from '../utils/chainConfig';
 import { mapErrorToUserMessage } from '../utils/errorMapping';
@@ -33,7 +33,10 @@ export function useSwap({
 
   const routerAddress = getRouterAddress(chainId);
   const gasSettings = getGasSettings(chainId);
-  const gasConfig = { gas: BigInt(gasSettings?.gasLimit ?? 500000) };
+  // MetaMask may still preflight-simulate with provided `gas`.
+  // Use a larger limit to reduce "likely to fail" due to underestimation.
+  const gasConfig = { gas: BigInt(gasSettings?.gasLimit ?? 500000) * 2n };
+  const publicClient = usePublicClient({ chainId });
 
   const amountWeiForAllowance = amountIn && !isNativeToken(tokenIn) && tokenIn?.decimals != null
     ? parseUnits(String(parseFloat(amountIn) || 0), tokenIn.decimals)
@@ -78,13 +81,22 @@ export function useSwap({
 
     try {
       if (!isNativeToken(tokenIn) && (allowance == null || allowance < amountWei)) {
-        await writeContractAsync({
+        const approveHash = await writeContractAsync({
           address: tokenIn.address,
           abi: ERC20_ABI,
           functionName: 'approve',
           args: [routerAddress, amountWei],
           chainId,
         });
+        // Ensure allowance is updated before sending the swap tx.
+        // Otherwise the swap may revert during MetaMask simulation (allowance still 0).
+        if (!publicClient?.waitForTransactionReceipt) {
+          throw new Error('Approval transaction sent but receipt polling is unavailable; try again in a moment.');
+        }
+        const approvalReceipt = await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        if (approvalReceipt?.status != null && approvalReceipt.status !== 'success' && approvalReceipt.status !== 1) {
+          throw new Error('Approval transaction failed; cannot perform swap.');
+        }
       }
 
       // MangoRouter002: 4 params (token0, token1, amount, referrer) — no slippage param

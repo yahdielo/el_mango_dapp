@@ -469,6 +469,10 @@ export default function CrossChainPage() {
                   ? 'Bungee'
                   : activeProvider === 'wormhole'
                   ? 'Wormhole'
+                  : activeProvider === 'symbiosis'
+                  ? 'Symbiosis'
+                  : activeProvider === 'inbridge'
+                  ? 'Inbridge'
                   : activeProvider}
               </p>
             )}

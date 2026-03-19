@@ -96,14 +96,6 @@ export default function SwapPage() {
     });
   }, [address, effectiveChainId, isValidRef, refParam, backendReferrer]);
 
-  const hasReferrer = referrer && referrer !== ZERO_ADDRESS;
-  const [useReferrer, setUseReferrer] = useState(true);
-
-  const swapReferrer = useMemo(() => {
-    if (!useReferrer || !hasReferrer) return ZERO_ADDRESS;
-    return referrer;
-  }, [useReferrer, hasReferrer, referrer]);
-
   // If user arrives via ?ref=..., persist it for account-based behavior.
   useEffect(() => {
     if (!address) return;
@@ -120,7 +112,7 @@ export default function SwapPage() {
     chainId: effectiveChainId,
     slippageBps,
     address,
-    referrer: swapReferrer,
+    referrer,
   });
 
   const { gasCostFormatted } = useGasEstimate({
@@ -129,7 +121,7 @@ export default function SwapPage() {
     amountIn: amount1,
     chainId: effectiveChainId,
     slippageBps,
-    referrer: swapReferrer,
+    referrer,
   });
 
   const routerConfigured = useMemo(() => Boolean(getRouterAddress(effectiveChainId)), [effectiveChainId]);
@@ -302,24 +294,6 @@ export default function SwapPage() {
             disabled={swapPending}
           />
         </div>
-
-        {hasReferrer && (
-          <div className="mt-3 flex items-center gap-2">
-            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
-              <input
-                type="checkbox"
-                checked={useReferrer}
-                onChange={(e) => setUseReferrer(e.target.checked)}
-                disabled={swapPending}
-                className="rounded border-gray-500 bg-black/30 text-[#3CF902] focus:ring-[#3CF902]"
-              />
-              <span>Use referral</span>
-            </label>
-            {swapError && (
-              <span className="text-amber-400 text-xs">If the transaction fails, try turning off.</span>
-            )}
-          </div>
-        )}
 
         <SwapTransactionDetails
           amountIn={amount1}

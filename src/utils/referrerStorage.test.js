@@ -4,6 +4,8 @@ import {
   getStoredReferrer,
   setStoredReferrer,
   resolveEffectiveReferrer,
+  setPendingReferrer,
+  getPendingReferrer,
 } from './referrerStorage';
 import { ZERO_ADDRESS } from './chainConfig';
 
@@ -46,6 +48,12 @@ describe('referrerStorage', () => {
     const urlRef = '0x3333333333333333333333333333333333333333';
     const eff = resolveEffectiveReferrer({ userAddress: USER, chainId: 8453, urlRef });
     expect(eff).toBe(urlRef);
+  });
+
+  it('stores and reads pending referrer', () => {
+    expect(getPendingReferrer()).toBe(ZERO_ADDRESS);
+    setPendingReferrer(REF);
+    expect(getPendingReferrer()).toBe(REF);
   });
 });
 

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppKitProvider } from './providers/AppKitProvider';
 import { useTelegramWebApp } from './hooks/useTelegramWebApp';
 import ReownSetupBanner from './components/ReownSetupBanner';
+import ReferralUrlCapture from './components/ReferralUrlCapture';
 import SwapPage from './pages/SwapPage';
 import CrossChainPage from './pages/CrossChainPage';
 import ReferralPage from './pages/ReferralPage';
@@ -13,6 +14,7 @@ export default function App() {
     <AppKitProvider>
       <ReownSetupBanner />
       <BrowserRouter>
+        <ReferralUrlCapture />
         <Routes>
           <Route path="/" element={<SwapPage />} />
           <Route path="/cross-chain" element={<CrossChainPage />} />

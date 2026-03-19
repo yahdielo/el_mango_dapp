@@ -1,6 +1,7 @@
 import { ZERO_ADDRESS, getReferrerAddress } from './chainConfig';
 
 const KEY_PREFIX = 'mango.referrer.';
+const PENDING_KEY = 'mango.pendingReferrer';
 
 export function isValidReferrerAddress(addr) {
   return typeof addr === 'string' && /^0x[a-fA-F0-9]{40}$/.test(addr.trim());
@@ -68,5 +69,37 @@ export function resolveEffectiveReferrer({ userAddress, chainId, urlRef }) {
   if (stored !== ZERO_ADDRESS) return stored;
   const envDefault = getReferrerAddress(chainId);
   return envDefault || ZERO_ADDRESS;
+}
+
+/**
+ * Store a pending URL referrer (when user isn't connected yet).
+ */
+export function setPendingReferrer(referrerAddress) {
+  if (typeof window === 'undefined') return ZERO_ADDRESS;
+  const ref = (referrerAddress || '').trim();
+  const normalized = isValidReferrerAddress(ref) ? ref : ZERO_ADDRESS;
+  try {
+    if (normalized === ZERO_ADDRESS) window.localStorage.removeItem(PENDING_KEY);
+    else window.localStorage.setItem(PENDING_KEY, normalized);
+  } catch {
+    // ignore
+  }
+  return normalized;
+}
+
+export function getPendingReferrer() {
+  if (typeof window === 'undefined') return ZERO_ADDRESS;
+  try {
+    const raw = window.localStorage.getItem(PENDING_KEY);
+    if (!raw) return ZERO_ADDRESS;
+    const s = String(raw).trim();
+    return isValidReferrerAddress(s) ? s : ZERO_ADDRESS;
+  } catch {
+    return ZERO_ADDRESS;
+  }
+}
+
+export function clearPendingReferrer() {
+  return setPendingReferrer(ZERO_ADDRESS);
 }
 

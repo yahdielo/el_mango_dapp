@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useAccount } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +9,7 @@ import { useReferralTree, useReferralPerformance, useReferralInsights, useTopRef
 import { syncReferral } from '../services/referralApi';
 import { LAYERSWAP_CHAIN_IDS } from '../services/bridgeApi';
 import { getAllChains } from '../utils/chainConfig';
+import { getStoredReferrer, isValidReferrerAddress, setStoredReferrer, clearStoredReferrer } from '../utils/referrerStorage';
 
 function formatAddress(addr) {
   if (!addr) return '';
@@ -48,6 +49,8 @@ export default function ReferralPage() {
   const navigate = useNavigate();
   const [syncStatus, setSyncStatus] = useState(null);
   const [copyDone, setCopyDone] = useState(false);
+  const [manualRef, setManualRef] = useState('');
+  const [manualStatus, setManualStatus] = useState(null);
 
   const { data: chainData, loading: chainLoading, error: chainError, refetch: refetchChain } = useReferralChain(address);
   const { data: treeData, loading: treeLoading, error: treeError } = useReferralTree(address);
@@ -58,9 +61,22 @@ export default function ReferralPage() {
   const raw = chainData?.data ?? chainData;
   const primaryReferrer = raw?.primaryReferrer ?? raw?.referral?.referrer ?? null;
   const referralsList = raw?.referrals ?? [];
+  const storedReferrer = useMemo(() => (address ? getStoredReferrer(address) : null), [address]);
   const referralLink = typeof window !== 'undefined' && address
     ? `${window.location.origin}/?ref=${address}`
     : '';
+
+  useEffect(() => {
+    if (!address) {
+      setManualRef('');
+      return;
+    }
+    if (storedReferrer && storedReferrer !== '0x0000000000000000000000000000000000000000') {
+      setManualRef(storedReferrer);
+    } else {
+      setManualRef('');
+    }
+  }, [address, storedReferrer]);
 
   const handleCopyLink = useCallback(() => {
     if (!referralLink) return;
@@ -118,6 +134,53 @@ export default function ReferralPage() {
           </div>
         ) : (
           <>
+            <ReferralSection title="Set my referrer (URL or manual)">
+              <p className="text-gray-400 text-xs mb-2">
+                This sets the referrer your swaps will use automatically. You can set it by visiting a link with <span className="font-mono">?ref=0x...</span> or by entering an address here.
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={manualRef}
+                  onChange={(e) => setManualRef(e.target.value)}
+                  placeholder="0xReferrerAddress"
+                  className="flex-1 bg-black/30 rounded-lg px-3 py-2 text-white text-xs font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!address) return;
+                    const v = (manualRef || '').trim();
+                    if (!isValidReferrerAddress(v) || v.toLowerCase() === address.toLowerCase()) {
+                      setManualStatus('Invalid referrer address');
+                      setTimeout(() => setManualStatus(null), 2500);
+                      return;
+                    }
+                    setStoredReferrer(address, v);
+                    setManualStatus('Saved');
+                    setTimeout(() => setManualStatus(null), 2000);
+                  }}
+                  className="shrink-0 px-3 py-2 rounded-lg bg-[#3CF902] text-black font-medium text-sm hover:opacity-90"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!address) return;
+                    clearStoredReferrer(address);
+                    setManualRef('');
+                    setManualStatus('Cleared');
+                    setTimeout(() => setManualStatus(null), 2000);
+                  }}
+                  className="shrink-0 px-3 py-2 rounded-lg bg-white/10 text-white font-medium text-sm hover:bg-white/15"
+                >
+                  Reset
+                </button>
+              </div>
+              {manualStatus && <p className="text-gray-400 text-xs mt-2">{manualStatus}</p>}
+            </ReferralSection>
+
             <ReferralSection title="My referrer">
               {chainLoading && <p className="text-gray-500">Loading...</p>}
               {chainError && <p className="text-red-400">{chainError}</p>}

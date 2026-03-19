@@ -26,8 +26,15 @@ async function fetchOk(url, options = {}) {
 
 export async function getReferralChain(address, opts = {}) {
   if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) return null;
-  // Don't call API so we never trigger 401; show empty state until backend allows unauthenticated or valid key is used
-  return null;
+  if (!BASE) return null;
+  // If backend is protected and no API key is present, avoid calling to prevent noisy 401s.
+  if (!API_KEY) return null;
+  const params = new URLSearchParams();
+  if (opts?.allChains) params.set('allChains', 'true');
+  const qs = params.toString();
+  return fetchOk(`${BASE}/api/v1/referral-chain/${encodeURIComponent(address)}${qs ? `?${qs}` : ''}`, {
+    method: 'GET',
+  });
 }
 
 export async function syncReferral(body) {

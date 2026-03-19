@@ -30,6 +30,7 @@ import { formatBalance } from '../utils/formatBalance';
 import { mapErrorToUserMessage } from '../utils/errorMapping';
 import SlippageSelector, { loadSlippageFromStorage } from '../components/SlippageSelector';
 import { useWhitelist } from '../hooks/useWhitelist';
+import { getStoredReferrer } from '../utils/referrerStorage';
 
 const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
 
@@ -316,11 +317,10 @@ export default function CrossChainPage() {
     if (!isCrossChain) return;
     if (routeSupported === false) return;
     try {
-        const referrerRes = await getReferralChain(address, { allChains: true }).catch(() => null);
-        const raw = referrerRes?.data ?? referrerRes;
-        const referrals = raw?.referrals ?? [];
-        const primaryReferrer = raw?.primaryReferrer ?? raw?.referral?.referrer ?? null;
-        const sourceReferrer = referrals.find((r) => Number(r.chainId) === sourceChainId)?.referrer ?? primaryReferrer;
+        // Current referral selection for cross-chain:
+        // Prefer local stored referrer (URL-captured or manually set in Referral page).
+        // Backend referral-chain API may be protected; when unavailable we still support account-based referral.
+        const sourceReferrer = getStoredReferrer(address);
 
         const recipient = isNonEvmDest(destChainId)
           ? (destinationAddress || '').trim()
@@ -334,11 +334,11 @@ export default function CrossChainPage() {
           amountIn,
           recipient,
           userAddress: senderAddress,
-          referrer: sourceReferrer || undefined,
+          referrer: sourceReferrer && sourceReferrer !== '0x0000000000000000000000000000000000000000' ? sourceReferrer : undefined,
         });
 
         // When not using backend, run referral sync client-side (backend does it when using mangoServices)
-        if (!isCrossChainViaBackendAvailable() && sourceReferrer) {
+        if (!isCrossChainViaBackendAvailable() && sourceReferrer && sourceReferrer !== '0x0000000000000000000000000000000000000000') {
           syncReferral({
             userAddress: address,
             referrerAddress: sourceReferrer,

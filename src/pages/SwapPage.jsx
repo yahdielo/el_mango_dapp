@@ -24,6 +24,7 @@ import { sanitizeAmountInput } from '../utils/inputValidation';
 import { getSlippageToleranceInBasisPoints } from '../utils/slippageUtils';
 import SlippageSelector, { loadSlippageFromStorage } from '../components/SlippageSelector';
 import { useWhitelist } from '../hooks/useWhitelist';
+import { resolveEffectiveReferrer, setStoredReferrer } from '../utils/referrerStorage';
 
 const DEFAULT_CHAIN = 8453;
 const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
@@ -76,10 +77,21 @@ export default function SwapPage() {
   });
 
   const slippageBps = getSlippageToleranceInBasisPoints(effectiveChainId, { getSlippage }, slippage);
-  const referrer = useMemo(
-    () => (isValidRef ? refParam : getReferrerAddress(effectiveChainId)),
-    [effectiveChainId, isValidRef, refParam]
-  );
+  const referrer = useMemo(() => {
+    return resolveEffectiveReferrer({
+      userAddress: address,
+      chainId: effectiveChainId,
+      urlRef: isValidRef ? refParam : null,
+    });
+  }, [address, effectiveChainId, isValidRef, refParam]);
+
+  // If user arrives via ?ref=..., persist it for account-based behavior.
+  useEffect(() => {
+    if (!address) return;
+    if (!isValidRef) return;
+    if (!refParam) return;
+    setStoredReferrer(address, refParam);
+  }, [address, isValidRef, refParam]);
 
   const { executeSwap, isPending: swapPending, error: swapError, txHash, reset: resetSwap, isSuccess: swapSuccess, explorerUrl } = useSwap({
     tokenIn: token1,

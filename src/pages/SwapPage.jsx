@@ -24,6 +24,8 @@ import { sanitizeAmountInput } from '../utils/inputValidation';
 import { getSlippageToleranceInBasisPoints } from '../utils/slippageUtils';
 import SlippageSelector, { loadSlippageFromStorage } from '../components/SlippageSelector';
 import { useWhitelist } from '../hooks/useWhitelist';
+import { useAccountReferrer } from '../hooks/useAccountReferrer';
+import { resolveEffectiveReferrer, setStoredReferrer } from '../utils/referrerStorage';
 import { resolveEffectiveReferrer, setStoredReferrer } from '../utils/referrerStorage';
 
 const DEFAULT_CHAIN = 8453;
@@ -77,13 +79,23 @@ export default function SwapPage() {
   });
 
   const slippageBps = getSlippageToleranceInBasisPoints(effectiveChainId, { getSlippage }, slippage);
+  const { referrer: backendReferrer } = useAccountReferrer(address);
   const referrer = useMemo(() => {
+    // Precedence:
+    // 1) URL `?ref=` (for immediate attribution)
+    // 2) backend account mapping (cross-device)
+    // 3) local stored referrer (fallback)
+    // 4) env default (campaign)
+    // 5) ZERO
+    const url = isValidRef ? refParam : null;
+    if (url && address && url.toLowerCase() !== address.toLowerCase()) return url;
+    if (backendReferrer && backendReferrer !== ZERO_ADDRESS) return backendReferrer;
     return resolveEffectiveReferrer({
       userAddress: address,
       chainId: effectiveChainId,
-      urlRef: isValidRef ? refParam : null,
+      urlRef: null,
     });
-  }, [address, effectiveChainId, isValidRef, refParam]);
+  }, [address, effectiveChainId, isValidRef, refParam, backendReferrer]);
 
   // If user arrives via ?ref=..., persist it for account-based behavior.
   useEffect(() => {

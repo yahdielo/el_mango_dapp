@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useSignMessage } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
 import { useNavigate } from 'react-router-dom';
 import SwapHeader from '../components/SwapHeader';
@@ -10,6 +10,7 @@ import { syncReferral } from '../services/referralApi';
 import { LAYERSWAP_CHAIN_IDS } from '../services/bridgeApi';
 import { getAllChains } from '../utils/chainConfig';
 import { getStoredReferrer, isValidReferrerAddress, setStoredReferrer, clearStoredReferrer } from '../utils/referrerStorage';
+import { getReferralClaimNonce, buildReferralClaimMessage, claimAccountReferrer } from '../services/referralAccountApi';
 
 function formatAddress(addr) {
   if (!addr) return '';
@@ -51,6 +52,7 @@ export default function ReferralPage() {
   const [copyDone, setCopyDone] = useState(false);
   const [manualRef, setManualRef] = useState('');
   const [manualStatus, setManualStatus] = useState(null);
+  const { signMessageAsync } = useSignMessage();
 
   const { data: chainData, loading: chainLoading, error: chainError, refetch: refetchChain } = useReferralChain(address);
   const { data: treeData, loading: treeLoading, error: treeError } = useReferralTree(address);
@@ -148,7 +150,7 @@ export default function ReferralPage() {
                 />
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     if (!address) return;
                     const v = (manualRef || '').trim();
                     if (!isValidReferrerAddress(v) || v.toLowerCase() === address.toLowerCase()) {
@@ -156,9 +158,27 @@ export default function ReferralPage() {
                       setTimeout(() => setManualStatus(null), 2500);
                       return;
                     }
+                    // Always save locally so swaps can use it immediately.
                     setStoredReferrer(address, v);
-                    setManualStatus('Saved');
-                    setTimeout(() => setManualStatus(null), 2000);
+                    setManualStatus('Saving (sign message)...');
+                    try {
+                      const { nonce } = await getReferralClaimNonce(address);
+                      const msg = buildReferralClaimMessage({ userAddress: address, referrerAddress: v, nonce });
+                      const signature = await signMessageAsync({ message: msg });
+                      await claimAccountReferrer({
+                        userAddress: address,
+                        referrerAddress: v,
+                        nonce,
+                        signature,
+                        source: 'manual',
+                      });
+                      setManualStatus('Saved (synced to backend)');
+                    } catch (e) {
+                      // Keep local save even if backend sync fails.
+                      setManualStatus(e?.message ? `Saved locally. Backend sync failed: ${e.message}` : 'Saved locally. Backend sync failed.');
+                    } finally {
+                      setTimeout(() => setManualStatus(null), 3500);
+                    }
                   }}
                   className="shrink-0 px-3 py-2 rounded-lg bg-[#3CF902] text-black font-medium text-sm hover:opacity-90"
                 >

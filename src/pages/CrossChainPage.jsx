@@ -191,7 +191,10 @@ export default function CrossChainPage() {
                 const isNative = !t.address;
                 if (isNative) {
                   // Only allow the real canonical native symbol for this chain.
-                  if (!canonicalNativeSym) return true;
+                  // If we can't resolve a canonical native symbol for this chain,
+                  // do NOT allow arbitrary "native-like" meta tokens. This prevents
+                  // synthetic/bridge-specific tokens from appearing on unrelated chains.
+                  if (!canonicalNativeSym) return false;
                   return normalizeSymbolForTokenCompare(t.symbol) === canonicalNativeSym;
                 }
                 return baseAllowedSymbols.has(normalizeSymbolForTokenCompare(t.symbol));
@@ -269,7 +272,7 @@ export default function CrossChainPage() {
               .filter((t) => {
                 const isNative = !t.address;
                 if (isNative) {
-                  if (!canonicalNativeSym) return true;
+                  if (!canonicalNativeSym) return false;
                   return normalizeSymbolForTokenCompare(t.symbol) === canonicalNativeSym;
                 }
                 return baseAllowedSymbols.has(normalizeSymbolForTokenCompare(t.symbol));

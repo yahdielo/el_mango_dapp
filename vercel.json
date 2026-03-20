@@ -10,14 +10,17 @@
       "headers": [{ "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }]
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/:path*",
-      "destination": "https://api.mangoswap.io/api/:path*"
+      "src": "/api/(.*)",
+      "dest": "https://api.mangoswap.io/api/$1"
     },
     {
-      "source": "/:path*",
-      "destination": "/index.html"
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }

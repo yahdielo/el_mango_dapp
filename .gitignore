@@ -102,7 +102,7 @@ out
 
 # Gatsby files
 .cache/
-public
+# Do NOT ignore public/ in this Vite app; chain/token icons are served from here.
 
 # Storybook build outputs
 .out

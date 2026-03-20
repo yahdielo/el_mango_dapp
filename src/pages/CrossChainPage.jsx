@@ -10,7 +10,7 @@ import CrossChainTransactionDetails from '../components/CrossChainTransactionDet
 import CrossChainSwapStatusBanner from '../components/CrossChainSwapStatusBanner';
 import SwapFooter from '../components/SwapFooter';
 import SlideToSwapButton from '../components/SlideToSwapButton';
-import { getAllChains, getChain, getSlippage } from '../utils/chainConfig';
+import { getAllChains, getChain, getSlippage, ZERO_ADDRESS } from '../utils/chainConfig';
 import { getSlippageToleranceInBasisPoints } from '../utils/slippageUtils';
 import { getTokensForChain } from '../config/tokenLists';
 import { useTokenBalance, isNativeToken } from '../hooks/useTokenBalance';
@@ -23,7 +23,7 @@ import { useCrossChainEstimate } from '../hooks/useCrossChainEstimate';
 import { useCrossChainUsdPrices } from '../hooks/useCrossChainUsdPrices';
 import { useRangoSupportMatrix } from '../hooks/useRangoSupportMatrix';
 import { useBridgeRouteSupport } from '../hooks/useBridgeRouteSupport';
-import { LAYERSWAP_CHAIN_IDS } from '../services/bridgeApi';
+import { LAYERSWAP_CHAIN_IDS, getNetworkName } from '../services/bridgeApi';
 import { getReferralChain, syncReferral } from '../services/referralApi';
 import { isCrossChainViaBackendAvailable } from '../services/crossChainSwapApi';
 import { formatBalance } from '../utils/formatBalance';
@@ -94,33 +94,131 @@ export default function CrossChainPage() {
     getTokensForRangoChain,
   } = useRangoSupportMatrix();
 
+  const { chains: bridgeMetaChains, tokens: bridgeMetaTokens } = useBridgeMeta();
+
   const tokensIn = useMemo(() => {
-    const base = getTokensForChain(sourceChainId).filter((t) => t.symbol !== 'MANGO');
-    if (bridgeProvider !== 'rango' || !rangoTokensByChain) return base;
-    const rangoTokens = getTokensForRangoChain(sourceChainId);
-    if (!rangoTokens.length) return base;
-    const allowed = new Set(
-      rangoTokens.map((t) => (t.address ? t.address.toLowerCase() : t.symbol.toUpperCase()))
-    );
-    return base.filter((t) => {
-      const key = t.address ? t.address.toLowerCase() : (t.symbol || '').toUpperCase();
-      return allowed.has(key);
-    });
-  }, [sourceChainId, bridgeProvider, rangoTokensByChain, getTokensForRangoChain]);
+    const staticTokens = getTokensForChain(sourceChainId).filter((t) => t.symbol !== 'MANGO');
+    const base =
+      staticTokens.length > 0
+        ? staticTokens
+        : (() => {
+            const chain = getChain(sourceChainId);
+            const native = chain?.nativeCurrency;
+            if (!native) return [];
+            return [
+              {
+                symbol: native.symbol,
+                name: native.name ?? native.symbol,
+                decimals: native.decimals ?? 18,
+                address: ZERO_ADDRESS,
+                native: true,
+              },
+            ];
+          })();
+
+    if (bridgeProvider === 'rango' && rangoTokensByChain) {
+      const rangoTokens = getTokensForRangoChain(sourceChainId);
+      if (!rangoTokens.length) return base;
+      const allowed = new Set(
+        rangoTokens.map((t) => (t.address ? t.address.toLowerCase() : t.symbol.toUpperCase()))
+      );
+      return base.filter((t) => {
+        const key = t.address ? t.address.toLowerCase() : (t.symbol || '').toUpperCase();
+        return allowed.has(key);
+      });
+    }
+
+    if (bridgeProvider === 'layerswap' && Array.isArray(bridgeMetaTokens) && bridgeMetaTokens.length) {
+      const net = getNetworkName(sourceChainId);
+      if (!net) return base;
+      const layerswapChainKey = `layerswap:${net}`;
+      const metaTokens = bridgeMetaTokens.filter(
+        (t) => t.chainKey === layerswapChainKey && t.symbol && t.symbol !== 'MANGO'
+      );
+      if (!metaTokens.length) return base;
+
+      const tokenKey = (t) => `${(t.symbol || '').toUpperCase()}|${(t.address || '').toLowerCase()}`;
+      const mapped = metaTokens.map((t) => ({
+        symbol: t.symbol,
+        name: t.symbol,
+        decimals: t.decimals,
+        address: t.address ?? ZERO_ADDRESS,
+        ...(t.address ? {} : { native: true }),
+      }));
+
+      const out = new Map();
+      for (const t of mapped) out.set(tokenKey(t), t);
+      // Keep static tokens for anything LayerSwap metadata doesn't include (logoURIs, etc.).
+      for (const t of base) {
+        const k = tokenKey(t);
+        if (!out.has(k)) out.set(k, t);
+      }
+      return Array.from(out.values());
+    }
+
+    return base;
+  }, [sourceChainId, bridgeProvider, rangoTokensByChain, getTokensForRangoChain, bridgeMetaTokens]);
 
   const tokensOut = useMemo(() => {
-    const base = getTokensForChain(destChainId).filter((t) => t.symbol !== 'MANGO');
-    if (bridgeProvider !== 'rango' || !rangoTokensByChain) return base;
-    const rangoTokens = getTokensForRangoChain(destChainId);
-    if (!rangoTokens.length) return base;
-    const allowed = new Set(
-      rangoTokens.map((t) => (t.address ? t.address.toLowerCase() : t.symbol.toUpperCase()))
-    );
-    return base.filter((t) => {
-      const key = t.address ? t.address.toLowerCase() : (t.symbol || '').toUpperCase();
-      return allowed.has(key);
-    });
-  }, [destChainId, bridgeProvider, rangoTokensByChain, getTokensForRangoChain]);
+    const staticTokens = getTokensForChain(destChainId).filter((t) => t.symbol !== 'MANGO');
+    const base =
+      staticTokens.length > 0
+        ? staticTokens
+        : (() => {
+            const chain = getChain(destChainId);
+            const native = chain?.nativeCurrency;
+            if (!native) return [];
+            return [
+              {
+                symbol: native.symbol,
+                name: native.name ?? native.symbol,
+                decimals: native.decimals ?? 18,
+                address: ZERO_ADDRESS,
+                native: true,
+              },
+            ];
+          })();
+    if (bridgeProvider === 'rango' && rangoTokensByChain) {
+      const rangoTokens = getTokensForRangoChain(destChainId);
+      if (!rangoTokens.length) return base;
+      const allowed = new Set(
+        rangoTokens.map((t) => (t.address ? t.address.toLowerCase() : t.symbol.toUpperCase()))
+      );
+      return base.filter((t) => {
+        const key = t.address ? t.address.toLowerCase() : (t.symbol || '').toUpperCase();
+        return allowed.has(key);
+      });
+    }
+
+    if (bridgeProvider === 'layerswap' && Array.isArray(bridgeMetaTokens) && bridgeMetaTokens.length) {
+      const net = getNetworkName(destChainId);
+      if (!net) return base;
+      const layerswapChainKey = `layerswap:${net}`;
+      const metaTokens = bridgeMetaTokens.filter(
+        (t) => t.chainKey === layerswapChainKey && t.symbol && t.symbol !== 'MANGO'
+      );
+      if (!metaTokens.length) return base;
+
+      const tokenKey = (t) => `${(t.symbol || '').toUpperCase()}|${(t.address || '').toLowerCase()}`;
+      const mapped = metaTokens.map((t) => ({
+        symbol: t.symbol,
+        name: t.symbol,
+        decimals: t.decimals,
+        address: t.address ?? ZERO_ADDRESS,
+        ...(t.address ? {} : { native: true }),
+      }));
+
+      const out = new Map();
+      for (const t of mapped) out.set(tokenKey(t), t);
+      for (const t of base) {
+        const k = tokenKey(t);
+        if (!out.has(k)) out.set(k, t);
+      }
+      return Array.from(out.values());
+    }
+
+    return base;
+  }, [destChainId, bridgeProvider, rangoTokensByChain, getTokensForRangoChain, bridgeMetaTokens]);
 
   const { balance: balanceTokenIn } = useTokenBalance({
     address,
@@ -196,8 +294,6 @@ export default function CrossChainPage() {
     balance: balanceTokenIn,
     address,
   });
-
-  const { chains: bridgeMetaChains } = useBridgeMeta();
 
   // When using Rango, restrict visible chains to those Rango reports as enabled.
   useEffect(() => {

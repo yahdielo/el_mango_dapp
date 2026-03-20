@@ -792,5 +792,632 @@
             "crossChainSync": true,
             "batchOperations": false
         }
+    },
+    {
+        "chainName": "Mode",
+        "chainId": "34443",
+        "img": "",
+        "type": "EVM",
+        "nativeCurrency": {
+            "name": "ETH",
+            "symbol": "ETH",
+            "decimals": 18
+        },
+        "rpcUrls": [],
+        "blockExplorers": [],
+        "contracts": {
+            "router": null,
+            "referral": null,
+            "token": null,
+            "manager": null,
+            "whitelist": null
+        },
+        "dexes": [
+            "LayerSwap"
+        ],
+        "bridge": "LayerSwap",
+        "status": "active",
+        "gasSettings": {
+            "gasLimit": 500000,
+            "maxFeePerGas": null,
+            "maxPriorityFeePerGas": null,
+            "gasPrice": null
+        },
+        "slippage": {
+            "default": 0.5,
+            "min": 0.1,
+            "max": 5.0
+        },
+        "timeouts": {
+            "transactionTimeout": 300000,
+            "rpcTimeout": 10000,
+            "retryAttempts": 3,
+            "retryDelay": 1000
+        },
+        "minimums": {
+            "swap": "0.001",
+            "referral": "0.0001"
+        },
+        "blockTime": 2,
+        "confirmationsRequired": 1,
+        "featureFlags": {
+            "directSwap": false,
+            "layerSwap": true,
+            "referralSystem": true,
+            "whitelist": false,
+            "tokenTax": false,
+            "crossChainSync": true,
+            "batchOperations": false
+        }
+    },
+    {
+        "chainName": "Mantle",
+        "chainId": "5000",
+        "img": "",
+        "type": "EVM",
+        "nativeCurrency": {
+            "name": "MNT",
+            "symbol": "MNT",
+            "decimals": 18
+        },
+        "rpcUrls": [],
+        "blockExplorers": [],
+        "contracts": {
+            "router": null,
+            "referral": null,
+            "token": null,
+            "manager": null,
+            "whitelist": null
+        },
+        "dexes": [
+            "LayerSwap"
+        ],
+        "bridge": "LayerSwap",
+        "status": "active",
+        "gasSettings": {
+            "gasLimit": 500000,
+            "maxFeePerGas": null,
+            "maxPriorityFeePerGas": null,
+            "gasPrice": null
+        },
+        "slippage": {
+            "default": 0.5,
+            "min": 0.1,
+            "max": 5.0
+        },
+        "timeouts": {
+            "transactionTimeout": 300000,
+            "rpcTimeout": 10000,
+            "retryAttempts": 3,
+            "retryDelay": 1000
+        },
+        "minimums": {
+            "swap": "0.001",
+            "referral": "0.0001"
+        },
+        "blockTime": 2,
+        "confirmationsRequired": 1,
+        "featureFlags": {
+            "directSwap": false,
+            "layerSwap": true,
+            "referralSystem": true,
+            "whitelist": false,
+            "tokenTax": false,
+            "crossChainSync": true,
+            "batchOperations": false
+        }
+    },
+    {
+        "chainName": "Berachain",
+        "chainId": "80094",
+        "img": "",
+        "type": "EVM",
+        "nativeCurrency": {
+            "name": "BERA",
+            "symbol": "BERA",
+            "decimals": 18
+        },
+        "rpcUrls": [],
+        "blockExplorers": [],
+        "contracts": {
+            "router": null,
+            "referral": null,
+            "token": null,
+            "manager": null,
+            "whitelist": null
+        },
+        "dexes": [
+            "LayerSwap"
+        ],
+        "bridge": "LayerSwap",
+        "status": "active",
+        "gasSettings": {
+            "gasLimit": 500000,
+            "maxFeePerGas": null,
+            "maxPriorityFeePerGas": null,
+            "gasPrice": null
+        },
+        "slippage": {
+            "default": 0.5,
+            "min": 0.1,
+            "max": 5.0
+        },
+        "timeouts": {
+            "transactionTimeout": 300000,
+            "rpcTimeout": 10000,
+            "retryAttempts": 3,
+            "retryDelay": 1000
+        },
+        "minimums": {
+            "swap": "0.001",
+            "referral": "0.0001"
+        },
+        "blockTime": 2,
+        "confirmationsRequired": 1,
+        "featureFlags": {
+            "directSwap": false,
+            "layerSwap": true,
+            "referralSystem": true,
+            "whitelist": false,
+            "tokenTax": false,
+            "crossChainSync": true,
+            "batchOperations": false
+        }
+    },
+    {
+        "chainName": "Celo",
+        "chainId": "42220",
+        "img": "",
+        "type": "EVM",
+        "nativeCurrency": {
+            "name": "CELO",
+            "symbol": "CELO",
+            "decimals": 18
+        },
+        "rpcUrls": [],
+        "blockExplorers": [],
+        "contracts": {
+            "router": null,
+            "referral": null,
+            "token": null,
+            "manager": null,
+            "whitelist": null
+        },
+        "dexes": [
+            "LayerSwap"
+        ],
+        "bridge": "LayerSwap",
+        "status": "active",
+        "gasSettings": {
+            "gasLimit": 500000,
+            "maxFeePerGas": null,
+            "maxPriorityFeePerGas": null,
+            "gasPrice": null
+        },
+        "slippage": {
+            "default": 0.5,
+            "min": 0.1,
+            "max": 5.0
+        },
+        "timeouts": {
+            "transactionTimeout": 300000,
+            "rpcTimeout": 10000,
+            "retryAttempts": 3,
+            "retryDelay": 1000
+        },
+        "minimums": {
+            "swap": "0.001",
+            "referral": "0.0001"
+        },
+        "blockTime": 2,
+        "confirmationsRequired": 1,
+        "featureFlags": {
+            "directSwap": false,
+            "layerSwap": true,
+            "referralSystem": true,
+            "whitelist": false,
+            "tokenTax": false,
+            "crossChainSync": true,
+            "batchOperations": false
+        }
+    },
+    {
+        "chainName": "Fraxtal",
+        "chainId": "252",
+        "img": "",
+        "type": "EVM",
+        "nativeCurrency": {
+            "name": "FRAX",
+            "symbol": "FRAX",
+            "decimals": 18
+        },
+        "rpcUrls": [],
+        "blockExplorers": [],
+        "contracts": {
+            "router": null,
+            "referral": null,
+            "token": null,
+            "manager": null,
+            "whitelist": null
+        },
+        "dexes": [
+            "LayerSwap"
+        ],
+        "bridge": "LayerSwap",
+        "status": "active",
+        "gasSettings": {
+            "gasLimit": 500000,
+            "maxFeePerGas": null,
+            "maxPriorityFeePerGas": null,
+            "gasPrice": null
+        },
+        "slippage": {
+            "default": 0.5,
+            "min": 0.1,
+            "max": 5.0
+        },
+        "timeouts": {
+            "transactionTimeout": 300000,
+            "rpcTimeout": 10000,
+            "retryAttempts": 3,
+            "retryDelay": 1000
+        },
+        "minimums": {
+            "swap": "0.001",
+            "referral": "0.0001"
+        },
+        "blockTime": 2,
+        "confirmationsRequired": 1,
+        "featureFlags": {
+            "directSwap": false,
+            "layerSwap": true,
+            "referralSystem": true,
+            "whitelist": false,
+            "tokenTax": false,
+            "crossChainSync": true,
+            "batchOperations": false
+        }
+    },
+    {
+        "chainName": "Taiko",
+        "chainId": "167000",
+        "img": "",
+        "type": "EVM",
+        "nativeCurrency": {
+            "name": "ETH",
+            "symbol": "ETH",
+            "decimals": 18
+        },
+        "rpcUrls": [],
+        "blockExplorers": [],
+        "contracts": {
+            "router": null,
+            "referral": null,
+            "token": null,
+            "manager": null,
+            "whitelist": null
+        },
+        "dexes": [
+            "LayerSwap"
+        ],
+        "bridge": "LayerSwap",
+        "status": "active",
+        "gasSettings": {
+            "gasLimit": 500000,
+            "maxFeePerGas": null,
+            "maxPriorityFeePerGas": null,
+            "gasPrice": null
+        },
+        "slippage": {
+            "default": 0.5,
+            "min": 0.1,
+            "max": 5.0
+        },
+        "timeouts": {
+            "transactionTimeout": 300000,
+            "rpcTimeout": 10000,
+            "retryAttempts": 3,
+            "retryDelay": 1000
+        },
+        "minimums": {
+            "swap": "0.001",
+            "referral": "0.0001"
+        },
+        "blockTime": 2,
+        "confirmationsRequired": 1,
+        "featureFlags": {
+            "directSwap": false,
+            "layerSwap": true,
+            "referralSystem": true,
+            "whitelist": false,
+            "tokenTax": false,
+            "crossChainSync": true,
+            "batchOperations": false
+        }
+    },
+    {
+        "chainName": "Sei",
+        "chainId": "1329",
+        "img": "",
+        "type": "EVM",
+        "nativeCurrency": {
+            "name": "SEI",
+            "symbol": "SEI",
+            "decimals": 18
+        },
+        "rpcUrls": [],
+        "blockExplorers": [],
+        "contracts": {
+            "router": null,
+            "referral": null,
+            "token": null,
+            "manager": null,
+            "whitelist": null
+        },
+        "dexes": [
+            "LayerSwap"
+        ],
+        "bridge": "LayerSwap",
+        "status": "active",
+        "gasSettings": {
+            "gasLimit": 500000,
+            "maxFeePerGas": null,
+            "maxPriorityFeePerGas": null,
+            "gasPrice": null
+        },
+        "slippage": {
+            "default": 0.5,
+            "min": 0.1,
+            "max": 5.0
+        },
+        "timeouts": {
+            "transactionTimeout": 300000,
+            "rpcTimeout": 10000,
+            "retryAttempts": 3,
+            "retryDelay": 1000
+        },
+        "minimums": {
+            "swap": "0.001",
+            "referral": "0.0001"
+        },
+        "blockTime": 2,
+        "confirmationsRequired": 1,
+        "featureFlags": {
+            "directSwap": false,
+            "layerSwap": true,
+            "referralSystem": true,
+            "whitelist": false,
+            "tokenTax": false,
+            "crossChainSync": true,
+            "batchOperations": false
+        }
+    },
+    {
+        "chainName": "World Chain",
+        "chainId": "480",
+        "img": "",
+        "type": "EVM",
+        "nativeCurrency": {
+            "name": "ETH",
+            "symbol": "ETH",
+            "decimals": 18
+        },
+        "rpcUrls": [],
+        "blockExplorers": [],
+        "contracts": {
+            "router": null,
+            "referral": null,
+            "token": null,
+            "manager": null,
+            "whitelist": null
+        },
+        "dexes": [
+            "LayerSwap"
+        ],
+        "bridge": "LayerSwap",
+        "status": "active",
+        "gasSettings": {
+            "gasLimit": 500000,
+            "maxFeePerGas": null,
+            "maxPriorityFeePerGas": null,
+            "gasPrice": null
+        },
+        "slippage": {
+            "default": 0.5,
+            "min": 0.1,
+            "max": 5.0
+        },
+        "timeouts": {
+            "transactionTimeout": 300000,
+            "rpcTimeout": 10000,
+            "retryAttempts": 3,
+            "retryDelay": 1000
+        },
+        "minimums": {
+            "swap": "0.001",
+            "referral": "0.0001"
+        },
+        "blockTime": 2,
+        "confirmationsRequired": 1,
+        "featureFlags": {
+            "directSwap": false,
+            "layerSwap": true,
+            "referralSystem": true,
+            "whitelist": false,
+            "tokenTax": false,
+            "crossChainSync": true,
+            "batchOperations": false
+        }
+    },
+    {
+        "chainName": "Monad",
+        "chainId": "143",
+        "img": "",
+        "type": "EVM",
+        "nativeCurrency": {
+            "name": "MON",
+            "symbol": "MON",
+            "decimals": 18
+        },
+        "rpcUrls": [],
+        "blockExplorers": [],
+        "contracts": {
+            "router": null,
+            "referral": null,
+            "token": null,
+            "manager": null,
+            "whitelist": null
+        },
+        "dexes": [
+            "LayerSwap"
+        ],
+        "bridge": "LayerSwap",
+        "status": "active",
+        "gasSettings": {
+            "gasLimit": 500000,
+            "maxFeePerGas": null,
+            "maxPriorityFeePerGas": null,
+            "gasPrice": null
+        },
+        "slippage": {
+            "default": 0.5,
+            "min": 0.1,
+            "max": 5.0
+        },
+        "timeouts": {
+            "transactionTimeout": 300000,
+            "rpcTimeout": 10000,
+            "retryAttempts": 3,
+            "retryDelay": 1000
+        },
+        "minimums": {
+            "swap": "0.001",
+            "referral": "0.0001"
+        },
+        "blockTime": 2,
+        "confirmationsRequired": 1,
+        "featureFlags": {
+            "directSwap": false,
+            "layerSwap": true,
+            "referralSystem": true,
+            "whitelist": false,
+            "tokenTax": false,
+            "crossChainSync": true,
+            "batchOperations": false
+        }
+    },
+    {
+        "chainName": "Zetachain",
+        "chainId": "7000",
+        "img": "",
+        "type": "EVM",
+        "nativeCurrency": {
+            "name": "ZETA",
+            "symbol": "ZETA",
+            "decimals": 18
+        },
+        "rpcUrls": [],
+        "blockExplorers": [],
+        "contracts": {
+            "router": null,
+            "referral": null,
+            "token": null,
+            "manager": null,
+            "whitelist": null
+        },
+        "dexes": [
+            "LayerSwap"
+        ],
+        "bridge": "LayerSwap",
+        "status": "active",
+        "gasSettings": {
+            "gasLimit": 500000,
+            "maxFeePerGas": null,
+            "maxPriorityFeePerGas": null,
+            "gasPrice": null
+        },
+        "slippage": {
+            "default": 0.5,
+            "min": 0.1,
+            "max": 5.0
+        },
+        "timeouts": {
+            "transactionTimeout": 300000,
+            "rpcTimeout": 10000,
+            "retryAttempts": 3,
+            "retryDelay": 1000
+        },
+        "minimums": {
+            "swap": "0.001",
+            "referral": "0.0001"
+        },
+        "blockTime": 2,
+        "confirmationsRequired": 1,
+        "featureFlags": {
+            "directSwap": false,
+            "layerSwap": true,
+            "referralSystem": true,
+            "whitelist": false,
+            "tokenTax": false,
+            "crossChainSync": true,
+            "batchOperations": false
+        }
+    },
+    {
+        "chainName": "Zircuit",
+        "chainId": "48900",
+        "img": "",
+        "type": "EVM",
+        "nativeCurrency": {
+            "name": "ETH",
+            "symbol": "ETH",
+            "decimals": 18
+        },
+        "rpcUrls": [],
+        "blockExplorers": [],
+        "contracts": {
+            "router": null,
+            "referral": null,
+            "token": null,
+            "manager": null,
+            "whitelist": null
+        },
+        "dexes": [
+            "LayerSwap"
+        ],
+        "bridge": "LayerSwap",
+        "status": "active",
+        "gasSettings": {
+            "gasLimit": 500000,
+            "maxFeePerGas": null,
+            "maxPriorityFeePerGas": null,
+            "gasPrice": null
+        },
+        "slippage": {
+            "default": 0.5,
+            "min": 0.1,
+            "max": 5.0
+        },
+        "timeouts": {
+            "transactionTimeout": 300000,
+            "rpcTimeout": 10000,
+            "retryAttempts": 3,
+            "retryDelay": 1000
+        },
+        "minimums": {
+            "swap": "0.001",
+            "referral": "0.0001"
+        },
+        "blockTime": 2,
+        "confirmationsRequired": 1,
+        "featureFlags": {
+            "directSwap": false,
+            "layerSwap": true,
+            "referralSystem": true,
+            "whitelist": false,
+            "tokenTax": false,
+            "crossChainSync": true,
+            "batchOperations": false
+        }
     }
 ]

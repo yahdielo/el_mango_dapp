@@ -7,6 +7,12 @@ import { getTokenLogoUrl } from '../utils/tokenLogoUrl';
 import TokenLogo from './TokenLogo';
 
 const ETH_ALLOWED_BRIDGE_SYMBOLS = new Set(['ETH', 'USDC', 'USDT', 'DAI']);
+const ETHEREUM_MAINNET_HINT_ADDRESSES = new Set([
+  '0xC02AAA39B223FE8D0A0E5C4F27EAD9083C756CC2', // WETH
+  '0xA0B86991C6218B36C1D19D4A2E9EB0CE3606EB48', // USDC
+  '0xDAC17F958D2EE523A2206206994597C13D831EC7', // USDT
+  '0x6B175474E89094C44DA98B954EEDEAC495271D0F', // DAI
+]);
 
 function TokenRow({ token, address, chainId, onSelect }) {
   const { formattedBalance, isLoading, error } = useTokenBalance({
@@ -57,9 +63,14 @@ export default function TokenSelectModal({ show, onHide, tokens, onSelect, addre
   }, [chainId]);
 
   const allTokensRaw = [...tokens, ...customTokens];
+  const isEthereumContext =
+    Number(chainId) === 1 ||
+    allTokensRaw.some((t) =>
+      ETHEREUM_MAINNET_HINT_ADDRESSES.has(String(t?.address || '').toUpperCase())
+    );
   // Hard UI guardrail: on Ethereum cross-chain modal, show only bridge-focused assets.
   // This prevents stale upstream token sources from rendering unrelated symbols.
-  const allTokens = Number(chainId) === 1
+  const allTokens = isEthereumContext
     ? allTokensRaw.filter((t) => ETH_ALLOWED_BRIDGE_SYMBOLS.has(String(t?.symbol || '').toUpperCase()))
     : allTokensRaw;
   const filtered = allTokens.filter((t) =>

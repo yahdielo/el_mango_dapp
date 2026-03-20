@@ -796,7 +796,7 @@
     {
         "chainName": "Mode",
         "chainId": "34443",
-        "img": "https://cdn.jsdelivr.net/gh/simplr-sh/coin-logos/images/ethereum/large.png",
+        "img": "/mode.png",
         "type": "EVM",
         "nativeCurrency": {
             "name": "ETH",
@@ -1081,7 +1081,7 @@
     {
         "chainName": "Taiko",
         "chainId": "167000",
-        "img": "https://cdn.jsdelivr.net/gh/simplr-sh/coin-logos/images/ethereum/large.png",
+        "img": "/taiko.png",
         "type": "EVM",
         "nativeCurrency": {
             "name": "ETH",
@@ -1195,7 +1195,7 @@
     {
         "chainName": "World Chain",
         "chainId": "480",
-        "img": "https://cdn.jsdelivr.net/gh/simplr-sh/coin-logos/images/ethereum/large.png",
+        "img": "/worldchain.png",
         "type": "EVM",
         "nativeCurrency": {
             "name": "ETH",
@@ -1366,7 +1366,7 @@
     {
         "chainName": "Zircuit",
         "chainId": "48900",
-        "img": "https://cdn.jsdelivr.net/gh/simplr-sh/coin-logos/images/ethereum/large.png",
+        "img": "/zircuit-inverted-icon.svg",
         "type": "EVM",
         "nativeCurrency": {
             "name": "ETH",

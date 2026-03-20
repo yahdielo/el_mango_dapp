@@ -45,6 +45,15 @@ export default function TokenSelectModal({ show, onHide, tokens, onSelect, addre
   const closeButtonRef = useRef(null);
   const publicClient = usePublicClient({ chainId });
 
+  // If user switches chain, custom tokens added on the previous chain should not carry over.
+  // Otherwise, the modal can show lots of unrelated tokens.
+  useEffect(() => {
+    setCustomTokens([]);
+    setSearch('');
+    setAddAddress('');
+    setAddError('');
+  }, [chainId]);
+
   const allTokens = [...tokens, ...customTokens];
   const filtered = allTokens.filter((t) =>
     (t.symbol && t.symbol.toLowerCase().includes(search.toLowerCase())) ||

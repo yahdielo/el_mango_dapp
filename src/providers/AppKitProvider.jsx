@@ -74,14 +74,6 @@ const CUSTOM_WALLETS = [
     mobile_link: 'https://go.cb-w.com/',
     desktop_link: 'https://www.coinbase.com/wallet',
   },
-  {
-    id: 'walletconnect',
-    name: 'WalletConnect',
-    homepage: 'https://walletconnect.com',
-    image_url: 'https://raw.githubusercontent.com/WalletConnect/walletconnect-assets/master/Logo/Blue%20(Default)/Logo.svg',
-    mobile_link: 'https://walletconnect.com',
-    desktop_link: 'https://walletconnect.com',
-  },
 ];
 
 const wagmiAdapter = new WagmiAdapter({
@@ -96,7 +88,9 @@ createAppKit({
   defaultNetwork: base,
   projectId,
   metadata,
-  allWallets: 'SHOW',
+  // Hide the full wallet list so users can't choose WalletConnect.
+  // (WalletConnect RPC endpoints are blocked by CORS + rate limited in the browser.)
+  allWallets: 'HIDE',
   featuredWalletIds: FEATURED_WALLET_IDS,
   customWallets: CUSTOM_WALLETS,
   enableWallets: true,

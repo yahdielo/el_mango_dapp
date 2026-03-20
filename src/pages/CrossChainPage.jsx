@@ -35,6 +35,10 @@ import { getAuthSessionNonce, buildAuthSessionMessage, createAuthSessionToken } 
 
 const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
 
+// LayerSwap-native route discovery missing pairs (86) are all directed pairs where either endpoint
+// is XRP (144) or Sui (101) when using native token inputs/outputs.
+const LAYERSWAP_NATIVE_ROUTE_MISSING_CHAIN_IDS = new Set([101, 144]);
+
 /** Non-EVM chains require a destination address in that chain's format (e.g. bc1... for BTC, not 0x...) */
 const NON_EVM_DEST_CHAINS = [0, 501111, 728126428, 144, 101];
 
@@ -529,6 +533,21 @@ export default function CrossChainPage() {
     isCrossChain && routeSupported === false && !routeLoading && amountIn && parseFloat(amountIn) > 0;
   const showRouteUnknownMessage = isCrossChain && routeSupported === null && !routeLoading && amountIn && parseFloat(amountIn) > 0;
 
+  const tokenInIsNative =
+    !!tokenIn?.native || (typeof tokenIn?.address === 'string' && tokenIn.address.toLowerCase() === ZERO_ADDRESS);
+  const tokenOutIsNative =
+    !!tokenOut?.native || (typeof tokenOut?.address === 'string' && tokenOut.address.toLowerCase() === ZERO_ADDRESS);
+
+  const isLayerSwapNativeRouteMissing =
+    isCrossChain &&
+    tokenInIsNative &&
+    tokenOutIsNative &&
+    (LAYERSWAP_NATIVE_ROUTE_MISSING_CHAIN_IDS.has(Number(sourceChainId)) ||
+      LAYERSWAP_NATIVE_ROUTE_MISSING_CHAIN_IDS.has(Number(destChainId)));
+
+  const showNotAvailableMissingLayerSwapNative =
+    showUnsupportedWarning && isLayerSwapNativeRouteMissing;
+
   // Sanity cap for USD so we never show overflow/weird values (e.g. -$1.96T) that can trigger MetaMask "likely to fail"
   const SANE_USD_MAX = 1e9;
   const isStablecoin = (s) => s === 'USDC' || s === 'USDT';
@@ -758,9 +777,13 @@ export default function CrossChainPage() {
             </p>
           )}
           {showUnsupportedWarning && (
-            <p className="text-amber-400 text-sm text-center mb-2">
-              This route is not supported by the bridge. Try a different token or chain.
-            </p>
+            showNotAvailableMissingLayerSwapNative ? (
+              <p className="text-amber-400 text-sm text-center mb-2">Not Available</p>
+            ) : (
+              <p className="text-amber-400 text-sm text-center mb-2">
+                This route is not supported by the bridge. Try a different token or chain.
+              </p>
+            )
           )}
           {showRouteUnknownMessage && (
             <p className="text-gray-500 text-xs text-center mb-2">

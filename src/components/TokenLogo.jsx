@@ -36,7 +36,11 @@ const CMC_ID_BY_SYMBOL = {
 function getCmcLogoBySymbol(symbol) {
   if (!symbol) return null;
   const id = CMC_ID_BY_SYMBOL[String(symbol).toUpperCase()];
-  return id ? `https://s2.coinmarketcap.com/static/img/coins/64x64/${id}.png` : null;
+  if (!id) return null;
+  return {
+    local: `/assets/cmc/tokens/${id}.png`,
+    remote: `https://s2.coinmarketcap.com/static/img/coins/64x64/${id}.png`,
+  };
 }
 
 /**
@@ -66,7 +70,7 @@ export default function TokenLogo({
   const fallback = token?.symbol ? FALLBACK_LOGO_BY_SYMBOL[token.symbol] : null;
   const cmcFallback = getCmcLogoBySymbol(token?.symbol);
   const urls = useMemo(
-    () => [primary, trustWalletFallback, fallback, cmcFallback].filter(Boolean),
+    () => [primary, trustWalletFallback, fallback, cmcFallback?.local, cmcFallback?.remote].filter(Boolean),
     [primary, trustWalletFallback, fallback, cmcFallback]
   );
   const currentSrc = urls[srcIndex];

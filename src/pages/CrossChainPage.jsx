@@ -121,6 +121,15 @@ export default function CrossChainPage() {
 
   const bridgeProvider = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
+  // If the swap involves any of our "LayerSwap-only" chainIds, force the frontend
+  // token filtering and UI messaging to use LayerSwap semantics as well.
+  // (Otherwise the token modal may use Rango's token matrix and show unrelated symbols.)
+  const LAYERSWAP_ONLY_CHAIN_IDS = new Set([34443, 5000, 80094, 42220, 252, 167000, 1329, 480, 143, 7000, 48900]);
+  const effectiveBridgeProvider =
+    LAYERSWAP_ONLY_CHAIN_IDS.has(Number(sourceChainId)) || LAYERSWAP_ONLY_CHAIN_IDS.has(Number(destChainId))
+      ? 'layerswap'
+      : bridgeProvider;
+
   // Rango support matrix (enabled chains + tokens) for display and filtering.
   const {
     chains: rangoChains,
@@ -153,7 +162,7 @@ export default function CrossChainPage() {
             ];
           })();
 
-    if (bridgeProvider === 'rango' && rangoTokensByChain) {
+    if (effectiveBridgeProvider === 'rango' && rangoTokensByChain) {
       const rangoTokens = getTokensForRangoChain(sourceChainId);
       if (!rangoTokens.length) return base;
       const allowed = new Set(
@@ -165,7 +174,7 @@ export default function CrossChainPage() {
       });
     }
 
-    if (bridgeProvider === 'layerswap' && Array.isArray(bridgeMetaTokens) && bridgeMetaTokens.length) {
+    if (effectiveBridgeProvider === 'layerswap' && Array.isArray(bridgeMetaTokens) && bridgeMetaTokens.length) {
       const net = getNetworkName(sourceChainId);
       if (!net) return base;
       const layerswapChainKey = `layerswap:${net}`;
@@ -218,7 +227,7 @@ export default function CrossChainPage() {
     }
 
     return base;
-  }, [sourceChainId, bridgeProvider, rangoTokensByChain, getTokensForRangoChain, bridgeMetaTokens]);
+  }, [sourceChainId, effectiveBridgeProvider, rangoTokensByChain, getTokensForRangoChain, bridgeMetaTokens]);
 
   const tokensOut = useMemo(() => {
     const staticTokens = getTokensForChain(destChainId).filter((t) => t.symbol !== 'MANGO');
@@ -239,7 +248,7 @@ export default function CrossChainPage() {
               },
             ];
           })();
-    if (bridgeProvider === 'rango' && rangoTokensByChain) {
+    if (effectiveBridgeProvider === 'rango' && rangoTokensByChain) {
       const rangoTokens = getTokensForRangoChain(destChainId);
       if (!rangoTokens.length) return base;
       const allowed = new Set(
@@ -251,7 +260,7 @@ export default function CrossChainPage() {
       });
     }
 
-    if (bridgeProvider === 'layerswap' && Array.isArray(bridgeMetaTokens) && bridgeMetaTokens.length) {
+    if (effectiveBridgeProvider === 'layerswap' && Array.isArray(bridgeMetaTokens) && bridgeMetaTokens.length) {
       const net = getNetworkName(destChainId);
       if (!net) return base;
       const layerswapChainKey = `layerswap:${net}`;
@@ -295,7 +304,7 @@ export default function CrossChainPage() {
     }
 
     return base;
-  }, [destChainId, bridgeProvider, rangoTokensByChain, getTokensForRangoChain, bridgeMetaTokens]);
+  }, [destChainId, effectiveBridgeProvider, rangoTokensByChain, getTokensForRangoChain, bridgeMetaTokens]);
 
   const { balance: balanceTokenIn } = useTokenBalance({
     address,
@@ -390,7 +399,7 @@ export default function CrossChainPage() {
       return;
     }
 
-    if (bridgeProvider === 'rango' && rangoChains.length) {
+    if (effectiveBridgeProvider === 'rango' && rangoChains.length) {
       const enabledIds = new Set(
         rangoChains.filter((c) => c.enabled).map((c) => Number(c.chainId))
       );
@@ -401,7 +410,7 @@ export default function CrossChainPage() {
     }
 
     setChains(base);
-  }, [allChains, bridgeProvider, rangoChains, bridgeMetaChains]);
+  }, [allChains, effectiveBridgeProvider, rangoChains, bridgeMetaChains]);
 
   const handleMaxClick = useCallback(() => {
     if (balanceTokenIn == null || balanceTokenIn <= 0n) return;
@@ -579,7 +588,7 @@ export default function CrossChainPage() {
   } = useCrossChainEstimate({
     enabled:
       isCrossChain &&
-      bridgeProvider === 'rango' &&
+      effectiveBridgeProvider === 'rango' &&
       isCrossChainViaBackendAvailable() &&
       !!amountIn &&
       parseFloat(amountIn) > 0 &&
@@ -655,9 +664,9 @@ export default function CrossChainPage() {
   );
   const lowerBridgeMsg = rawBridgeMsg.toLowerCase();
   const isRangoRouteUnavailable =
-    bridgeProvider === 'rango' && /route not available|no route/i.test(lowerBridgeMsg);
+    effectiveBridgeProvider === 'rango' && /route not available|no route/i.test(lowerBridgeMsg);
   const isRangoBelowMinimum =
-    bridgeProvider === 'rango' && /amount below minimum|below minimum/i.test(lowerBridgeMsg);
+    effectiveBridgeProvider === 'rango' && /amount below minimum|below minimum/i.test(lowerBridgeMsg);
 
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center" style={{ fontFamily: "'Afacad', sans-serif" }}>
@@ -720,7 +729,7 @@ export default function CrossChainPage() {
             onMaxClick={handleMaxClick}
           />
 
-          {bridgeProvider === 'rango' && minAmount && (
+          {effectiveBridgeProvider === 'rango' && minAmount && (
             <p className="mt-2 text-xs text-gray-400 text-right">
               Min: {minAmount} {tokenIn?.symbol}
               {maxAmount && (
@@ -731,7 +740,7 @@ export default function CrossChainPage() {
               )}
             </p>
           )}
-          {bridgeProvider === 'rango' && (amountTooLow || amountTooHigh) && (
+          {effectiveBridgeProvider === 'rango' && (amountTooLow || amountTooHigh) && (
             <p className="mt-1 text-xs text-amber-400 text-right">
               {amountTooLow
                 ? 'Amount below bridge minimum for this route.'
@@ -880,7 +889,7 @@ export default function CrossChainPage() {
               <p className="text-red-400 text-sm text-center mb-2">
                 {mapErrorToUserMessage(rawBridgeError)}
               </p>
-              {bridgeProvider === 'rango' && (isRangoRouteUnavailable || isRangoBelowMinimum) && (
+              {effectiveBridgeProvider === 'rango' && (isRangoRouteUnavailable || isRangoBelowMinimum) && (
                 <p className="text-xs text-gray-400 text-center mb-2">
                   {isRangoRouteUnavailable
                     ? 'Rango has no route for this chain/token pair right now. Try a different token or chain.'

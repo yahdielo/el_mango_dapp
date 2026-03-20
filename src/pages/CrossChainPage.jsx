@@ -72,6 +72,17 @@ function getCanonicalLayerSwapNativeSymbol(chainId) {
   return null;
 }
 
+/**
+ * UX guardrail for Ethereum token modal:
+ * keep only bridge-focused assets to avoid long unrelated token lists.
+ */
+const ETHEREUM_BRIDGE_TOKEN_SYMBOLS = new Set(['ETH', 'USDC', 'USDT', 'DAI']);
+function filterEthereumBridgeTokens(chainId, tokens) {
+  if (Number(chainId) !== 1) return tokens;
+  const out = (tokens || []).filter((t) => ETHEREUM_BRIDGE_TOKEN_SYMBOLS.has(String(t?.symbol || '').toUpperCase()));
+  return out.length ? out : tokens;
+}
+
 /** Non-EVM chains require a destination address in that chain's format (e.g. bc1... for BTC, not 0x...) */
 const NON_EVM_DEST_CHAINS = [0, 501111, 728126428, 144, 101];
 
@@ -168,10 +179,11 @@ export default function CrossChainPage() {
       const allowed = new Set(
         rangoTokens.map((t) => (t.address ? t.address.toLowerCase() : t.symbol.toUpperCase()))
       );
-      return base.filter((t) => {
+      const filtered = base.filter((t) => {
         const key = t.address ? t.address.toLowerCase() : (t.symbol || '').toUpperCase();
         return allowed.has(key);
       });
+      return filterEthereumBridgeTokens(sourceChainId, filtered);
     }
 
     if (effectiveBridgeProvider === 'layerswap' && Array.isArray(bridgeMetaTokens) && bridgeMetaTokens.length) {
@@ -223,10 +235,10 @@ export default function CrossChainPage() {
         const k = tokenKey(t);
         if (!out.has(k)) out.set(k, t);
       }
-      return Array.from(out.values());
+      return filterEthereumBridgeTokens(sourceChainId, Array.from(out.values()));
     }
 
-    return base;
+    return filterEthereumBridgeTokens(sourceChainId, base);
   }, [sourceChainId, effectiveBridgeProvider, rangoTokensByChain, getTokensForRangoChain, bridgeMetaTokens]);
 
   const tokensOut = useMemo(() => {
@@ -254,10 +266,11 @@ export default function CrossChainPage() {
       const allowed = new Set(
         rangoTokens.map((t) => (t.address ? t.address.toLowerCase() : t.symbol.toUpperCase()))
       );
-      return base.filter((t) => {
+      const filtered = base.filter((t) => {
         const key = t.address ? t.address.toLowerCase() : (t.symbol || '').toUpperCase();
         return allowed.has(key);
       });
+      return filterEthereumBridgeTokens(destChainId, filtered);
     }
 
     if (effectiveBridgeProvider === 'layerswap' && Array.isArray(bridgeMetaTokens) && bridgeMetaTokens.length) {
@@ -300,10 +313,10 @@ export default function CrossChainPage() {
         const k = tokenKey(t);
         if (!out.has(k)) out.set(k, t);
       }
-      return Array.from(out.values());
+      return filterEthereumBridgeTokens(destChainId, Array.from(out.values()));
     }
 
-    return base;
+    return filterEthereumBridgeTokens(destChainId, base);
   }, [destChainId, effectiveBridgeProvider, rangoTokensByChain, getTokensForRangoChain, bridgeMetaTokens]);
 
   const { balance: balanceTokenIn } = useTokenBalance({

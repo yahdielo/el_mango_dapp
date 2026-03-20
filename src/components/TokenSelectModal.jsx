@@ -13,6 +13,9 @@ const ETHEREUM_MAINNET_HINT_ADDRESSES = new Set([
   '0xDAC17F958D2EE523A2206206994597C13D831EC7', // USDT
   '0x6B175474E89094C44DA98B954EEDEAC495271D0F', // DAI
 ]);
+const ETH_NOISY_SYMBOL_HINTS = new Set([
+  'ENA', 'PERP', 'POWER', 'TANSSI', 'RLUSD', 'PAXG', 'MNTX', 'XCN', 'UNIO', 'TREE',
+]);
 
 function TokenRow({ token, address, chainId, onSelect }) {
   const { formattedBalance, isLoading, error } = useTokenBalance({
@@ -63,11 +66,15 @@ export default function TokenSelectModal({ show, onHide, tokens, onSelect, addre
   }, [chainId]);
 
   const allTokensRaw = [...tokens, ...customTokens];
+  const upperSymbols = allTokensRaw.map((t) => String(t?.symbol || '').toUpperCase());
+  const hasEthCoreSymbols = upperSymbols.some((s) => ETH_ALLOWED_BRIDGE_SYMBOLS.has(s));
+  const hasEthNoisySymbols = upperSymbols.some((s) => ETH_NOISY_SYMBOL_HINTS.has(s));
   const isEthereumContext =
     Number(chainId) === 1 ||
     allTokensRaw.some((t) =>
       ETHEREUM_MAINNET_HINT_ADDRESSES.has(String(t?.address || '').toUpperCase())
-    );
+    ) ||
+    (hasEthCoreSymbols && hasEthNoisySymbols);
   // Hard UI guardrail: on Ethereum cross-chain modal, show only bridge-focused assets.
   // This prevents stale upstream token sources from rendering unrelated symbols.
   const allTokens = isEthereumContext

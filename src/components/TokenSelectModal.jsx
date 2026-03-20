@@ -5,6 +5,7 @@ import { useTokenBalance } from '../hooks/useTokenBalance';
 import { ERC20_ABI } from '../config/abis';
 import { getTokenLogoUrl } from '../utils/tokenLogoUrl';
 import TokenLogo from './TokenLogo';
+import { getTokensForChain } from '../config/tokenLists';
 
 const ETH_ALLOWED_BRIDGE_SYMBOLS = new Set(['ETH', 'USDC', 'USDT', 'DAI']);
 const ETHEREUM_MAINNET_HINT_ADDRESSES = new Set([
@@ -16,6 +17,7 @@ const ETHEREUM_MAINNET_HINT_ADDRESSES = new Set([
 const ETH_NOISY_SYMBOL_HINTS = new Set([
   'ENA', 'PERP', 'POWER', 'TANSSI', 'RLUSD', 'PAXG', 'MNTX', 'XCN', 'UNIO', 'TREE',
 ]);
+const FORCED_ETH_SYMBOL_ORDER = ['ETH', 'USDC', 'USDT', 'DAI'];
 
 function TokenRow({ token, address, chainId, onSelect }) {
   const { formattedBalance, isLoading, error } = useTokenBalance({
@@ -77,9 +79,14 @@ export default function TokenSelectModal({ show, onHide, tokens, onSelect, addre
     (hasEthCoreSymbols && hasEthNoisySymbols);
   // Hard UI guardrail: on Ethereum cross-chain modal, show only bridge-focused assets.
   // This prevents stale upstream token sources from rendering unrelated symbols.
-  const allTokens = isEthereumContext
-    ? allTokensRaw.filter((t) => ETH_ALLOWED_BRIDGE_SYMBOLS.has(String(t?.symbol || '').toUpperCase()))
-    : allTokensRaw;
+  const forcedEthTokens = getTokensForChain(1)
+    .filter((t) => FORCED_ETH_SYMBOL_ORDER.includes(String(t?.symbol || '').toUpperCase()))
+    .sort(
+      (a, b) =>
+        FORCED_ETH_SYMBOL_ORDER.indexOf(String(a?.symbol || '').toUpperCase()) -
+        FORCED_ETH_SYMBOL_ORDER.indexOf(String(b?.symbol || '').toUpperCase())
+    );
+  const allTokens = isEthereumContext ? forcedEthTokens : allTokensRaw;
   const filtered = allTokens.filter((t) =>
     (t.symbol && t.symbol.toLowerCase().includes(search.toLowerCase())) ||
     (t.name && t.name.toLowerCase().includes(search.toLowerCase())) ||
@@ -183,6 +190,7 @@ export default function TokenSelectModal({ show, onHide, tokens, onSelect, addre
             placeholder="Search token..."
             className="w-full px-4 py-3 rounded-xl bg-[#111] text-white border border-gray-700 focus:border-[#3CF902] focus:outline-none mb-4"
           />
+          {!isEthereumContext && (
           <div className="mb-4">
             <div className="text-gray-400 text-sm mb-2">Add by contract address</div>
             <div className="flex gap-2">
@@ -205,6 +213,7 @@ export default function TokenSelectModal({ show, onHide, tokens, onSelect, addre
             </div>
             {addError && <p className="text-red-400 text-sm mt-2">{addError}</p>}
           </div>
+          )}
         </div>
         <div className="overflow-y-auto max-h-[50vh] p-4 overscroll-contain">
           {filtered.map((token) => (

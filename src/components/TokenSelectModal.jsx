@@ -22,7 +22,7 @@ function TokenRow({ token, address, chainId, onSelect }) {
     >
       <div className="flex items-center gap-3 min-w-0">
         <div className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden bg-[#3CF902]">
-          <TokenLogo token={token} letterClassName="text-black font-bold text-sm" />
+          <TokenLogo token={token} chainId={chainId} letterClassName="text-black font-bold text-sm" />
         </div>
         <div>
           <div className="text-white font-medium">{token.symbol}</div>

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import mangoTokenImage from '../assets/mango-token.jpg';
+import { getTrustWalletLogoUrl } from '../utils/tokenLogoUrl';
 
 /** Fallback logo URLs (e.g. CoinGecko) when primary (Trust Wallet) fails with connection reset */
 const FALLBACK_LOGO_BY_SYMBOL = {
@@ -15,11 +16,25 @@ const FALLBACK_LOGO_BY_SYMBOL = {
  * Renders token logo with fallback: primary logoURI -> fallback URL (if symbol known) -> letter.
  * MANGO uses bundled mango-token.jpg so it loads on Vercel and all deployments.
  */
-export default function TokenLogo({ token, className = '', letterClassName = 'text-white font-bold text-sm' }) {
+export default function TokenLogo({
+  token,
+  chainId,
+  className = '',
+  letterClassName = 'text-white font-bold text-sm',
+}) {
   const [srcIndex, setSrcIndex] = useState(0);
+
   const primary = token?.logoURI;
+  // If `logoURI` is missing, attempt deterministic TrustWallet asset path.
+  // This is synchronous (URL construction only); the browser will handle 404 via onError.
+  const hasTrustWalletAddress =
+    token?.address && typeof token.address === 'string' && token.address.length > 0 && token.address !== '0x0000000000000000000000000000000000000000';
+
+  const trustWalletFallback =
+    typeof chainId === 'number' && hasTrustWalletAddress ? getTrustWalletLogoUrl(chainId, token.address) : null;
+
   const fallback = token?.symbol ? FALLBACK_LOGO_BY_SYMBOL[token.symbol] : null;
-  const urls = useMemo(() => [primary, fallback].filter(Boolean), [primary, fallback]);
+  const urls = useMemo(() => [primary, trustWalletFallback, fallback].filter(Boolean), [primary, trustWalletFallback, fallback]);
   const currentSrc = urls[srcIndex];
   const showLetter = !currentSrc || srcIndex >= urls.length;
 

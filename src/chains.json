@@ -1252,7 +1252,7 @@
     {
         "chainName": "Monad",
         "chainId": "143",
-        "img": "https://cdn.jsdelivr.net/gh/simplr-sh/coin-logos/images/monad/large.png",
+        "img": "/monad.jpg",
         "type": "EVM",
         "nativeCurrency": {
             "name": "MON",

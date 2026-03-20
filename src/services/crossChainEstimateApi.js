@@ -1,12 +1,15 @@
 import { ZERO_ADDRESS } from '../utils/chainConfig';
 import { isNativeToken } from '../hooks/useTokenBalance';
 
+import { resolveMangoServicesBaseUrl } from '../utils/mangoServicesBaseUrl';
+
 const RAW_BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
+const BASE = resolveMangoServicesBaseUrl(RAW_BASE);
 const API_KEY = import.meta.env.VITE_MANGO_SERVICES_API_KEY || '';
 const BRIDGE_PROVIDER = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
 function getBaseUrl() {
-  const raw = RAW_BASE;
+  const raw = BASE;
   if (typeof window !== 'undefined' && window.location?.protocol === 'https:' && raw.startsWith('http://')) {
     return raw.replace(/^http:\/\//i, 'https://');
   }
@@ -42,9 +45,7 @@ export async function getCrossChainEstimate({
   recipient,
 }) {
   const baseUrl = getBaseUrl();
-  if (!baseUrl) {
-    throw new Error('VITE_MANGO_SERVICES_URL not configured');
-  }
+  if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not configured');
   if (!API_KEY) {
     throw new Error('VITE_MANGO_SERVICES_API_KEY not set');
   }

@@ -7,16 +7,19 @@
 import { parseUnits, formatUnits } from 'viem';
 import { ZERO_ADDRESS } from '../utils/chainConfig';
 import { isNativeToken } from '../hooks/useTokenBalance';
+import { resolveMangoServicesBaseUrl } from '../utils/mangoServicesBaseUrl';
 
 const MANGO_SERVICES_URL = import.meta.env.VITE_MANGO_SERVICES_URL || '';
+const RAW_MANGO_SERVICES_URL = String(MANGO_SERVICES_URL || '').replace(/\/$/, '');
 
 /** When app is HTTPS, use HTTPS for API to avoid Mixed Content block. */
 function getBaseUrl() {
-  const raw = (MANGO_SERVICES_URL || '').replace(/\/$/, '');
-  if (typeof window !== 'undefined' && window.location?.protocol === 'https:' && raw.startsWith('http://')) {
-    return raw.replace(/^http:\/\//i, 'https://');
+  const raw = RAW_MANGO_SERVICES_URL;
+  const resolved = resolveMangoServicesBaseUrl(raw);
+  if (typeof window !== 'undefined' && window.location?.protocol === 'https:' && resolved.startsWith('http://')) {
+    return resolved.replace(/^http:\/\//i, 'https://');
   }
-  return raw;
+  return resolved;
 }
 
 async function fetchJson(url) {
@@ -82,9 +85,7 @@ export async function getQuote({ chainId, tokenIn, tokenOut, amountIn }) {
   }
 
   const baseUrl = getBaseUrl();
-  if (!baseUrl) {
-    throw new Error('VITE_MANGO_SERVICES_URL not configured');
-  }
+  if (!RAW_MANGO_SERVICES_URL) throw new Error('VITE_MANGO_SERVICES_URL not configured');
 
   const decimalsIn = tokenIn?.decimals ?? 18;
   const amountWei = parseUnits(String(amt), decimalsIn).toString();
@@ -134,7 +135,7 @@ export async function getTokenPriceUsd({ chainId, token }) {
   if (!token?.symbol || !chainId) return 0;
 
   const baseUrl = getBaseUrl();
-  if (!baseUrl) return 0;
+  if (!RAW_MANGO_SERVICES_URL) return 0;
 
   // USDC addresses per chain (aligned with tokenLists.js)
   const USDC_BY_CHAIN = {
@@ -191,7 +192,7 @@ export async function getTokenPriceUsd({ chainId, token }) {
 export async function getTokenPriceUsdFromBackend(symbol) {
   if (!symbol) return 0;
   const baseUrl = getBaseUrl();
-  if (!baseUrl) return 0;
+  if (!RAW_MANGO_SERVICES_URL) return 0;
   try {
     const res = await fetch(
       `${baseUrl}/api/v1/price?symbol=${encodeURIComponent(symbol.toUpperCase())}`,

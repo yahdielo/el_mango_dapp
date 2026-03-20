@@ -3,7 +3,10 @@
  * GET /api/v1/referral-chain/:address, POST /api/v1/referral-chain/sync
  */
 
-const BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
+import { resolveMangoServicesBaseUrl } from '../utils/mangoServicesBaseUrl';
+
+const RAW_BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
+const BASE = resolveMangoServicesBaseUrl(RAW_BASE);
 const API_KEY = import.meta.env.VITE_MANGO_SERVICES_API_KEY || '';
 
 function headers() {
@@ -26,7 +29,7 @@ async function fetchOk(url, options = {}) {
 
 export async function getReferralChain(address, opts = {}) {
   if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) return null;
-  if (!BASE) return null;
+  if (!RAW_BASE) return null;
   // If backend is protected and no API key is present, avoid calling to prevent noisy 401s.
   if (!API_KEY) return null;
   const params = new URLSearchParams();
@@ -38,7 +41,7 @@ export async function getReferralChain(address, opts = {}) {
 }
 
 export async function syncReferral(body) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   return fetchOk(`${BASE}/api/v1/referral-chain/sync`, {
     method: 'POST',
     body: JSON.stringify(body),

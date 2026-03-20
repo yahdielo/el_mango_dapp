@@ -4,7 +4,10 @@
  * POST /api/v1/whitelist/batch – batch add addresses with tier (Standard, VIP, Premium)
  */
 
-const BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
+import { resolveMangoServicesBaseUrl } from '../utils/mangoServicesBaseUrl';
+
+const RAW_BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
+const BASE = resolveMangoServicesBaseUrl(RAW_BASE);
 const API_KEY = import.meta.env.VITE_MANGO_SERVICES_API_KEY || '';
 
 function headers() {
@@ -70,7 +73,7 @@ async function fetchWithAdminKey(url, adminKey, payload) {
  * @returns {Promise<{ added: number, failed: number, results?: Array }>}
  */
 export async function batchAddWhitelist(users, adminKey) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   if (!adminKey || typeof adminKey !== 'string') throw new Error('Admin key is required');
   const payload = { users: users.map((u) => ({ address: u.address, tier: u.tier || 'Standard' })) };
   const data = await fetchWithAdminKey(`${BASE}/api/v1/whitelist/batch`, adminKey, payload);

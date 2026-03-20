@@ -1,4 +1,7 @@
-const BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
+import { resolveMangoServicesBaseUrl } from '../utils/mangoServicesBaseUrl';
+
+const RAW_BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
+const BASE = resolveMangoServicesBaseUrl(RAW_BASE);
 const API_KEY = import.meta.env.VITE_MANGO_SERVICES_API_KEY || '';
 
 function headers() {
@@ -19,7 +22,7 @@ export function buildAuthSessionMessage({ userAddress, nonce }) {
 }
 
 export async function getAuthSessionNonce(userAddress) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   if (!API_KEY) throw new Error('VITE_MANGO_SERVICES_API_KEY not set');
   const res = await fetch(`${BASE}/api/v1/auth/nonce/${encodeURIComponent(userAddress)}`, {
     method: 'GET',
@@ -32,7 +35,7 @@ export async function getAuthSessionNonce(userAddress) {
 }
 
 export async function createAuthSessionToken({ userAddress, nonce, signature }) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   if (!API_KEY) throw new Error('VITE_MANGO_SERVICES_API_KEY not set');
   const res = await fetch(`${BASE}/api/v1/auth/token`, {
     method: 'POST',

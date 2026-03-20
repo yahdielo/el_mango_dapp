@@ -5,7 +5,10 @@
  * - POST /api/v1/referral/claim
  */
 
-const BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
+import { resolveMangoServicesBaseUrl } from '../utils/mangoServicesBaseUrl';
+
+const RAW_BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
+const BASE = resolveMangoServicesBaseUrl(RAW_BASE);
 const API_KEY = import.meta.env.VITE_MANGO_SERVICES_API_KEY || '';
 
 function headers() {
@@ -29,17 +32,17 @@ async function fetchOk(url, options = {}) {
 }
 
 export function isReferralAccountApiAvailable() {
-  return Boolean(BASE && BASE.trim() !== '');
+  return Boolean(RAW_BASE && RAW_BASE.trim() !== '');
 }
 
 export async function getAccountReferrer(userAddress) {
-  if (!BASE) return null;
+  if (!RAW_BASE) return null;
   if (!userAddress || !/^0x[a-fA-F0-9]{40}$/.test(userAddress)) return null;
   return fetchOk(`${BASE}/api/v1/referral/${encodeURIComponent(userAddress)}`, { method: 'GET' });
 }
 
 export async function getReferralClaimNonce(userAddress) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   if (!userAddress || !/^0x[a-fA-F0-9]{40}$/.test(userAddress)) throw new Error('Invalid user address');
   return fetchOk(`${BASE}/api/v1/referral/nonce/${encodeURIComponent(userAddress)}`, { method: 'GET' });
 }
@@ -61,7 +64,7 @@ export function buildReferralClaimMessage({ userAddress, referrerAddress, nonce 
 }
 
 export async function claimAccountReferrer({ userAddress, referrerAddress, nonce, signature, source }) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   return fetchOk(`${BASE}/api/v1/referral/claim`, {
     method: 'POST',
     body: JSON.stringify({ userAddress, referrerAddress, nonce, signature, source }),

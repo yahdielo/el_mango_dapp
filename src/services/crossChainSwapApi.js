@@ -3,7 +3,10 @@
  * Uses backend so referral sync and reward scheduling run; backend creates LayerSwap order.
  */
 
-const BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
+import { resolveMangoServicesBaseUrl } from '../utils/mangoServicesBaseUrl';
+
+const RAW_BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
+const BASE = resolveMangoServicesBaseUrl(RAW_BASE);
 const API_KEY = import.meta.env.VITE_MANGO_SERVICES_API_KEY || '';
 const BRIDGE_PROVIDER = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
@@ -63,7 +66,7 @@ export async function initiateCrossChainViaBackend({
   referrer,
   userToken,
 }) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   const tokenInAddr = toBridgeTokenAddress(tokenIn?.address ?? tokenIn, sourceChainId);
   const tokenOutAddr = toBridgeTokenAddress(tokenOut?.address ?? tokenOut, destChainId);
   if (!tokenInAddr || !tokenOutAddr || !recipient || !amountIn) {
@@ -145,7 +148,7 @@ export async function initiateCrossChainViaBackend({
  * @returns {Promise<{ status: string, depositActions?: Array }>}
  */
 export async function getSwapStatusFromBackend(swapId, userToken) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   const res = await fetch(`${BASE}/api/v1/swap/${encodeURIComponent(swapId)}/status`, {
     method: 'GET',
     headers: headers(userToken),
@@ -167,7 +170,7 @@ export async function getSwapStatusFromBackend(swapId, userToken) {
  * Fetch deposit instructions (to_address, amount) for a swap. Use when status didn't include depositActions.
  */
 export async function getDepositFromBackend(swapId, userToken) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   const res = await fetch(`${BASE}/api/v1/swap/${encodeURIComponent(swapId)}/deposit`, {
     method: 'GET',
     headers: headers(userToken),
@@ -188,7 +191,7 @@ export async function getDepositFromBackend(swapId, userToken) {
  * @param {string} txHash
  */
 export async function notifySourceTxHash(swapId, txHash, userToken) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   if (!swapId) throw new Error('swapId required');
   if (!txHash) throw new Error('txHash required');
 
@@ -210,7 +213,7 @@ export async function notifySourceTxHash(swapId, txHash, userToken) {
 
 /** Backend is used for cross-chain when BASE is set. API key is optional (backend allows test.mangoswap.io / mangoswap.io without key). */
 export function isCrossChainViaBackendAvailable() {
-  return Boolean(BASE && BASE.trim() !== '');
+  return Boolean(RAW_BASE && RAW_BASE.trim() !== '');
 }
 
 /**
@@ -218,7 +221,7 @@ export function isCrossChainViaBackendAvailable() {
  * @returns {Promise<{ chains: Array, tokens: Array }>}
  */
 export async function getBridgeMeta() {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   const res = await fetch(`${BASE}/api/v1/bridge/meta`, {
     method: 'GET',
     headers: headers(),
@@ -240,7 +243,7 @@ export async function getBridgeMeta() {
  * @returns {Promise<{ routes: Array, provider?: string }>}
  */
 export async function getRoutesFromBackend(sourceChainId, destChainId, tokenIn, tokenOut) {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   const tokenInAddr = toBridgeTokenAddress(tokenIn?.address ?? tokenIn ?? ZERO, sourceChainId);
   const tokenOutAddr = toBridgeTokenAddress(tokenOut?.address ?? tokenOut ?? ZERO, destChainId);
   const params = new URLSearchParams({
@@ -276,7 +279,7 @@ export async function isRouteSupportedViaBackend(sourceChainId, destChainId, tok
  * Backend proxies Rango's /basic/meta so API key stays server-side.
  */
 export async function getRangoSupportMatrix() {
-  if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
+  if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   const res = await fetch(`${BASE}/api/v1/swap/rango/meta`, {
     method: 'GET',
     headers: headers(),

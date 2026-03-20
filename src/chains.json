@@ -796,7 +796,7 @@
     {
         "chainName": "Mode",
         "chainId": "34443",
-        "img": "https://s2.coinmarketcap.com/static/img/coins/64x64/31016.png",
+        "img": "/assets/cmc/chain-34443.png",
         "type": "EVM",
         "nativeCurrency": {
             "name": "ETH",
@@ -853,7 +853,7 @@
     {
         "chainName": "Mantle",
         "chainId": "5000",
-        "img": "https://s2.coinmarketcap.com/static/img/coins/64x64/27075.png",
+        "img": "/assets/cmc/chain-5000.png",
         "type": "EVM",
         "nativeCurrency": {
             "name": "MNT",
@@ -910,7 +910,7 @@
     {
         "chainName": "Berachain",
         "chainId": "80094",
-        "img": "https://s2.coinmarketcap.com/static/img/coins/64x64/24647.png",
+        "img": "/assets/cmc/chain-80094.png",
         "type": "EVM",
         "nativeCurrency": {
             "name": "BERA",
@@ -967,7 +967,7 @@
     {
         "chainName": "Celo",
         "chainId": "42220",
-        "img": "https://s2.coinmarketcap.com/static/img/coins/64x64/5567.png",
+        "img": "/assets/cmc/chain-42220.png",
         "type": "EVM",
         "nativeCurrency": {
             "name": "CELO",
@@ -1024,7 +1024,7 @@
     {
         "chainName": "Fraxtal",
         "chainId": "252",
-        "img": "https://s2.coinmarketcap.com/static/img/coins/64x64/6952.png",
+        "img": "/assets/cmc/chain-252.png",
         "type": "EVM",
         "nativeCurrency": {
             "name": "FRAX",
@@ -1081,7 +1081,7 @@
     {
         "chainName": "Taiko",
         "chainId": "167000",
-        "img": "https://s2.coinmarketcap.com/static/img/coins/64x64/31525.png",
+        "img": "/assets/cmc/chain-167000.png",
         "type": "EVM",
         "nativeCurrency": {
             "name": "ETH",
@@ -1138,7 +1138,7 @@
     {
         "chainName": "Sei",
         "chainId": "1329",
-        "img": "https://s2.coinmarketcap.com/static/img/coins/64x64/23149.png",
+        "img": "/assets/cmc/chain-1329.png",
         "type": "EVM",
         "nativeCurrency": {
             "name": "SEI",
@@ -1195,7 +1195,7 @@
     {
         "chainName": "World Chain",
         "chainId": "480",
-        "img": "https://s2.coinmarketcap.com/static/img/coins/64x64/13502.png",
+        "img": "/assets/cmc/chain-480.png",
         "type": "EVM",
         "nativeCurrency": {
             "name": "ETH",
@@ -1252,7 +1252,7 @@
     {
         "chainName": "Monad",
         "chainId": "143",
-        "img": "https://s2.coinmarketcap.com/static/img/coins/64x64/30495.png",
+        "img": "/assets/cmc/chain-143.png",
         "type": "EVM",
         "nativeCurrency": {
             "name": "MON",
@@ -1309,7 +1309,7 @@
     {
         "chainName": "Zetachain",
         "chainId": "7000",
-        "img": "https://s2.coinmarketcap.com/static/img/coins/64x64/21259.png",
+        "img": "/assets/cmc/chain-7000.png",
         "type": "EVM",
         "nativeCurrency": {
             "name": "ZETA",
@@ -1366,7 +1366,7 @@
     {
         "chainName": "Zircuit",
         "chainId": "48900",
-        "img": "https://s2.coinmarketcap.com/static/img/coins/64x64/29711.png",
+        "img": "/assets/cmc/chain-48900.png",
         "type": "EVM",
         "nativeCurrency": {
             "name": "ETH",

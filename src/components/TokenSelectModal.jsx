@@ -6,6 +6,8 @@ import { ERC20_ABI } from '../config/abis';
 import { getTokenLogoUrl } from '../utils/tokenLogoUrl';
 import TokenLogo from './TokenLogo';
 
+const ETH_ALLOWED_BRIDGE_SYMBOLS = new Set(['ETH', 'USDC', 'USDT', 'DAI']);
+
 function TokenRow({ token, address, chainId, onSelect }) {
   const { formattedBalance, isLoading, error } = useTokenBalance({
     address,
@@ -54,7 +56,12 @@ export default function TokenSelectModal({ show, onHide, tokens, onSelect, addre
     setAddError('');
   }, [chainId]);
 
-  const allTokens = [...tokens, ...customTokens];
+  const allTokensRaw = [...tokens, ...customTokens];
+  // Hard UI guardrail: on Ethereum cross-chain modal, show only bridge-focused assets.
+  // This prevents stale upstream token sources from rendering unrelated symbols.
+  const allTokens = Number(chainId) === 1
+    ? allTokensRaw.filter((t) => ETH_ALLOWED_BRIDGE_SYMBOLS.has(String(t?.symbol || '').toUpperCase()))
+    : allTokensRaw;
   const filtered = allTokens.filter((t) =>
     (t.symbol && t.symbol.toLowerCase().includes(search.toLowerCase())) ||
     (t.name && t.name.toLowerCase().includes(search.toLowerCase())) ||

@@ -129,6 +129,7 @@ export function useCrossChainSwap() {
           recipient: params.recipient,
           userAddress: params.userAddress,
           referrer: params.referrer,
+          userToken: params.userToken,
         });
         useBackendStatusRef.current = true; // Always poll backend when initiated via backend
         setSwapId(result.swapId);

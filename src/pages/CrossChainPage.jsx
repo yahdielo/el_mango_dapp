@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useSignMessage } from 'wagmi';
 import { useConnectWallet } from '../hooks/useConnectWallet';
 import { useNavigate } from 'react-router-dom';
 import SwapHeader from '../components/SwapHeader';
@@ -31,6 +31,7 @@ import { mapErrorToUserMessage } from '../utils/errorMapping';
 import SlippageSelector, { loadSlippageFromStorage } from '../components/SlippageSelector';
 import { useWhitelist } from '../hooks/useWhitelist';
 import { getStoredReferrer } from '../utils/referrerStorage';
+import { getAuthSessionNonce, buildAuthSessionMessage, createAuthSessionToken } from '../services/authSessionApi';
 
 const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
 
@@ -51,6 +52,7 @@ function isValidBitcoinAddress(addr) {
 
 export default function CrossChainPage() {
   const { address } = useAccount();
+  const { signMessageAsync } = useSignMessage();
   const { handleConnect } = useConnectWallet();
   const navigate = useNavigate();
   const allChains = useMemo(() => getAllChains(), []);
@@ -326,6 +328,26 @@ export default function CrossChainPage() {
           ? (destinationAddress || '').trim()
           : address;
         const senderAddress = sourceChainId === 0 ? (bitcoinSenderAddress || '').trim() : address;
+        let userToken;
+        try {
+          if (address) {
+            const noncePayload = await getAuthSessionNonce(address);
+            const message = buildAuthSessionMessage({
+              userAddress: address,
+              nonce: noncePayload?.nonce,
+            });
+            const signature = await signMessageAsync({ message });
+            const tokenPayload = await createAuthSessionToken({
+              userAddress: address,
+              nonce: noncePayload?.nonce,
+              signature,
+            });
+            userToken = tokenPayload?.token;
+          }
+        } catch (authErr) {
+          // Session token is required for protected write endpoints; surface meaningful error.
+          throw new Error(authErr?.message || 'Failed to create swap session token');
+        }
         await startSwap({
           sourceChainId,
           destChainId,
@@ -335,6 +357,7 @@ export default function CrossChainPage() {
           recipient,
           userAddress: senderAddress,
           referrer: sourceReferrer && sourceReferrer !== '0x0000000000000000000000000000000000000000' ? sourceReferrer : undefined,
+          userToken,
         });
 
         // When not using backend, run referral sync client-side (backend does it when using mangoServices)
@@ -362,6 +385,7 @@ export default function CrossChainPage() {
     tokenIn,
     tokenOut,
     amountIn,
+    signMessageAsync,
   ]);
 
   const destAddrRequired = isNonEvmDest(destChainId);

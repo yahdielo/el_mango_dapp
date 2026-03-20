@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import { parseUnits } from 'viem';
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract, usePublicClient } from 'wagmi';
-import { ERC20_ABI, ROUTER_ABI } from '../config/abis';
-import { ZERO_ADDRESS, getRouterAddress, getExplorerUrl, getGasSettings } from '../utils/chainConfig';
+import { ERC20_ABI, ROUTER_ABI, MANGO_REFERRAL_ABI } from '../config/abis';
+import { ZERO_ADDRESS, getRouterAddress, getExplorerUrl, getGasSettings, getMangoReferralContractAddress } from '../utils/chainConfig';
 import { mapErrorToUserMessage } from '../utils/errorMapping';
 import { isNativeToken } from './useTokenBalance';
 
@@ -80,6 +80,54 @@ export function useSwap({
     const amountWei = parseUnits(amountIn, dec);
 
     try {
+      // Referral payouts can revert the whole swap if the chain's MangoReferral
+      // contract isn't properly configured (whitelist/funded/paused).
+      // We keep the referrer for tracking, but disable payout for this tx if unsafe.
+      let effectiveReferrer = referrer || ZERO_ADDRESS;
+      if (effectiveReferrer && effectiveReferrer !== ZERO_ADDRESS) {
+        const referralContract = getMangoReferralContractAddress(chainId);
+        if (!referralContract) {
+          effectiveReferrer = ZERO_ADDRESS;
+        } else {
+          try {
+            const [isPaused, isRouterWhitelisted, mangoTokenAddr] = await Promise.all([
+              publicClient.readContract({
+                address: referralContract,
+                abi: MANGO_REFERRAL_ABI,
+                functionName: 'chainPaused',
+                args: [BigInt(chainId)],
+              }),
+              publicClient.readContract({
+                address: referralContract,
+                abi: MANGO_REFERRAL_ABI,
+                functionName: 'whiteListed',
+                args: [routerAddress],
+              }),
+              publicClient.readContract({
+                address: referralContract,
+                abi: MANGO_REFERRAL_ABI,
+                functionName: 'mangoToken',
+              }),
+            ]);
+
+            if (isPaused || !isRouterWhitelisted || !mangoTokenAddr || mangoTokenAddr === ZERO_ADDRESS) {
+              effectiveReferrer = ZERO_ADDRESS;
+            } else {
+              const referralTokenBal = await publicClient.readContract({
+                address: mangoTokenAddr,
+                abi: ERC20_ABI,
+                functionName: 'balanceOf',
+                args: [referralContract],
+              });
+              if (referralTokenBal == null || referralTokenBal === 0n) effectiveReferrer = ZERO_ADDRESS;
+            }
+          } catch {
+            // Fail-safe: if any read fails, don't risk swapping with referral payout.
+            effectiveReferrer = ZERO_ADDRESS;
+          }
+        }
+      }
+
       if (!isNativeToken(tokenIn) && (allowance == null || allowance < amountWei)) {
         const approveHash = await writeContractAsync({
           address: tokenIn.address,
@@ -101,8 +149,8 @@ export function useSwap({
 
       // MangoRouter002: 4 params (token0, token1, amount, referrer) — no slippage param
       const finalArgs = isNativeToken(tokenIn)
-        ? [token0, token1, 0n, referrer || ZERO_ADDRESS]
-        : [token0, token1, amountWei, referrer || ZERO_ADDRESS];
+        ? [token0, token1, 0n, effectiveReferrer || ZERO_ADDRESS]
+        : [token0, token1, amountWei, effectiveReferrer || ZERO_ADDRESS];
 
       const hash = await writeContractAsync({
         address: routerAddress,

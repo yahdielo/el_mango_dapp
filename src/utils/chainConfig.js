@@ -70,6 +70,17 @@ export function getRouterAddress(chainId) {
 }
 
 /**
+ * Get MangoReferral contract address for chain (onchain payout infra).
+ * Used to decide whether referral payouts are safe to include in swap().
+ * @param {number} chainId
+ * @returns {string|null}
+ */
+export function getMangoReferralContractAddress(chainId) {
+  const chain = getChain(chainId);
+  return chain?.contracts?.referral || null;
+}
+
+/**
  * Get slippage settings for chain
  * @param {number} chainId
  * @returns {{ default: number, min: number, max: number }}

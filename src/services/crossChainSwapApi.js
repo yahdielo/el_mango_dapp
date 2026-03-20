@@ -32,10 +32,11 @@ function toRawAddress(addr) {
   return m ? m[1] : s;
 }
 
-function headers() {
+function headers(userToken) {
   const h = { Accept: 'application/json', 'Content-Type': 'application/json' };
   if (API_KEY) h['x-api-key'] = API_KEY;
   if (BRIDGE_PROVIDER) h['x-bridge-provider'] = BRIDGE_PROVIDER;
+  if (userToken) h['x-user-token'] = userToken;
   return h;
 }
 
@@ -60,6 +61,7 @@ export async function initiateCrossChainViaBackend({
   recipient,
   userAddress,
   referrer,
+  userToken,
 }) {
   if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   const tokenInAddr = toBridgeTokenAddress(tokenIn?.address ?? tokenIn, sourceChainId);
@@ -80,13 +82,28 @@ export async function initiateCrossChainViaBackend({
 
   const res = await fetch(`${BASE}/api/v1/swap/cross-chain`, {
     method: 'POST',
-    headers: headers(),
+    headers: headers(userToken),
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(30000),
   });
   const data = await res.json().catch(() => ({}));
   if (res.status === 401) {
-    throw new Error('Cross-chain API requires authentication. Set VITE_MANGO_SERVICES_API_KEY in your build environment.');
+    const hint = data?.message || data?.error;
+    if (typeof hint === 'string' && hint.includes('user session token')) {
+      throw new Error(
+        `${hint} If you use a browser wallet on a different domain than the API, ensure the API CORS policy allows the x-user-token header (redeploy mangoServices).`
+      );
+    }
+    if (typeof hint === 'string' && hint.toLowerCase().includes('api key')) {
+      throw new Error(
+        `${hint} Set VITE_MANGO_SERVICES_API_KEY on your frontend build (Vercel) to match the backend API_KEY.`
+      );
+    }
+    throw new Error(
+      typeof hint === 'string'
+        ? hint
+        : 'Cross-chain API returned 401. Check VITE_MANGO_SERVICES_API_KEY and wallet session signing (x-user-token).'
+    );
   }
   if (!res.ok) {
     // Log full response so DevTools shows the real reason for 400/5xx
@@ -127,11 +144,11 @@ export async function initiateCrossChainViaBackend({
  * @param {string} swapId - Our internal swap UUID
  * @returns {Promise<{ status: string, depositActions?: Array }>}
  */
-export async function getSwapStatusFromBackend(swapId) {
+export async function getSwapStatusFromBackend(swapId, userToken) {
   if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   const res = await fetch(`${BASE}/api/v1/swap/${encodeURIComponent(swapId)}/status`, {
     method: 'GET',
-    headers: headers(),
+    headers: headers(userToken),
     signal: AbortSignal.timeout(15000),
   });
   const data = await res.json().catch(() => ({}));
@@ -149,11 +166,11 @@ export async function getSwapStatusFromBackend(swapId) {
 /**
  * Fetch deposit instructions (to_address, amount) for a swap. Use when status didn't include depositActions.
  */
-export async function getDepositFromBackend(swapId) {
+export async function getDepositFromBackend(swapId, userToken) {
   if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   const res = await fetch(`${BASE}/api/v1/swap/${encodeURIComponent(swapId)}/deposit`, {
     method: 'GET',
-    headers: headers(),
+    headers: headers(userToken),
     signal: AbortSignal.timeout(10000),
   });
   const data = await res.json().catch(() => ({}));
@@ -170,7 +187,7 @@ export async function getDepositFromBackend(swapId) {
  * @param {string} swapId
  * @param {string} txHash
  */
-export async function notifySourceTxHash(swapId, txHash) {
+export async function notifySourceTxHash(swapId, txHash, userToken) {
   if (!BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   if (!swapId) throw new Error('swapId required');
   if (!txHash) throw new Error('txHash required');
@@ -179,7 +196,7 @@ export async function notifySourceTxHash(swapId, txHash) {
     `${BASE}/api/v1/swap/${encodeURIComponent(swapId)}/source-tx`,
     {
       method: 'POST',
-      headers: headers(),
+      headers: headers(userToken),
       body: JSON.stringify({ txHash }),
       signal: AbortSignal.timeout(15000),
     }

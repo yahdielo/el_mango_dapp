@@ -64,3 +64,30 @@ export const ROUTER_ABI = [
     type: 'function',
   },
 ];
+
+/**
+ * MangoReferral minimal ABI (used for preflight safety checks).
+ */
+export const MANGO_REFERRAL_ABI = [
+  {
+    inputs: [{ name: 'router', type: 'address' }],
+    name: 'whiteListed',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: '', type: 'uint256' }],
+    name: 'chainPaused',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'mangoToken',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+];

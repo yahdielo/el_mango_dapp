@@ -33,13 +33,39 @@ export function useBridgeRouteSupport(sourceChainId, destChainId, tokenIn, token
     }
 
     const useBackend = isCrossChainViaBackendAvailable();
-    const checkFn = useBackend ? isRouteSupportedViaBackend : isRouteSupported;
 
+    let cancelled = false;
     setLoading(true);
-    checkFn(sourceChainId, destChainId, tokenIn, tokenOut)
-      .then(setIsSupported)
-      .catch(() => setIsSupported(null))
-      .finally(() => setLoading(false));
+
+    (async () => {
+      try {
+        if (!useBackend) {
+          const ls = await isRouteSupported(sourceChainId, destChainId, tokenIn, tokenOut);
+          if (!cancelled) setIsSupported(ls);
+          return;
+        }
+
+        // Backend is preferred, but if it returns "false" due to an upstream/proxy issue,
+        // we want to fall back to LayerSwap so the UI doesn't incorrectly say "not supported".
+        const backendRes = await isRouteSupportedViaBackend(sourceChainId, destChainId, tokenIn, tokenOut);
+        if (backendRes !== false) {
+          if (!cancelled) setIsSupported(backendRes);
+          return;
+        }
+
+        // Fallback: confirm with LayerSwap when backend says unsupported.
+        const ls = await isRouteSupported(sourceChainId, destChainId, tokenIn, tokenOut);
+        if (!cancelled) setIsSupported(ls);
+      } catch {
+        if (!cancelled) setIsSupported(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [sourceChainId, destChainId, tokenIn?.symbol, tokenOut?.symbol]);
 
   return { isSupported, loading };

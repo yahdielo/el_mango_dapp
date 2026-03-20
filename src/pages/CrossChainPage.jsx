@@ -39,6 +39,16 @@ const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
 // is XRP (144) or Sui (101) when using native token inputs/outputs.
 const LAYERSWAP_NATIVE_ROUTE_MISSING_CHAIN_IDS = new Set([101, 144]);
 
+function normalizeSymbolForTokenCompare(symbol) {
+  const s = String(symbol || '').toUpperCase().trim();
+  // Treat wrapped native as its canonical native symbol for UI matching.
+  if (s === 'WETH' || s === 'ETH') return 'ETH';
+  if (s === 'WMATIC' || s === 'MATIC' || s === 'POL') return 'POL';
+  if (s === 'WBNB' || s === 'BNB') return 'BNB';
+  if (s === 'WAVAX' || s === 'AVAX') return 'AVAX';
+  return s;
+}
+
 /** Non-EVM chains require a destination address in that chain's format (e.g. bc1... for BTC, not 0x...) */
 const NON_EVM_DEST_CHAINS = [0, 501111, 728126428, 144, 101];
 
@@ -141,14 +151,30 @@ export default function CrossChainPage() {
       );
       if (!metaTokens.length) return base;
 
+            const baseAllowedSymbols = new Set(
+              base
+                .map((t) => normalizeSymbolForTokenCompare(t.symbol))
+                .filter(Boolean)
+            );
+
       const tokenKey = (t) => `${(t.symbol || '').toUpperCase()}|${(t.address || '').toLowerCase()}`;
-      const mapped = metaTokens.map((t) => ({
-        symbol: t.symbol,
-        name: t.symbol,
-        decimals: t.decimals,
-        address: t.address ?? ZERO_ADDRESS,
-        ...(t.address ? {} : { native: true }),
-      }));
+            // Avoid showing unexpected "bridge" or synthetic symbols that aren't in our curated UI list.
+            // We allow:
+            // - native tokens (LayerSwap returns address=null)
+            // - any meta token whose symbol matches one of the static tokens for this chain
+            const mapped = metaTokens
+              .filter((t) => {
+                const isNative = !t.address;
+                if (isNative) return true;
+                return baseAllowedSymbols.has(normalizeSymbolForTokenCompare(t.symbol));
+              })
+              .map((t) => ({
+                symbol: t.symbol,
+                name: t.symbol,
+                decimals: t.decimals,
+                address: t.address ?? ZERO_ADDRESS,
+                ...(t.address ? {} : { native: true }),
+              }));
 
       const out = new Map();
       for (const t of mapped) out.set(tokenKey(t), t);
@@ -203,14 +229,26 @@ export default function CrossChainPage() {
       );
       if (!metaTokens.length) return base;
 
+            const baseAllowedSymbols = new Set(
+              base
+                .map((t) => normalizeSymbolForTokenCompare(t.symbol))
+                .filter(Boolean)
+            );
+
       const tokenKey = (t) => `${(t.symbol || '').toUpperCase()}|${(t.address || '').toLowerCase()}`;
-      const mapped = metaTokens.map((t) => ({
-        symbol: t.symbol,
-        name: t.symbol,
-        decimals: t.decimals,
-        address: t.address ?? ZERO_ADDRESS,
-        ...(t.address ? {} : { native: true }),
-      }));
+            const mapped = metaTokens
+              .filter((t) => {
+                const isNative = !t.address;
+                if (isNative) return true;
+                return baseAllowedSymbols.has(normalizeSymbolForTokenCompare(t.symbol));
+              })
+              .map((t) => ({
+                symbol: t.symbol,
+                name: t.symbol,
+                decimals: t.decimals,
+                address: t.address ?? ZERO_ADDRESS,
+                ...(t.address ? {} : { native: true }),
+              }));
 
       const out = new Map();
       for (const t of mapped) out.set(tokenKey(t), t);

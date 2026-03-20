@@ -10,6 +10,7 @@ const FALLBACK_LOGO_BY_SYMBOL = {
   DAI: 'https://assets.coingecko.com/coins/images/9956/large/Badge_Dai.png',
   WETH: 'https://assets.coingecko.com/coins/images/2518/large/weth.png',
   ETH: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
+  MON: '/assets/monad.jpg',
 };
 
 const NATIVE_LOGO_BY_CHAIN_ID = {
@@ -83,7 +84,7 @@ export default function TokenLogo({
       ? getTrustWalletLogoCandidates(chainId, token.address)
       : [];
 
-  const fallback = token?.symbol ? FALLBACK_LOGO_BY_SYMBOL[token.symbol] : null;
+  const fallback = token?.symbol ? FALLBACK_LOGO_BY_SYMBOL[String(token.symbol).toUpperCase()] : null;
   const isNativeToken =
     token?.native || String(token?.address || '').toLowerCase() === '0x0000000000000000000000000000000000000000';
   const nativeChainFallback =

@@ -620,7 +620,7 @@ export default function CrossChainPage() {
   const canConfirmCrossChain =
     isCrossChain &&
     !routeLoading &&
-    routeSupported !== false &&
+    (isCrossChainViaBackendAvailable() ? routeSupported === true : routeSupported !== false) &&
     canSwap &&
     destAddrValid &&
     bitcoinSenderValid &&

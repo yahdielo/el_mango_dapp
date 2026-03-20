@@ -10,6 +10,12 @@ const FALLBACK_LOGO_BY_SYMBOL = {
   DAI: 'https://assets.coingecko.com/coins/images/9956/large/Badge_Dai.png',
   WETH: 'https://assets.coingecko.com/coins/images/2518/large/weth.png',
   ETH: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
+  MNT: '/assets/cmc/chain-5000.png',
+  BERA: '/assets/cmc/chain-80094.png',
+  CELO: '/assets/cmc/chain-42220.png',
+  FRAX: '/assets/cmc/chain-252.png',
+  SEI: '/assets/cmc/chain-1329.png',
+  ZETA: '/assets/cmc/chain-7000.png',
   MON: '/assets/monad.jpg',
 };
 

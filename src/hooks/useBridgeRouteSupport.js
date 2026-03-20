@@ -45,17 +45,11 @@ export function useBridgeRouteSupport(sourceChainId, destChainId, tokenIn, token
           return;
         }
 
-        // Backend is preferred, but if it returns "false" due to an upstream/proxy issue,
-        // we want to fall back to LayerSwap so the UI doesn't incorrectly say "not supported".
+        // Backend is authoritative for execution path on mangoswap deployments.
+        // Do NOT override backend "unsupported" with a looser client-side LayerSwap probe,
+        // otherwise UI can enable a swap that backend later rejects with 400.
         const backendRes = await isRouteSupportedViaBackend(sourceChainId, destChainId, tokenIn, tokenOut);
-        if (backendRes !== false) {
-          if (!cancelled) setIsSupported(backendRes);
-          return;
-        }
-
-        // Fallback: confirm with LayerSwap when backend says unsupported.
-        const ls = await isRouteSupported(sourceChainId, destChainId, tokenIn, tokenOut);
-        if (!cancelled) setIsSupported(ls);
+        if (!cancelled) setIsSupported(backendRes);
       } catch {
         if (!cancelled) setIsSupported(null);
       } finally {

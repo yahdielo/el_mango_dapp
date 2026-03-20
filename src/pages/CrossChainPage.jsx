@@ -619,6 +619,7 @@ export default function CrossChainPage() {
   });
   const canConfirmCrossChain =
     isCrossChain &&
+    !routeLoading &&
     routeSupported !== false &&
     canSwap &&
     destAddrValid &&

@@ -16,7 +16,7 @@
       "destination": "https://api.mangoswap.io/api/:path*"
     },
     {
-      "source": "/((?!assets/|.*\\.(png|jpg|jpeg|gif|svg|webp)$).*)",
+      "source": "/:path*",
       "destination": "/index.html"
     }
   ]

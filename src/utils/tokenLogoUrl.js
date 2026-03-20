@@ -12,6 +12,17 @@ const TRUSTWALLET_CHAIN = {
   137: 'polygon',
   10: 'optimism',
   43114: 'avalanchec',
+  34443: 'mode',
+  5000: 'mantle',
+  80094: 'berachain',
+  42220: 'celo',
+  252: 'fraxtal',
+  167000: 'taiko',
+  1329: 'sei',
+  480: 'world',
+  143: 'monad',
+  7000: 'zetachain',
+  48900: 'zircuit',
 };
 
 const TRUSTWALLET_BASE = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains';
@@ -28,6 +39,23 @@ export function getTrustWalletLogoUrl(chainId, tokenAddress) {
   if (!folder || !tokenAddress) return null;
   const addr = tokenAddress.toLowerCase();
   return `${TRUSTWALLET_BASE}/${folder}/assets/${addr}/logo.png`;
+}
+
+/**
+ * Return multiple Trust Wallet URL candidates because address casing in upstream
+ * metadata can vary while repository paths can be case-sensitive.
+ */
+export function getTrustWalletLogoCandidates(chainId, tokenAddress) {
+  const folder = TRUSTWALLET_CHAIN[chainId];
+  if (!folder || !tokenAddress) return [];
+  const raw = String(tokenAddress).trim();
+  if (!raw) return [];
+  const lower = raw.toLowerCase();
+  const set = new Set([
+    `${TRUSTWALLET_BASE}/${folder}/assets/${raw}/logo.png`,
+    `${TRUSTWALLET_BASE}/${folder}/assets/${lower}/logo.png`,
+  ]);
+  return Array.from(set);
 }
 
 /**

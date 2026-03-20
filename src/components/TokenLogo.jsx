@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import mangoTokenImage from '../assets/mango-token.jpg';
-import { getTrustWalletLogoUrl } from '../utils/tokenLogoUrl';
+import { getTrustWalletLogoCandidates } from '../utils/tokenLogoUrl';
 
 /** Fallback logo URLs (e.g. CoinGecko) when primary (Trust Wallet) fails with connection reset */
 const FALLBACK_LOGO_BY_SYMBOL = {
@@ -10,6 +10,20 @@ const FALLBACK_LOGO_BY_SYMBOL = {
   DAI: 'https://assets.coingecko.com/coins/images/9956/large/Badge_Dai.png',
   WETH: 'https://assets.coingecko.com/coins/images/2518/large/weth.png',
   ETH: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
+};
+
+const NATIVE_LOGO_BY_CHAIN_ID = {
+  34443: '/assets/mode.png',
+  5000: '/assets/cmc/chain-5000.png',
+  80094: '/assets/cmc/chain-80094.png',
+  42220: '/assets/cmc/chain-42220.png',
+  252: '/assets/cmc/chain-252.png',
+  167000: '/assets/taiko.png',
+  1329: '/assets/cmc/chain-1329.png',
+  480: '/assets/worldchain.png',
+  143: '/assets/cmc/chain-143.png',
+  7000: '/assets/cmc/chain-7000.png',
+  48900: '/assets/zircuit-inverted-icon.svg',
 };
 
 /** CoinMarketCap id map for symbols frequently returned in Ethereum token modal. */
@@ -64,14 +78,23 @@ export default function TokenLogo({
   const hasTrustWalletAddress =
     token?.address && typeof token.address === 'string' && token.address.length > 0 && token.address !== '0x0000000000000000000000000000000000000000';
 
-  const trustWalletFallback =
-    typeof chainId === 'number' && hasTrustWalletAddress ? getTrustWalletLogoUrl(chainId, token.address) : null;
+  const trustWalletFallbacks =
+    typeof chainId === 'number' && hasTrustWalletAddress
+      ? getTrustWalletLogoCandidates(chainId, token.address)
+      : [];
 
   const fallback = token?.symbol ? FALLBACK_LOGO_BY_SYMBOL[token.symbol] : null;
+  const isNativeToken =
+    token?.native || String(token?.address || '').toLowerCase() === '0x0000000000000000000000000000000000000000';
+  const nativeChainFallback =
+    isNativeToken && typeof chainId === 'number' ? NATIVE_LOGO_BY_CHAIN_ID[chainId] || null : null;
   const cmcFallback = getCmcLogoBySymbol(token?.symbol);
   const urls = useMemo(
-    () => [primary, trustWalletFallback, fallback, cmcFallback?.local, cmcFallback?.remote].filter(Boolean),
-    [primary, trustWalletFallback, fallback, cmcFallback]
+    () =>
+      [primary, ...trustWalletFallbacks, nativeChainFallback, fallback, cmcFallback?.local, cmcFallback?.remote].filter(
+        Boolean
+      ),
+    [primary, trustWalletFallbacks, nativeChainFallback, fallback, cmcFallback]
   );
   const currentSrc = urls[srcIndex];
   const showLetter = !currentSrc || srcIndex >= urls.length;

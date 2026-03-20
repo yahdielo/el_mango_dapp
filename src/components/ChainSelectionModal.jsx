@@ -1,6 +1,13 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { getAllChains } from '../utils/chainConfig';
 
+const FIXED_CHAIN_ICON_BY_ID = {
+  34443: '/assets/mode.png?v=3',
+  167000: '/assets/taiko.png?v=3',
+  480: '/assets/worldchain.png?v=3',
+  48900: '/assets/zircuit-inverted-icon.svg?v=3',
+};
+
 export default function ChainSelectionModal({ show, onHide, onSelect, title = 'Select Chain', selectedChainId, chains: chainsProp }) {
   const [search, setSearch] = useState('');
   const allChains = useMemo(() => chainsProp ?? getAllChains(), [chainsProp]);
@@ -64,6 +71,7 @@ export default function ChainSelectionModal({ show, onHide, onSelect, title = 'S
           {filtered.map((chain) => {
             const id = parseInt(chain.chainId);
             const isSelected = selectedChainId === id;
+            const resolvedImg = FIXED_CHAIN_ICON_BY_ID[id] || chain.img;
             return (
               <button
                 key={chain.chainId}
@@ -74,9 +82,9 @@ export default function ChainSelectionModal({ show, onHide, onSelect, title = 'S
                 }`}
               >
                 <div className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden bg-[#3CF902]/30">
-                  {chain.img ? (
+                  {resolvedImg ? (
                     <img
-                      src={chain.img}
+                      src={resolvedImg}
                       alt={chain.chainName}
                       className="w-full h-full object-cover"
                       onError={(e) => {
@@ -86,7 +94,7 @@ export default function ChainSelectionModal({ show, onHide, onSelect, title = 'S
                       }}
                     />
                   ) : null}
-                  <span className={`text-white font-bold ${chain.img ? 'hidden' : ''}`}>{(chain.chainName || 'C')[0]}</span>
+                  <span className={`text-white font-bold ${resolvedImg ? 'hidden' : ''}`}>{(chain.chainName || 'C')[0]}</span>
                 </div>
                 <span className="text-white text-sm font-medium text-center truncate w-full">{chain.chainName}</span>
                 {isSelected && <span className="text-[#3CF902] text-xs">✓</span>}

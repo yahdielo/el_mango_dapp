@@ -165,13 +165,15 @@ export async function getStatus(swapId) {
  */
 export async function isRouteSupported(sourceChainId, destChainId, sourceToken, destToken) {
   const destNetwork = getNetworkName(destChainId);
-  const destSym = (destToken?.symbol || destToken || '').toUpperCase();
-  const destTk = destSym === 'WETH' || destSym === 'ETH' ? 'ETH' : destSym;
-  if (!destNetwork || !destTk) return false;
+  if (!destNetwork) return false;
 
   try {
+    // Query by destination network only.
+    // Some LayerSwap native destination tokens (e.g. FRAX/MON/SEI/ZETA) can return
+    // ROUTE_NOT_FOUND_ERROR when destination_token is provided, despite the network
+    // itself being valid and routable for other assets.
     const data = await fetchApi(
-      `/sources?destination_network=${encodeURIComponent(destNetwork)}&destination_token=${encodeURIComponent(destTk)}`
+      `/sources?destination_network=${encodeURIComponent(destNetwork)}`
     );
     const sources = data?.data ?? [];
     const sourceNetwork = getNetworkName(sourceChainId);

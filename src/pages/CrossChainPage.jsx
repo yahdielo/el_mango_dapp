@@ -49,6 +49,29 @@ function normalizeSymbolForTokenCompare(symbol) {
   return s;
 }
 
+/**
+ * LayerSwap metadata can include "native-like" entries where `contract/address` is null.
+ * We must only allow the canonical LayerSwap native symbol for the selected chain,
+ * otherwise synthetic tokens can appear (e.g. non-ETH symbols showing on Ethereum).
+ */
+function getCanonicalLayerSwapNativeSymbol(chainId) {
+  const id = Number(chainId);
+  // Ethereum-like EVM chains
+  if ([1, 8453, 42161, 10, 43114, 167000, 480, 48900, 34443].includes(id)) return 'ETH';
+  // Polygon uses POL on LayerSwap
+  if (id === 137) return 'POL';
+  // New EVM chains
+  if (id === 5000) return 'MNT';
+  if (id === 80094) return 'BERA';
+  if (id === 42220) return 'CELO';
+  if (id === 252) return 'FRAX';
+  if (id === 1329) return 'SEI';
+  if (id === 143) return 'MON';
+  if (id === 7000) return 'ZETA';
+  // Fallback: try to match whatever LayerSwap returns for known wrapped native symbols
+  return null;
+}
+
 /** Non-EVM chains require a destination address in that chain's format (e.g. bc1... for BTC, not 0x...) */
 const NON_EVM_DEST_CHAINS = [0, 501111, 728126428, 144, 101];
 
@@ -162,10 +185,15 @@ export default function CrossChainPage() {
             // We allow:
             // - native tokens (LayerSwap returns address=null)
             // - any meta token whose symbol matches one of the static tokens for this chain
+      const canonicalNativeSym = getCanonicalLayerSwapNativeSymbol(sourceChainId);
             const mapped = metaTokens
               .filter((t) => {
                 const isNative = !t.address;
-                if (isNative) return true;
+                if (isNative) {
+                  // Only allow the real canonical native symbol for this chain.
+                  if (!canonicalNativeSym) return true;
+                  return normalizeSymbolForTokenCompare(t.symbol) === canonicalNativeSym;
+                }
                 return baseAllowedSymbols.has(normalizeSymbolForTokenCompare(t.symbol));
               })
               .map((t) => ({
@@ -236,10 +264,14 @@ export default function CrossChainPage() {
             );
 
       const tokenKey = (t) => `${(t.symbol || '').toUpperCase()}|${(t.address || '').toLowerCase()}`;
-            const mapped = metaTokens
+      const canonicalNativeSym = getCanonicalLayerSwapNativeSymbol(destChainId);
+      const mapped = metaTokens
               .filter((t) => {
                 const isNative = !t.address;
-                if (isNative) return true;
+                if (isNative) {
+                  if (!canonicalNativeSym) return true;
+                  return normalizeSymbolForTokenCompare(t.symbol) === canonicalNativeSym;
+                }
                 return baseAllowedSymbols.has(normalizeSymbolForTokenCompare(t.symbol));
               })
               .map((t) => ({

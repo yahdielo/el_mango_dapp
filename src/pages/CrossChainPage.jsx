@@ -540,8 +540,11 @@ export default function CrossChainPage() {
             userToken = tokenPayload?.token;
           }
         } catch (authErr) {
-          // Session token is required for protected write endpoints; surface meaningful error.
-          throw new Error(authErr?.message || 'Failed to create swap session token');
+          // Non-blocking: if auth token creation fails (400/nonce/signature mismatch),
+          // continue without x-user-token. Backend may still allow initiation.
+          // This avoids blocking swaps due to auth-session edge cases.
+          console.warn('[auth-session] proceeding without user token:', authErr?.message || authErr);
+          userToken = undefined;
         }
         await startSwap({
           sourceChainId,

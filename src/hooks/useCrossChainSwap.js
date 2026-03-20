@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { initiateSwap, getStatus } from '../services/bridgeApi';
+import { getStatus } from '../services/bridgeApi';
 import {
   initiateCrossChainViaBackend,
   isCrossChainViaBackendAvailable,
@@ -169,12 +169,9 @@ export function useCrossChainSwap() {
         return { swapId: result.swapId, depositActions: acts, rangoTx: rtx };
       }
       useBackendStatusRef.current = false;
-      const result = await initiateSwap(params);
-      setSwapId(result.swapId);
-      setStatus('user_transfer_pending');
-      setDepositActions(result.depositActions || []);
-      setProvider(result.provider || null);
-      return result;
+      throw new Error(
+        'Cross-chain backend is not configured (missing VITE_MANGO_SERVICES_URL). Direct LayerSwap browser swaps are disabled.'
+      );
     } catch (err) {
       setError(err?.message || 'Failed to initiate swap');
       throw err;

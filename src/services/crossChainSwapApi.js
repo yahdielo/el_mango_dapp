@@ -213,10 +213,11 @@ export async function notifySourceTxHash(swapId, txHash, userToken) {
 
 /** Backend is used for cross-chain when BASE is set. API key is optional (backend allows test.mangoswap.io / mangoswap.io without key). */
 export function isCrossChainViaBackendAvailable() {
-  // `BASE` is the *resolved* base URL. When we intentionally resolve to `''`
-  // (e.g. proxy not available / same-origin workaround), we must treat backend
-  // as unavailable so we can fall back to LayerSwap directly.
-  return Boolean(BASE && BASE.trim() !== '');
+  // IMPORTANT:
+  // - On mangoswap domains we intentionally resolve api.mangoswap.io -> '' so requests go through /api proxy.
+  // - In that case BASE is empty string by design, but backend is still available.
+  // Therefore availability must be based on RAW_BASE (env intent), not resolved BASE.
+  return Boolean(RAW_BASE && RAW_BASE.trim() !== '');
 }
 
 /**

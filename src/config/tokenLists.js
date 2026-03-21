@@ -38,7 +38,7 @@ export function getFirstSupportedChain() {
   return SUPPORTED_SWAP_CHAINS[0];
 }
 
-/** MANGO token (deterministic, same across Polygon/Optimism/Avalanche/Base) - from deployment report */
+/** MANGO token (Avalanche list only; excluded from Polygon/Optimism swap UI) */
 const MANGO_TOKEN_ADDRESS = '0x1dC5726C54791c18eA68C26428bef5c278007627';
 
 export const tokenLists = {
@@ -93,13 +93,11 @@ export const tokenLists = {
   },
   137: {
     default: [
-      { symbol: 'MANGO', name: 'Mango DeFi Token', decimals: 18, address: MANGO_TOKEN_ADDRESS, logoURI: MANGO_LOGO },
       { symbol: 'WMATIC', name: 'Wrapped MATIC', decimals: 18, address: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270/logo.png' },
       { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', logoURI: USDC_LOGO },
       { symbol: 'USDT', name: 'Tether USD', decimals: 6, address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', logoURI: USDT_LOGO },
     ],
     popular: [
-      { symbol: 'MANGO', name: 'Mango DeFi Token', decimals: 18, address: MANGO_TOKEN_ADDRESS, logoURI: MANGO_LOGO },
       { symbol: 'WMATIC', name: 'Wrapped MATIC', decimals: 18, address: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', logoURI: WMATIC_LOGO },
       { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', logoURI: USDC_LOGO },
       { symbol: 'USDT', name: 'Tether USD', decimals: 6, address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', logoURI: USDT_LOGO },
@@ -112,12 +110,10 @@ export const tokenLists = {
   },
   10: {
     default: [
-      { symbol: 'MANGO', name: 'Mango DeFi Token', decimals: 18, address: MANGO_TOKEN_ADDRESS, logoURI: MANGO_LOGO },
       { symbol: 'WETH', name: 'Wrapped Ether', decimals: 18, address: '0x4200000000000000000000000000000000000006', logoURI: ETH_LOGO },
       { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85', logoURI: USDC_LOGO },
     ],
     popular: [
-      { symbol: 'MANGO', name: 'Mango DeFi Token', decimals: 18, address: MANGO_TOKEN_ADDRESS, logoURI: MANGO_LOGO },
       { symbol: 'WETH', name: 'Wrapped Ether', decimals: 18, address: '0x4200000000000000000000000000000000000006', logoURI: ETH_LOGO },
       { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85', logoURI: USDC_LOGO },
       { symbol: 'USDT', name: 'Tether USD', decimals: 6, address: '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58', logoURI: USDT_LOGO },

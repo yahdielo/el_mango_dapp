@@ -347,6 +347,8 @@ export default function CrossChainPage() {
   const effectiveQuoteLoading = isCrossChain ? false : quoteLoading;
   const effectiveQuoteError = isCrossChain ? null : quoteError;
   const effectiveQuoteEstimated = isCrossChain ? true : quoteEstimated;
+  const sameAssetCrossChainPair =
+    normalizeSymbolForTokenCompare(tokenIn?.symbol) === normalizeSymbolForTokenCompare(tokenOut?.symbol);
 
   const slippageBps = getSlippageToleranceInBasisPoints(sourceChainId, { getSlippage }, slippage);
 
@@ -621,6 +623,7 @@ export default function CrossChainPage() {
     isCrossChain &&
     !routeLoading &&
     (isCrossChainViaBackendAvailable() ? routeSupported === true : routeSupported !== false) &&
+    (effectiveBridgeProvider !== 'layerswap' || sameAssetCrossChainPair) &&
     canSwap &&
     destAddrValid &&
     bitcoinSenderValid &&
@@ -884,6 +887,15 @@ export default function CrossChainPage() {
               </p>
             )
           )}
+          {isCrossChain &&
+            effectiveBridgeProvider === 'layerswap' &&
+            tokenIn?.symbol &&
+            tokenOut?.symbol &&
+            !sameAssetCrossChainPair && (
+              <p className="text-amber-400 text-sm text-center mb-2">
+                LayerSwap supports same-asset bridges (e.g. ETH→ETH, USDT→USDT). Bridge first, then swap on destination.
+              </p>
+            )}
           {showRouteUnknownMessage && (
             <p className="text-gray-500 text-xs text-center mb-2">
               Route check unavailable — you can still slide to continue; swap completes via the bridge.

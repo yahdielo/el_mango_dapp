@@ -5,6 +5,7 @@ import { ERC20_ABI, ROUTER_ABI, MANGO_REFERRAL_ABI } from '../config/abis';
 import { ZERO_ADDRESS, getRouterAddress, getExplorerUrl, getGasSettings, getMangoReferralContractAddress } from '../utils/chainConfig';
 import { mapErrorToUserMessage } from '../utils/errorMapping';
 import { isNativeToken } from './useTokenBalance';
+import { isPolygonBridgedWethSwap, POLYGON_USE_WMATIC_MESSAGE } from '../utils/mangoRouterPolygonSupport';
 
 /**
  * @param {Object} params
@@ -70,6 +71,11 @@ export function useSwap({
     const amt = parseFloat(amountIn);
     if (Number.isNaN(amt) || amt <= 0) {
       setError('Invalid amount');
+      return;
+    }
+
+    if (isPolygonBridgedWethSwap(chainId, tokenIn, tokenOut)) {
+      setError(POLYGON_USE_WMATIC_MESSAGE);
       return;
     }
 

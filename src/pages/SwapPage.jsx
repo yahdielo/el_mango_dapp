@@ -26,6 +26,7 @@ import SlippageSelector, { loadSlippageFromStorage } from '../components/Slippag
 import { useWhitelist } from '../hooks/useWhitelist';
 import { useAccountReferrer } from '../hooks/useAccountReferrer';
 import { resolveEffectiveReferrer, setStoredReferrer } from '../utils/referrerStorage';
+import { isPolygonBridgedWethSwap, POLYGON_USE_WMATIC_MESSAGE } from '../utils/mangoRouterPolygonSupport';
 
 const DEFAULT_CHAIN = 8453;
 const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
@@ -131,6 +132,11 @@ export default function SwapPage() {
     }
     return null;
   }, [effectiveChainId, routerConfigured]);
+
+  const polygonBridgedWethError = useMemo(() => {
+    if (isPolygonBridgedWethSwap(effectiveChainId, token1, token2)) return POLYGON_USE_WMATIC_MESSAGE;
+    return null;
+  }, [effectiveChainId, token1, token2]);
 
   const { canSwap, error: validationError } = useSwapValidation({
     amount: amount1,
@@ -329,10 +335,12 @@ export default function SwapPage() {
               </button>
             </div>
           )}
-          {(routerError || validationError || quoteError || swapError) && !swapSuccess && (
+          {(polygonBridgedWethError || routerError || validationError || quoteError || swapError) && !swapSuccess && (
             <div className="mb-4 flex items-center justify-between gap-2">
               <p className="text-red-400 text-sm flex-1">
-                {routerError || mapErrorToUserMessage(validationError || quoteError || swapError)}
+                {polygonBridgedWethError ||
+                  routerError ||
+                  mapErrorToUserMessage(validationError || quoteError || swapError)}
               </p>
               {swapError && (
                 <button
@@ -361,7 +369,9 @@ export default function SwapPage() {
             }
             emptyStateLabel={!address ? 'Connect above to swap' : undefined}
             disabled={
-              (address && isChainSupportedForSwap(chainId) && (!canSwap || swapSuccess || swapPending || !routerConfigured)) ||
+              (address &&
+                isChainSupportedForSwap(chainId) &&
+                (!canSwap || swapSuccess || swapPending || !routerConfigured || !!polygonBridgedWethError)) ||
               (address && !isChainSupportedForSwap(chainId) && !switchChain)
             }
             isPending={swapPending}

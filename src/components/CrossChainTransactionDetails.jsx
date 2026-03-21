@@ -1,4 +1,12 @@
-export default function CrossChainTransactionDetails({ amountIn, amountOut, sourceChain, destChain, estimated, gasCostFormatted }) {
+export default function CrossChainTransactionDetails({
+  amountIn,
+  amountOut,
+  sourceChain,
+  destChain,
+  estimated,
+  gasCostFormatted,
+  bridgeLabel = 'Auto',
+}) {
   if (!amountIn || parseFloat(amountIn) <= 0) return null;
 
   const rate = amountIn && amountOut && parseFloat(amountIn) > 0 && parseFloat(amountOut) > 0
@@ -23,7 +31,7 @@ export default function CrossChainTransactionDetails({ amountIn, amountOut, sour
         )}
         <div className="flex justify-between text-gray-400">
           <span>Bridge</span>
-          <span className="text-[#3CF902]">Auto</span>
+          <span className="text-[#3CF902]">{bridgeLabel}</span>
         </div>
         {gasCostFormatted && (
           <div className="flex justify-between text-gray-400">

@@ -132,6 +132,13 @@ export default function CrossChainPage() {
 
   const bridgeProvider = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
+  const bridgeLabelDisplay = useMemo(() => {
+    if (bridgeProvider === 'auto') return 'Auto';
+    if (bridgeProvider === 'layerswap') return 'LayerSwap';
+    if (bridgeProvider === 'rango') return 'Rango';
+    return bridgeProvider ? bridgeProvider.charAt(0).toUpperCase() + bridgeProvider.slice(1) : 'Auto';
+  }, [bridgeProvider]);
+
   // If the swap involves any of our "LayerSwap-only" chainIds, force the frontend
   // token filtering and UI messaging to use LayerSwap semantics as well.
   // (Otherwise the token modal may use Rango's token matrix and show unrelated symbols.)
@@ -802,6 +809,7 @@ export default function CrossChainPage() {
           destChain={destChain}
           estimated={effectiveQuoteEstimated}
           gasCostFormatted={isCrossChain && !gasCostFormatted ? '~<0.0001 ETH' : gasCostFormatted}
+          bridgeLabel={bridgeLabelDisplay}
         />
 
         <div className="mt-6">
@@ -893,7 +901,21 @@ export default function CrossChainPage() {
             tokenOut?.symbol &&
             !sameAssetCrossChainPair && (
               <p className="text-amber-400 text-sm text-center mb-2">
-                LayerSwap supports same-asset bridges (e.g. ETH→ETH, USDT→USDT). Bridge first, then swap on destination.
+                This route swaps different assets ({tokenIn.symbol} → {tokenOut.symbol}). LayerSwap only supports moving the{' '}
+                <strong className="font-semibold">same</strong> token across chains (e.g. ETH→ETH, USDC→USDC). Pick the same
+                token on both sides, or use a deployment with <strong className="font-semibold">Auto</strong> bridge routing so
+                another provider can handle cross-asset pairs like BTC→ETH. For same-asset transfers: bridge first, then swap on
+                the destination if you need a different token there.
+              </p>
+            )}
+          {isCrossChain &&
+            bridgeProvider === 'auto' &&
+            tokenIn?.symbol &&
+            tokenOut?.symbol &&
+            !sameAssetCrossChainPair && (
+              <p className="text-gray-500 text-xs text-center mb-2">
+                Cross-asset route ({tokenIn.symbol} → {tokenOut.symbol}): the backend picks an available bridge. Final amount
+                and fees depend on that provider; connect a wallet on the source chain where required.
               </p>
             )}
           {showRouteUnknownMessage && (

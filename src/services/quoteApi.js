@@ -8,6 +8,7 @@ import { parseUnits, formatUnits } from 'viem';
 import { ZERO_ADDRESS } from '../utils/chainConfig';
 import { isNativeToken } from '../hooks/useTokenBalance';
 import { resolveMangoServicesBaseUrl } from '../utils/mangoServicesBaseUrl';
+import { isPolygonBridgedWethSwap, POLYGON_USE_WMATIC_MESSAGE } from '../utils/mangoRouterPolygonSupport';
 
 const MANGO_SERVICES_URL = import.meta.env.VITE_MANGO_SERVICES_URL || '';
 const RAW_MANGO_SERVICES_URL = String(MANGO_SERVICES_URL || '').replace(/\/$/, '');
@@ -82,6 +83,10 @@ export async function getQuote({ chainId, tokenIn, tokenOut, amountIn }) {
   }
   if (!tokenIn || !tokenOut) {
     throw new Error('Tokens required');
+  }
+
+  if (isPolygonBridgedWethSwap(chainId, tokenIn, tokenOut)) {
+    throw new Error(POLYGON_USE_WMATIC_MESSAGE);
   }
 
   const baseUrl = getBaseUrl();

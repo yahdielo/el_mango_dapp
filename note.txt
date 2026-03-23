@@ -1,0 +1,26 @@
+Mango / el_mango_dapp — deliberate history reset
+===============================================
+
+Date: 2026-03-23 (local)
+
+Action
+------
+The `main` branch was reset to commit:
+
+  006a307  (message: "mango")
+
+Everything that existed on `main` *after* 006a307 was removed from this branch
+by a hard reset, then this file was added and committed.
+
+Why
+---
+Requested restore to the known-good state at 006a307 before newer changes.
+
+What was dropped
+----------------
+All commits that were on `main` after 006a307 are no longer part of `main`.
+They may still exist in reflog or on machines that fetched them until garbage-collected.
+
+Remote
+------
+After this commit, `main` was force-pushed to `origin` so GitHub matches this tree.

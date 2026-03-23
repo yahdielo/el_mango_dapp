@@ -17,6 +17,8 @@ const FALLBACK_LOGO_BY_SYMBOL = {
   SEI: '/assets/cmc/chain-1329.png',
   ZETA: '/assets/cmc/chain-7000.png',
   MON: '/assets/monad.jpg',
+  /** Fuse native + common bridge token on Fuse (CMC) */
+  FUSE: '/assets/cmc/tokens/5634.png',
 };
 
 const NATIVE_LOGO_BY_CHAIN_ID = {
@@ -31,6 +33,16 @@ const NATIVE_LOGO_BY_CHAIN_ID = {
   143: '/assets/cmc/chain-143.png',
   7000: '/assets/cmc/chain-7000.png',
   48900: '/assets/zircuit-inverted-icon.svg',
+  81457: '/assets/cmc/chain-81457.png',
+  122: '/assets/cmc/chain-122.png',
+  1890: '/assets/cmc/chain-1890.png',
+  59144: '/assets/cmc/chain-59144.png',
+  /** Hyperliquid lists USDC as primary asset */
+  911001: '/assets/cmc/tokens/3408.png',
+  911002: '/assets/cmc/tokens/11419.png',
+  /** Paradex / Loopring native gas token is ETH in our UI */
+  911003: '/assets/cmc/tokens/1027.png',
+  911004: '/assets/cmc/tokens/1027.png',
 };
 
 /** CoinMarketCap id map for symbols frequently returned in Ethereum token modal. */
@@ -52,6 +64,10 @@ const CMC_ID_BY_SYMBOL = {
   CRV: 6538, LDO: 8000, USDF: 35721, EURC: 20641, FOOM: 27023, ASTR: 12885,
   OBOL: 36278, XCL: 38597, ZCHF: 31379, USDD: 19891, PEPE: 24478, BIFI: 7311,
   COW: 19269, BOLD: 38407, SHIB: 5994,
+  /** LayerSwap-only chains (Fuse / Loopring appendix tokens) */
+  FUSE: 5634,
+  /** Best-effort: Blocktanium ticker BKT (if LayerSwap uses another BKT, replace id) */
+  BKT: 18417,
 };
 
 function getCmcLogoBySymbol(symbol) {
@@ -90,12 +106,13 @@ export default function TokenLogo({
       ? getTrustWalletLogoCandidates(chainId, token.address)
       : [];
 
-  const fallback = token?.symbol ? FALLBACK_LOGO_BY_SYMBOL[String(token.symbol).toUpperCase()] : null;
+  const symUpper = token?.symbol ? String(token.symbol).trim().toUpperCase() : '';
+  const fallback = symUpper ? FALLBACK_LOGO_BY_SYMBOL[symUpper] : null;
   const isNativeToken =
     token?.native || String(token?.address || '').toLowerCase() === '0x0000000000000000000000000000000000000000';
   const nativeChainFallback =
     isNativeToken && typeof chainId === 'number' ? NATIVE_LOGO_BY_CHAIN_ID[chainId] || null : null;
-  const cmcFallback = getCmcLogoBySymbol(token?.symbol);
+  const cmcFallback = getCmcLogoBySymbol(symUpper);
   const urls = useMemo(
     () =>
       [primary, ...trustWalletFallbacks, nativeChainFallback, fallback, cmcFallback?.local, cmcFallback?.remote].filter(

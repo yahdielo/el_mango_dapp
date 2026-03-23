@@ -18,9 +18,10 @@ export default function CrossChainSwapCard({
   readOnly,
   onMaxClick,
 }) {
+  const tokenChainId = chain?.chainId != null ? parseInt(chain.chainId, 10) : undefined;
   const TokenIcon = () => (
     <div className="w-[54px] h-[54px] rounded-full flex items-center justify-center overflow-hidden bg-[#8247E5]">
-      <TokenLogo token={token} letterClassName="text-white font-bold" />
+      <TokenLogo token={token} chainId={tokenChainId} letterClassName="text-white font-bold" />
     </div>
   );
 

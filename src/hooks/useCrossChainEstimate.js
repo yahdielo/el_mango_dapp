@@ -14,6 +14,8 @@ export function useCrossChainEstimate({
   tokenOut,
   amountIn,
   recipient,
+  /** Bitcoin source: Rango requires the BTC sender (bc1…) on GET /swap/estimate */
+  userAddress,
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -26,12 +28,20 @@ export function useCrossChainEstimate({
     let cancelled = false;
 
     async function run() {
+      const decimals =
+        tokenIn?.decimals != null && tokenIn.decimals !== ''
+          ? Number(tokenIn.decimals)
+          : Number(sourceChainId) === 0
+            ? 8
+            : 18;
+
       if (
         !enabled ||
         !sourceChainId ||
         !destChainId ||
         sourceChainId === destChainId ||
-        !tokenIn?.decimals ||
+        !Number.isFinite(decimals) ||
+        decimals < 0 ||
         !tokenOut ||
         !amountIn ||
         parseFloat(amountIn) <= 0
@@ -53,7 +63,6 @@ export function useCrossChainEstimate({
         setAmountTooLow(false);
         setAmountTooHigh(false);
 
-        const decimals = tokenIn.decimals ?? 18;
         let amountWei;
         try {
           amountWei = parseUnits(String(amountIn), decimals);
@@ -68,6 +77,7 @@ export function useCrossChainEstimate({
           tokenOut,
           amountInWei: amountWei.toString(),
           recipient,
+          userAddress,
         });
 
         const backendError = data?.error || null;
@@ -126,7 +136,7 @@ export function useCrossChainEstimate({
     return () => {
       cancelled = true;
     };
-  }, [enabled, sourceChainId, destChainId, tokenIn?.decimals, tokenOut, amountIn, recipient]);
+  }, [enabled, sourceChainId, destChainId, tokenIn?.decimals, tokenIn, tokenOut, amountIn, recipient, userAddress]);
 
   return {
     loading,

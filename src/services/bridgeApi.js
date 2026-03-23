@@ -25,6 +25,14 @@ const CHAIN_ID_TO_NETWORK = {
   143: 'MONAD_MAINNET',
   7000: 'ZETACHAIN_MAINNET',
   48900: 'ZIRCUIT_MAINNET',
+  81457: 'BLAST_MAINNET',
+  122: 'FUSE_MAINNET',
+  1890: 'LIGHTLINK_MAINNET',
+  59144: 'LINEA_MAINNET',
+  911001: 'HYPERLIQUID_MAINNET',
+  911002: 'TON_MAINNET',
+  911003: 'PARADEX_MAINNET',
+  911004: 'LOOPRING_MAINNET',
   // Non-EVM (LayerSwap - per CROSS_CHAIN_SWAP_IMPLEMENTATION_COMPLETE.md)
   0: 'BITCOIN_MAINNET',
   501111: 'SOLANA_MAINNET',
@@ -38,11 +46,17 @@ function getNetworkName(chainId) {
   return CHAIN_ID_TO_NETWORK[id] ?? null;
 }
 
+/** Keep in sync with `mangoServices/src/utils/layerswapOnlyChains.ts` */
+export const LAYERSWAP_ONLY_CHAIN_IDS = new Set([
+  34443, 5000, 80094, 42220, 252, 167000, 1329, 480, 143, 7000, 48900,
+  81457, 122, 1890, 59144, 911001, 911002, 911003, 911004,
+]);
+
 function getTokenSymbol(token) {
   if (!token?.symbol) return null;
   const s = token.symbol.toUpperCase();
   if (s === 'WETH' || s === 'ETH') return 'ETH';
-  if (s === 'WBTC') return 'BTC';
+  // Keep WBTC as WBTC for LayerSwap source_token; destination uses BTC on Bitcoin.
   return s;
 }
 
@@ -178,7 +192,8 @@ export async function isRouteSupported(sourceChainId, destChainId, sourceToken, 
     const sources = data?.data ?? [];
     const sourceNetwork = getNetworkName(sourceChainId);
     const sourceSym = (sourceToken?.symbol || sourceToken || '').toUpperCase();
-    const srcTk = sourceSym === 'WETH' || sourceSym === 'ETH' ? 'ETH' : sourceSym;
+    let srcTk = sourceSym === 'WETH' || sourceSym === 'ETH' ? 'ETH' : sourceSym;
+    if (srcTk === 'USDC.E' || srcTk === 'USDCE') srcTk = 'USDC';
     if (!sourceNetwork || !srcTk) return false;
 
     const match = sources.find(

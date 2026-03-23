@@ -27,6 +27,27 @@ function toBridgeTokenAddress(addr, chainId) {
   return addr;
 }
 
+/**
+ * Token from UI may be `{ symbol, address?, native? }`. Never pass the whole object when `address` is missing
+ * (that produced "[object Object]" / invalid route params and "route not supported").
+ * @param {string|{address?: string}|null|undefined} token
+ * @param {number} chainId
+ * @returns {string}
+ */
+function resolveTokenAddressForBridgeApi(token, chainId) {
+  let addr;
+  if (token == null) {
+    addr = undefined;
+  } else if (typeof token === 'string') {
+    addr = token;
+  } else if (typeof token === 'object' && typeof token.address === 'string') {
+    addr = token.address;
+  } else {
+    addr = undefined;
+  }
+  return toBridgeTokenAddress(addr ?? ZERO, chainId);
+}
+
 /** Normalize CAIP-10 (eip155:chainId:0x...) to raw 0x... - prevents "value too long for varchar(42)" */
 function toRawAddress(addr) {
   if (!addr || typeof addr !== 'string') return addr;
@@ -67,8 +88,8 @@ export async function initiateCrossChainViaBackend({
   userToken,
 }) {
   if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
-  const tokenInAddr = toBridgeTokenAddress(tokenIn?.address ?? tokenIn, sourceChainId);
-  const tokenOutAddr = toBridgeTokenAddress(tokenOut?.address ?? tokenOut, destChainId);
+  const tokenInAddr = resolveTokenAddressForBridgeApi(tokenIn, sourceChainId);
+  const tokenOutAddr = resolveTokenAddressForBridgeApi(tokenOut, destChainId);
   if (!tokenInAddr || !tokenOutAddr || !recipient || !amountIn) {
     throw new Error('Missing required fields: tokenIn, tokenOut, amountIn, recipient');
   }
@@ -80,7 +101,12 @@ export async function initiateCrossChainViaBackend({
     amountIn: String(amountIn),
     recipient: toRawAddress(recipient) || recipient,
   };
-  if (userAddress != null && String(userAddress).trim()) body.userAddress = toRawAddress(userAddress) || userAddress;
+  // Never run EVM CAIP normalization on Bitcoin/Solana/etc. sender addresses (only eip155:… or bare 0x…).
+  if (userAddress != null && String(userAddress).trim()) {
+    const u = String(userAddress).trim();
+    body.userAddress =
+      /^eip155:\d+:0x/i.test(u) || /^0x[a-fA-F0-9]{40}$/i.test(u) ? toRawAddress(u) || u : u;
+  }
   if (referrer && typeof referrer === 'string') body.referrer = toRawAddress(referrer) || referrer;
 
   const res = await fetch(`${BASE}/api/v1/swap/cross-chain`, {
@@ -113,6 +139,12 @@ export async function initiateCrossChainViaBackend({
     console.error('[Cross-chain API]', res.status, res.statusText, data);
     const rawMsg = data?.message ?? data?.error;
     let msg = typeof rawMsg === 'string' ? rawMsg : (data?.suggestion ? `${data.error || 'Error'}. ${data.suggestion}` : null) || `API error: ${res.status}`;
+    if (data?.minAmount != null && String(data.minAmount).length && !msg.includes(String(data.minAmount))) {
+      msg = `${msg} (minimum: ${data.minAmount})`;
+    }
+    if (data?.maxAmount != null && String(data.maxAmount).length && !msg.includes(String(data.maxAmount))) {
+      msg = `${msg} (maximum: ${data.maxAmount})`;
+    }
     if (data?.suggestion && msg && !msg.includes(data.suggestion)) {
       msg = `${msg} ${data.suggestion}`;
     }
@@ -248,8 +280,8 @@ export async function getBridgeMeta() {
  */
 export async function getRoutesFromBackend(sourceChainId, destChainId, tokenIn, tokenOut) {
   if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
-  const tokenInAddr = toBridgeTokenAddress(tokenIn?.address ?? tokenIn ?? ZERO, sourceChainId);
-  const tokenOutAddr = toBridgeTokenAddress(tokenOut?.address ?? tokenOut ?? ZERO, destChainId);
+  const tokenInAddr = resolveTokenAddressForBridgeApi(tokenIn, sourceChainId);
+  const tokenOutAddr = resolveTokenAddressForBridgeApi(tokenOut, destChainId);
   const params = new URLSearchParams({
     sourceChainId: String(sourceChainId),
     destChainId: String(destChainId),

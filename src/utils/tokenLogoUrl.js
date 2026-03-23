@@ -3,11 +3,13 @@
  * Used for "Add by contract address" and any token without logoURI.
  */
 
+import { getAddress } from 'viem';
+
 /** Trust Wallet assets chain folder names by chainId */
 const TRUSTWALLET_CHAIN = {
   1: 'ethereum',
   8453: 'base',
-  42161: 'arbitrum_one',
+  42161: 'arbitrum',
   56: 'smartchain',
   137: 'polygon',
   10: 'optimism',
@@ -23,6 +25,8 @@ const TRUSTWALLET_CHAIN = {
   143: 'monad',
   7000: 'zetachain',
   48900: 'zircuit',
+  81457: 'blast',
+  59144: 'linea',
 };
 
 const TRUSTWALLET_BASE = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains';
@@ -37,8 +41,15 @@ const TRUSTWALLET_BASE = 'https://raw.githubusercontent.com/trustwallet/assets/m
 export function getTrustWalletLogoUrl(chainId, tokenAddress) {
   const folder = TRUSTWALLET_CHAIN[chainId];
   if (!folder || !tokenAddress) return null;
-  const addr = tokenAddress.toLowerCase();
-  return `${TRUSTWALLET_BASE}/${folder}/assets/${addr}/logo.png`;
+  const raw = String(tokenAddress).trim();
+  if (/^0x[a-fA-F0-9]{40}$/.test(raw)) {
+    try {
+      return `${TRUSTWALLET_BASE}/${folder}/assets/${getAddress(raw)}/logo.png`;
+    } catch {
+      /* fall through */
+    }
+  }
+  return `${TRUSTWALLET_BASE}/${folder}/assets/${raw.toLowerCase()}/logo.png`;
 }
 
 /**
@@ -55,6 +66,15 @@ export function getTrustWalletLogoCandidates(chainId, tokenAddress) {
     `${TRUSTWALLET_BASE}/${folder}/assets/${raw}/logo.png`,
     `${TRUSTWALLET_BASE}/${folder}/assets/${lower}/logo.png`,
   ]);
+  // Trust Wallet repos use checksummed paths; lowercase-only URLs often 404 (Base/Arbitrum USDC, etc.).
+  if (/^0x[a-fA-F0-9]{40}$/.test(raw)) {
+    try {
+      const checksummed = getAddress(raw);
+      set.add(`${TRUSTWALLET_BASE}/${folder}/assets/${checksummed}/logo.png`);
+    } catch {
+      /* non-checksummable hex */
+    }
+  }
   return Array.from(set);
 }
 

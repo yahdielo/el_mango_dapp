@@ -34,7 +34,7 @@ function toTokenAddress(token, chainId) {
 /**
  * Get cross-chain estimate (min/max, fees) via mangoServices.
  * This is only used when a backend bridge provider is configured (e.g. Rango).
- * @param {{ sourceChainId: number, destChainId: number, tokenIn: any, tokenOut: any, amountInWei: string, recipient?: string }} params
+ * @param {{ sourceChainId: number, destChainId: number, tokenIn: any, tokenOut: any, amountInWei: string, recipient?: string, userAddress?: string }} params
  */
 export async function getCrossChainEstimate({
   sourceChainId,
@@ -43,12 +43,10 @@ export async function getCrossChainEstimate({
   tokenOut,
   amountInWei,
   recipient,
+  userAddress,
 }) {
   const baseUrl = getBaseUrl();
   if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not configured');
-  if (!API_KEY) {
-    throw new Error('VITE_MANGO_SERVICES_API_KEY not set');
-  }
 
   const tokenInAddr = toTokenAddress(tokenIn, sourceChainId);
   const tokenOutAddr = toTokenAddress(tokenOut, destChainId);
@@ -63,6 +61,9 @@ export async function getCrossChainEstimate({
 
   if (recipient) {
     params.set('recipient', recipient);
+  }
+  if (userAddress && String(userAddress).trim()) {
+    params.set('userAddress', String(userAddress).trim());
   }
 
   const url = `${baseUrl}/api/v1/swap/estimate?${params.toString()}`;

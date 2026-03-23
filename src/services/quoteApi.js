@@ -137,7 +137,11 @@ export async function getQuote({ chainId, tokenIn, tokenOut, amountIn }) {
  * @returns {Promise<number>}
  */
 export async function getTokenPriceUsd({ chainId, token }) {
-  if (!token?.symbol || !chainId) return 0;
+  if (!token?.symbol) return 0;
+  const cid = chainId === '' || chainId == null ? NaN : Number(chainId);
+  if (!Number.isFinite(cid)) return 0;
+  // Chain 0 = Bitcoin (and other non-EVM ids without USDC quote path) — price from backend / public CG only
+  if (cid === 0) return 0;
 
   const baseUrl = getBaseUrl();
   if (!RAW_MANGO_SERVICES_URL) return 0;
@@ -162,17 +166,17 @@ export async function getTokenPriceUsd({ chainId, token }) {
     43114: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7', // WAVAX
     56: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',   // WBNB
   };
-  const usdcAddr = USDC_BY_CHAIN[chainId];
+  const usdcAddr = USDC_BY_CHAIN[cid];
   if (!usdcAddr) return 0;
 
-  let tokenAddr = toTokenAddress(token, chainId);
+  let tokenAddr = toTokenAddress(token, cid);
   if (tokenAddr === usdcAddr) return 1;
 
   try {
     const decimals = token?.decimals ?? 18;
     const oneUnit = parseUnits('1', decimals).toString();
     const params = new URLSearchParams({
-      chainId: String(chainId),
+      chainId: String(cid),
       sellToken: tokenAddr,
       buyToken: usdcAddr,
       amountToSell: oneUnit,
@@ -188,26 +192,77 @@ export async function getTokenPriceUsd({ chainId, token }) {
   return 0;
 }
 
+/** CoinGecko `ids` for common symbols (no API key; rate-limited). Used when backend has no price. */
+const COINGECKO_PUBLIC_ID_BY_SYMBOL = {
+  BTC: 'bitcoin',
+  WBTC: 'wrapped-bitcoin',
+  ETH: 'ethereum',
+  WETH: 'ethereum',
+  SOL: 'solana',
+  USDC: 'usd-coin',
+  USDT: 'tether',
+  DAI: 'dai',
+  BNB: 'binancecoin',
+  WBNB: 'binancecoin',
+  AVAX: 'avalanche-2',
+  POL: 'matic-network',
+  MATIC: 'matic-network',
+  TRX: 'tron',
+  XRP: 'ripple',
+  DOGE: 'dogecoin',
+  TON: 'the-open-network',
+  SUI: 'sui',
+};
+
 /**
- * Optional: backend USD price (e.g. GET /api/v1/price?symbol=ETH).
- * Use when quote API returns 0 for cross-chain. Backend can proxy CoinGecko server-side to avoid CORS.
- * @param {string} symbol - Token symbol (ETH, USDC, etc.)
+ * Best-effort USD from CoinGecko public API (browser; may be CORS/rate-limited).
+ * @param {string} symbolUpper
+ * @returns {Promise<number>}
+ */
+async function getTokenPriceUsdFromCoinGeckoPublic(symbolUpper) {
+  const id = COINGECKO_PUBLIC_ID_BY_SYMBOL[symbolUpper];
+  if (!id) return 0;
+  try {
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(id)}&vs_currencies=usd`;
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return 0;
+    const data = await res.json();
+    const usd = data?.[id]?.usd;
+    return typeof usd === 'number' && usd > 0 ? usd : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Backend USD price (GET /api/v1/price?symbol=) then public CoinGecko fallback.
+ * Use when quote API returns 0 (e.g. Bitcoin chain 0, or no DEX path).
+ * @param {string} symbol - Token symbol (ETH, USDC, BTC, etc.)
  * @returns {Promise<number>}
  */
 export async function getTokenPriceUsdFromBackend(symbol) {
   if (!symbol) return 0;
-  const baseUrl = getBaseUrl();
-  if (!RAW_MANGO_SERVICES_URL) return 0;
-  try {
-    const res = await fetch(
-      `${baseUrl}/api/v1/price?symbol=${encodeURIComponent(symbol.toUpperCase())}`,
-      { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8000) }
-    );
-    if (!res.ok) return 0;
-    const data = await res.json();
-    const price = data?.usd ?? data?.price;
-    return typeof price === 'number' ? price : 0;
-  } catch {
-    return 0;
+  const upper = String(symbol).toUpperCase();
+
+  if (RAW_MANGO_SERVICES_URL) {
+    try {
+      const baseUrl = getBaseUrl();
+      const res = await fetch(
+        `${baseUrl}/api/v1/price?symbol=${encodeURIComponent(upper)}`,
+        { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8000) }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const price = data?.usd ?? data?.price;
+        if (typeof price === 'number' && price > 0) return price;
+      }
+    } catch {
+      // fall through to public API
+    }
   }
+
+  return getTokenPriceUsdFromCoinGeckoPublic(upper);
 }

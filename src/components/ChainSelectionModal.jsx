@@ -6,6 +6,14 @@ const FIXED_CHAIN_ICON_BY_ID = {
   167000: '/assets/taiko.png?v=3',
   480: '/assets/worldchain.png?v=3',
   48900: '/assets/zircuit-inverted-icon.svg?v=3',
+  81457: '/assets/cmc/chain-81457.png?v=1',
+  122: '/assets/cmc/chain-122.png?v=1',
+  1890: '/assets/cmc/chain-1890.png?v=1',
+  59144: '/assets/cmc/chain-59144.png?v=1',
+  911001: '/assets/cmc/chain-911001.jpg?v=1',
+  911002: '/assets/cmc/chain-911002.png?v=1',
+  911003: '/assets/cmc/chain-911003.png?v=1',
+  911004: '/assets/cmc/chain-911004.png?v=1',
 };
 
 export default function ChainSelectionModal({ show, onHide, onSelect, title = 'Select Chain', selectedChainId, chains: chainsProp }) {

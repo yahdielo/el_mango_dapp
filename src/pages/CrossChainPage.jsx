@@ -23,7 +23,12 @@ import { useCrossChainEstimate } from '../hooks/useCrossChainEstimate';
 import { useCrossChainUsdPrices } from '../hooks/useCrossChainUsdPrices';
 import { useRangoSupportMatrix } from '../hooks/useRangoSupportMatrix';
 import { useBridgeRouteSupport } from '../hooks/useBridgeRouteSupport';
-import { LAYERSWAP_CHAIN_IDS, getNetworkName } from '../services/bridgeApi';
+import {
+  LAYERSWAP_CHAIN_IDS,
+  LAYERSWAP_ONLY_CHAIN_IDS,
+  getNetworkName,
+} from '../services/bridgeApi';
+import { isLayerSwapVerifiedCrossAssetCorridor } from '../config/layerswapVerifiedCorridors';
 import { getReferralChain, syncReferral } from '../services/referralApi';
 import { isCrossChainViaBackendAvailable } from '../services/crossChainSwapApi';
 import { formatBalance } from '../utils/formatBalance';
@@ -46,6 +51,8 @@ function normalizeSymbolForTokenCompare(symbol) {
   if (s === 'WMATIC' || s === 'MATIC' || s === 'POL') return 'POL';
   if (s === 'WBNB' || s === 'BNB') return 'BNB';
   if (s === 'WAVAX' || s === 'AVAX') return 'AVAX';
+  // Arbitrum USDC.e vs native USDC — LayerSwap /sources uses USDC
+  if (s === 'USDC.E' || s === 'USDCE') return 'USDC';
   return s;
 }
 
@@ -57,7 +64,8 @@ function normalizeSymbolForTokenCompare(symbol) {
 function getCanonicalLayerSwapNativeSymbol(chainId) {
   const id = Number(chainId);
   // Ethereum-like EVM chains
-  if ([1, 8453, 42161, 10, 43114, 167000, 480, 48900, 34443].includes(id)) return 'ETH';
+  if ([1, 8453, 42161, 10, 43114, 167000, 480, 48900, 34443, 81457, 1890, 59144, 911003, 911004].includes(id))
+    return 'ETH';
   // Polygon uses POL on LayerSwap
   if (id === 137) return 'POL';
   // New EVM chains
@@ -68,8 +76,72 @@ function getCanonicalLayerSwapNativeSymbol(chainId) {
   if (id === 1329) return 'SEI';
   if (id === 143) return 'MON';
   if (id === 7000) return 'ZETA';
+  if (id === 122) return 'FUSE';
+  if (id === 911001) return 'USDC'; // Hyperliquid
+  if (id === 911002) return 'TON';
   // Fallback: try to match whatever LayerSwap returns for known wrapped native symbols
   return null;
+}
+
+/**
+ * LayerSwap token list from bridge meta. For LayerSwap-only chains, show all API-listed
+ * tokens (appendix / Untitled-1.md); for other chains, intersect with static `base` symbols.
+ */
+function buildLayerSwapTokensFromMeta(chainId, bridgeMetaTokens, base) {
+  const net = getNetworkName(chainId);
+  if (!net || !Array.isArray(bridgeMetaTokens) || !bridgeMetaTokens.length) return null;
+  const layerswapChainKey = `layerswap:${net}`;
+  const metaTokens = bridgeMetaTokens.filter(
+    (t) => t.chainKey === layerswapChainKey && t.symbol && t.symbol !== 'MANGO'
+  );
+  if (!metaTokens.length) return null;
+
+  const canonicalNativeSym = getCanonicalLayerSwapNativeSymbol(chainId);
+  const baseAllowedSymbols = new Set(
+    base.map((t) => normalizeSymbolForTokenCompare(t.symbol)).filter(Boolean)
+  );
+  const tokenKey = (t) => `${(t.symbol || '').toUpperCase()}|${(t.address || '').toLowerCase()}`;
+  const layerswapOnly = LAYERSWAP_ONLY_CHAIN_IDS.has(Number(chainId));
+
+  const mapped = metaTokens
+    .filter((t) => {
+      const isNative = !t.address;
+      if (isNative) {
+        if (!canonicalNativeSym) return false;
+        return normalizeSymbolForTokenCompare(t.symbol) === canonicalNativeSym;
+      }
+      if (layerswapOnly) return true;
+      return baseAllowedSymbols.has(normalizeSymbolForTokenCompare(t.symbol));
+    })
+    .map((t) => ({
+      symbol: t.symbol,
+      name: t.symbol,
+      decimals: t.decimals,
+      address: t.address ?? ZERO_ADDRESS,
+      ...(t.logoURI || t.logo ? { logoURI: t.logoURI || t.logo } : {}),
+      ...(t.address ? {} : { native: true }),
+    }));
+
+  const out = new Map();
+  for (const t of mapped) out.set(tokenKey(t), t);
+  // Meta tokens often omit logoURI; static `base` list has TrustWallet/CoinGecko URLs — merge, don't skip.
+  for (const t of base) {
+    const k = tokenKey(t);
+    const existing = out.get(k);
+    if (!existing) {
+      out.set(k, t);
+    } else {
+      out.set(k, {
+        ...existing,
+        logoURI: existing.logoURI || t.logoURI,
+        name:
+          t.name && String(t.name).trim() && t.name !== t.symbol
+            ? t.name
+            : existing.name,
+      });
+    }
+  }
+  return Array.from(out.values());
 }
 
 /**
@@ -84,7 +156,7 @@ function filterEthereumBridgeTokens(chainId, tokens) {
 }
 
 /** Non-EVM chains require a destination address in that chain's format (e.g. bc1... for BTC, not 0x...) */
-const NON_EVM_DEST_CHAINS = [0, 501111, 728126428, 144, 101];
+const NON_EVM_DEST_CHAINS = [0, 501111, 728126428, 144, 101, 911002];
 
 function isNonEvmDest(chainId) {
   return NON_EVM_DEST_CHAINS.includes(Number(chainId));
@@ -132,19 +204,40 @@ export default function CrossChainPage() {
 
   const bridgeProvider = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
+  /** Sending *from* Bitcoin (chain 0): backend uses Rango only (not LayerSwap). EVM→BTC (e.g. WBTC→BTC) can use LayerSwap. */
+  const bitcoinSource = Number(sourceChainId) === 0;
+
+  const {
+    startSwap,
+    swapId,
+    status: bridgeStatus,
+    depositActions,
+    rangoTx,
+    provider: activeProvider,
+    error: bridgeError,
+    isLoading: bridgeLoading,
+    reset: resetBridge,
+    refetchDeposit,
+  } = useCrossChainSwap();
+
   const bridgeLabelDisplay = useMemo(() => {
+    if (bitcoinSource) {
+      if (activeProvider === 'rango') return 'Rango';
+      if (activeProvider === 'layerswap') return 'LayerSwap';
+      return 'Rango';
+    }
     if (bridgeProvider === 'auto') return 'Auto';
     if (bridgeProvider === 'layerswap') return 'LayerSwap';
     if (bridgeProvider === 'rango') return 'Rango';
     return bridgeProvider ? bridgeProvider.charAt(0).toUpperCase() + bridgeProvider.slice(1) : 'Auto';
-  }, [bridgeProvider]);
+  }, [bridgeProvider, bitcoinSource, activeProvider]);
 
   // If the swap involves any of our "LayerSwap-only" chainIds, force the frontend
   // token filtering and UI messaging to use LayerSwap semantics as well.
-  // (Otherwise the token modal may use Rango's token matrix and show unrelated symbols.)
-  const LAYERSWAP_ONLY_CHAIN_IDS = new Set([34443, 5000, 80094, 42220, 252, 167000, 1329, 480, 143, 7000, 48900]);
-  const effectiveBridgeProvider =
-    LAYERSWAP_ONLY_CHAIN_IDS.has(Number(sourceChainId)) || LAYERSWAP_ONLY_CHAIN_IDS.has(Number(destChainId))
+  // BTC source must follow Rango in the UI (quotes, min/max, tokens) — matches mangoServices (Rango-only for chain 0).
+  const effectiveBridgeProvider = bitcoinSource
+    ? 'rango'
+    : LAYERSWAP_ONLY_CHAIN_IDS.has(Number(sourceChainId)) || LAYERSWAP_ONLY_CHAIN_IDS.has(Number(destChainId))
       ? 'layerswap'
       : bridgeProvider;
 
@@ -194,55 +287,10 @@ export default function CrossChainPage() {
     }
 
     if (effectiveBridgeProvider === 'layerswap' && Array.isArray(bridgeMetaTokens) && bridgeMetaTokens.length) {
-      const net = getNetworkName(sourceChainId);
-      if (!net) return base;
-      const layerswapChainKey = `layerswap:${net}`;
-      const metaTokens = bridgeMetaTokens.filter(
-        (t) => t.chainKey === layerswapChainKey && t.symbol && t.symbol !== 'MANGO'
-      );
-      if (!metaTokens.length) return base;
-
-            const baseAllowedSymbols = new Set(
-              base
-                .map((t) => normalizeSymbolForTokenCompare(t.symbol))
-                .filter(Boolean)
-            );
-
-      const tokenKey = (t) => `${(t.symbol || '').toUpperCase()}|${(t.address || '').toLowerCase()}`;
-            // Avoid showing unexpected "bridge" or synthetic symbols that aren't in our curated UI list.
-            // We allow:
-            // - native tokens (LayerSwap returns address=null)
-            // - any meta token whose symbol matches one of the static tokens for this chain
-      const canonicalNativeSym = getCanonicalLayerSwapNativeSymbol(sourceChainId);
-            const mapped = metaTokens
-              .filter((t) => {
-                const isNative = !t.address;
-                if (isNative) {
-                  // Only allow the real canonical native symbol for this chain.
-                  // If we can't resolve a canonical native symbol for this chain,
-                  // do NOT allow arbitrary "native-like" meta tokens. This prevents
-                  // synthetic/bridge-specific tokens from appearing on unrelated chains.
-                  if (!canonicalNativeSym) return false;
-                  return normalizeSymbolForTokenCompare(t.symbol) === canonicalNativeSym;
-                }
-                return baseAllowedSymbols.has(normalizeSymbolForTokenCompare(t.symbol));
-              })
-              .map((t) => ({
-                symbol: t.symbol,
-                name: t.symbol,
-                decimals: t.decimals,
-                address: t.address ?? ZERO_ADDRESS,
-                ...(t.address ? {} : { native: true }),
-              }));
-
-      const out = new Map();
-      for (const t of mapped) out.set(tokenKey(t), t);
-      // Keep static tokens for anything LayerSwap metadata doesn't include (logoURIs, etc.).
-      for (const t of base) {
-        const k = tokenKey(t);
-        if (!out.has(k)) out.set(k, t);
+      const fromMeta = buildLayerSwapTokensFromMeta(sourceChainId, bridgeMetaTokens, base);
+      if (fromMeta?.length) {
+        return filterEthereumBridgeTokens(sourceChainId, fromMeta);
       }
-      return filterEthereumBridgeTokens(sourceChainId, Array.from(out.values()));
     }
 
     return filterEthereumBridgeTokens(sourceChainId, base);
@@ -281,46 +329,10 @@ export default function CrossChainPage() {
     }
 
     if (effectiveBridgeProvider === 'layerswap' && Array.isArray(bridgeMetaTokens) && bridgeMetaTokens.length) {
-      const net = getNetworkName(destChainId);
-      if (!net) return base;
-      const layerswapChainKey = `layerswap:${net}`;
-      const metaTokens = bridgeMetaTokens.filter(
-        (t) => t.chainKey === layerswapChainKey && t.symbol && t.symbol !== 'MANGO'
-      );
-      if (!metaTokens.length) return base;
-
-            const baseAllowedSymbols = new Set(
-              base
-                .map((t) => normalizeSymbolForTokenCompare(t.symbol))
-                .filter(Boolean)
-            );
-
-      const tokenKey = (t) => `${(t.symbol || '').toUpperCase()}|${(t.address || '').toLowerCase()}`;
-      const canonicalNativeSym = getCanonicalLayerSwapNativeSymbol(destChainId);
-      const mapped = metaTokens
-              .filter((t) => {
-                const isNative = !t.address;
-                if (isNative) {
-                  if (!canonicalNativeSym) return false;
-                  return normalizeSymbolForTokenCompare(t.symbol) === canonicalNativeSym;
-                }
-                return baseAllowedSymbols.has(normalizeSymbolForTokenCompare(t.symbol));
-              })
-              .map((t) => ({
-                symbol: t.symbol,
-                name: t.symbol,
-                decimals: t.decimals,
-                address: t.address ?? ZERO_ADDRESS,
-                ...(t.address ? {} : { native: true }),
-              }));
-
-      const out = new Map();
-      for (const t of mapped) out.set(tokenKey(t), t);
-      for (const t of base) {
-        const k = tokenKey(t);
-        if (!out.has(k)) out.set(k, t);
+      const fromMeta = buildLayerSwapTokensFromMeta(destChainId, bridgeMetaTokens, base);
+      if (fromMeta?.length) {
+        return filterEthereumBridgeTokens(destChainId, fromMeta);
       }
-      return filterEthereumBridgeTokens(destChainId, Array.from(out.values()));
     }
 
     return filterEthereumBridgeTokens(destChainId, base);
@@ -356,6 +368,10 @@ export default function CrossChainPage() {
   const effectiveQuoteEstimated = isCrossChain ? true : quoteEstimated;
   const sameAssetCrossChainPair =
     normalizeSymbolForTokenCompare(tokenIn?.symbol) === normalizeSymbolForTokenCompare(tokenOut?.symbol);
+  /** LayerSwap: same token across chains, or doc-verified cross-asset (ETH→POL/BNB/AVAX, WBTC→BTC). */
+  const layerSwapExecutionPairOk =
+    sameAssetCrossChainPair ||
+    isLayerSwapVerifiedCrossAssetCorridor(sourceChainId, destChainId, tokenIn?.symbol, tokenOut?.symbol);
 
   const slippageBps = getSlippageToleranceInBasisPoints(sourceChainId, { getSlippage }, slippage);
 
@@ -383,24 +399,13 @@ export default function CrossChainPage() {
     tokenOut,
   });
 
-  const {
-    startSwap,
-    swapId,
-    status: bridgeStatus,
-    depositActions,
-    rangoTx,
-    provider: activeProvider,
-    error: bridgeError,
-    isLoading: bridgeLoading,
-    reset: resetBridge,
-    refetchDeposit,
-  } = useCrossChainSwap();
-
   const { canSwap, error: validationError } = useSwapValidation({
     amount: amountIn,
     tokenIn,
     balance: balanceTokenIn,
     address,
+    // BTC is paid from the user's Bitcoin wallet; wagmi balance on chain 0 is not reliable here.
+    skipBalanceCheck: Number(sourceChainId) === 0,
   });
 
   // When using Rango, restrict visible chains to those Rango reports as enabled.
@@ -618,25 +623,31 @@ export default function CrossChainPage() {
       !!amountIn &&
       parseFloat(amountIn) > 0 &&
       !!tokenIn &&
-      !!tokenOut,
+      !!tokenOut &&
+      (!bitcoinSourceRequired || bitcoinSenderValid),
     sourceChainId,
     destChainId,
     tokenIn,
     tokenOut,
     amountIn,
     recipient: recipientForEstimate,
+    userAddress: bitcoinSourceRequired ? bitcoinSenderTrimmed : undefined,
   });
+  // true / null = proceed (null matches "Route check unavailable; you can still slide"). false = explicit unsupported.
   const canConfirmCrossChain =
     isCrossChain &&
     !routeLoading &&
-    (isCrossChainViaBackendAvailable() ? routeSupported === true : routeSupported !== false) &&
-    (effectiveBridgeProvider !== 'layerswap' || sameAssetCrossChainPair) &&
+    routeSupported !== false &&
+    // LayerSwap: same-asset or verified cross-asset (see layerswapVerifiedCorridors.js); from-Bitcoin uses Rango.
+    (effectiveBridgeProvider !== 'layerswap' || layerSwapExecutionPairOk || bitcoinSource) &&
     canSwap &&
     destAddrValid &&
     bitcoinSenderValid &&
     !amountTooLow &&
     !amountTooHigh &&
-    !bridgeLoading;
+    !bridgeLoading &&
+    // Rango: do not allow initiate when GET /swap/estimate already reported no route (avoids 400 on POST).
+    !(effectiveBridgeProvider === 'rango' && crossChainEstimateError && !crossChainEstimateLoading);
   const canConfirm = isCrossChain ? canConfirmCrossChain : false;
   const showUnsupportedWarning =
     isCrossChain && routeSupported === false && !routeLoading && amountIn && parseFloat(amountIn) > 0;
@@ -899,14 +910,27 @@ export default function CrossChainPage() {
             effectiveBridgeProvider === 'layerswap' &&
             tokenIn?.symbol &&
             tokenOut?.symbol &&
-            !sameAssetCrossChainPair && (
-              <p className="text-amber-400 text-sm text-center mb-2">
-                This route swaps different assets ({tokenIn.symbol} → {tokenOut.symbol}). LayerSwap only supports moving the{' '}
-                <strong className="font-semibold">same</strong> token across chains (e.g. ETH→ETH, USDC→USDC). Pick the same
-                token on both sides, or use a deployment with <strong className="font-semibold">Auto</strong> bridge routing so
-                another provider can handle cross-asset pairs like BTC→ETH. For same-asset transfers: bridge first, then swap on
-                the destination if you need a different token there.
-              </p>
+            !layerSwapExecutionPairOk &&
+            !bitcoinSource && (
+              <div
+                className="mb-3 rounded-xl border border-amber-500/30 bg-gradient-to-b from-amber-500/[0.08] to-amber-950/30 px-4 py-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
+                role="status"
+              >
+                <p className="text-center text-sm leading-snug text-amber-100/95">
+                  <span className="font-semibold text-amber-300">MangoSwap</span> bridges the{' '}
+                  <span className="font-semibold text-white">same</span> token across chains.
+                  <span className="mt-1 block text-amber-200/90">
+                    <span className="font-mono text-[13px]">
+                      {tokenIn.symbol} → {tokenOut.symbol}
+                    </span>{' '}
+                    <span className="text-amber-200/70">is a cross-asset pair.</span>
+                  </span>
+                </p>
+                <p className="mt-2 text-center text-xs leading-relaxed text-amber-200/80">
+                  Match the token on both sides, or set bridge to <span className="font-semibold text-amber-200">Auto</span> for
+                  cross-asset routes.
+                </p>
+              </div>
             )}
           {isCrossChain &&
             bridgeProvider === 'auto' &&

@@ -19,16 +19,19 @@ function parseAmountToBigInt(amountStr, decimals = 18) {
  * @param {Object} [params.tokenIn] - Token { decimals }
  * @param {bigint} [params.balance] - Raw balance
  * @param {string} [params.address] - Wallet address
+ * @param {boolean} [params.skipBalanceCheck] - e.g. Bitcoin source: funds sent from external wallet, not tracked in wagmi
  * @returns {{ canSwap: boolean, error: string }}
  */
-export function useSwapValidation({ amount, tokenIn, balance, address }) {
+export function useSwapValidation({ amount, tokenIn, balance, address, skipBalanceCheck = false }) {
   return useMemo(() => {
     if (!address) return { canSwap: false, error: 'Connect wallet' };
     const amt = amount?.trim?.() ?? '';
     if (!amt || amt === '0' || amt === '0.') return { canSwap: false, error: 'Enter amount' };
     const amountBigInt = parseAmountToBigInt(amt, tokenIn?.decimals ?? 18);
     if (amountBigInt == null || amountBigInt <= 0n) return { canSwap: false, error: 'Enter amount' };
-    if (balance != null && balance < amountBigInt) return { canSwap: false, error: 'Insufficient balance' };
+    if (!skipBalanceCheck && balance != null && balance < amountBigInt) {
+      return { canSwap: false, error: 'Insufficient balance' };
+    }
     return { canSwap: true, error: '' };
-  }, [amount, tokenIn?.decimals, balance, address]);
+  }, [amount, tokenIn?.decimals, balance, address, skipBalanceCheck]);
 }

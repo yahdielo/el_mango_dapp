@@ -134,6 +134,14 @@ export async function initiateCrossChainViaBackend({
         : 'Cross-chain API returned 401. Check VITE_MANGO_SERVICES_API_KEY and wallet session signing (x-user-token).'
     );
   }
+  if (res.status === 429) {
+    const hint = data?.retryHint || data?.message || data?.error;
+    throw new Error(
+      typeof hint === 'string'
+        ? hint
+        : 'Bridge rate limit — please wait a moment and try again.'
+    );
+  }
   if (!res.ok) {
     // Log full response so DevTools shows the real reason for 400/5xx
     console.error('[Cross-chain API]', res.status, res.statusText, data);

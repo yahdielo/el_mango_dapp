@@ -229,25 +229,37 @@ export default function CrossChainPage() {
   } = useCrossChainSwap();
 
   const bridgeLabelDisplay = useMemo(() => {
-    if (bitcoinSource) {
-      if (activeProvider === 'rango') return 'Rango';
+    if (activeProvider) {
+      // After a swap is started, use the actual provider returned by the backend.
       if (activeProvider === 'layerswap') return 'LayerSwap';
-      return 'Rango';
+      if (activeProvider === 'rango') return 'Rango';
+      if (activeProvider === 'symbiosis') return 'Symbiosis';
+      if (activeProvider === 'lifi') return 'LiFi';
+      if (activeProvider === 'squid') return 'Squid';
+      if (activeProvider === 'bungee') return 'Bungee';
+      if (activeProvider === 'inbridge') return 'Inbridge';
+      return activeProvider;
     }
+    // Pre-swap: derive label from the pair corridor.
+    if (bitcoinSource) return 'Rango';
+    if (isSymbiosisOnlyPair(sourceChainId, destChainId)) return 'Symbiosis';
     if (bridgeProvider === 'auto') return 'Auto';
     if (bridgeProvider === 'layerswap') return 'LayerSwap';
     if (bridgeProvider === 'rango') return 'Rango';
     return bridgeProvider ? bridgeProvider.charAt(0).toUpperCase() + bridgeProvider.slice(1) : 'Auto';
-  }, [bridgeProvider, bitcoinSource, activeProvider]);
+  }, [bridgeProvider, bitcoinSource, activeProvider, sourceChainId, destChainId]);
 
   // If the swap involves any of our "LayerSwap-only" chainIds, force the frontend
   // token filtering and UI messaging to use LayerSwap semantics as well.
   // BTC source must follow Rango in the UI (quotes, min/max, tokens) — matches mangoServices (Rango-only for chain 0).
+  // Symbiosis corridors (Solana↔EVM) bypass LayerSwap token semantics entirely.
   const effectiveBridgeProvider = bitcoinSource
     ? 'rango'
-    : LAYERSWAP_ONLY_CHAIN_IDS.has(Number(sourceChainId)) || LAYERSWAP_ONLY_CHAIN_IDS.has(Number(destChainId))
-      ? 'layerswap'
-      : bridgeProvider;
+    : isSymbiosisOnlyPair(sourceChainId, destChainId)
+      ? 'symbiosis'
+      : LAYERSWAP_ONLY_CHAIN_IDS.has(Number(sourceChainId)) || LAYERSWAP_ONLY_CHAIN_IDS.has(Number(destChainId))
+        ? 'layerswap'
+        : bridgeProvider;
 
   // Rango support matrix (enabled chains + tokens) for display and filtering.
   const {

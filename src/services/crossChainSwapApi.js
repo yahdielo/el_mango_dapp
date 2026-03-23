@@ -171,6 +171,7 @@ export async function initiateCrossChainViaBackend({
     providerSwapId: data.providerSwapId,
     rangoTx: data.rangoTx,
     rangoRequestId: data.rangoRequestId,
+    symbiosisSolana: data.symbiosisSolana,
   };
 }
 

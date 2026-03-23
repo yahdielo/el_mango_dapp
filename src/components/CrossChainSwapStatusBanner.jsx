@@ -36,11 +36,14 @@ function isValidDepositAction(action) {
   return (isAddress(raw) || isEthereumAddressLike(raw)) && parseFloat(String(action.amount)) > 0;
 }
 
+const SOLANA_CHAIN_ID = 501111;
+
 export default function CrossChainSwapStatusBanner({
   status,
   swapId,
   depositActions,
   rangoTx,
+  symbiosisSolana,
   sourceChainId,
   sourceChain,
   tokenIn,
@@ -55,6 +58,7 @@ export default function CrossChainSwapStatusBanner({
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
   const [txConfirmed, setTxConfirmed] = useState(false);
   const [approvalTxDone, setApprovalTxDone] = useState(false);
+  const [solanaBusy, setSolanaBusy] = useState(false);
 
   // Reset txConfirmed and approval when swap changes or status leaves user_transfer_pending
   useEffect(() => {
@@ -63,8 +67,6 @@ export default function CrossChainSwapStatusBanner({
       setApprovalTxDone(false);
     }
   }, [swapId, status]);
-
-  if (!status) return null;
 
   const isPending =
     status === 'user_transfer_pending' ||
@@ -104,7 +106,9 @@ export default function CrossChainSwapStatusBanner({
     } else {
       const amt = amountIn != null && amountIn !== '' ? String(amountIn) : null;
       const sym = (tokenIn?.symbol || '').trim() || 'ETH';
-      if (rangoTx) {
+      if (sourceChainId === SOLANA_CHAIN_ID && symbiosisSolana?.instructions) {
+        label = amt ? `Sign ${amt} ${sym} on Solana` : 'Sign Solana transaction in your wallet';
+      } else if (rangoTx) {
         label = amt ? `Send ${amt} ${sym}` : 'Sign transaction to bridge';
       } else {
         label = amt ? `Send ${amt} ${sym}` : 'Waiting for deposit';
@@ -147,8 +151,61 @@ export default function CrossChainSwapStatusBanner({
   const canSendInApp = canSignRangoTx || canSendNative || canSendErc20;
   const isSendPendingAny = isSendPending || isWritePending;
 
+  const handleSignSymbiosisSolana = useCallback(async () => {
+    const b64 = symbiosisSolana?.instructions;
+    if (!b64 || typeof window === 'undefined') return;
+    setSolanaBusy(true);
+    try {
+      const w = window;
+      const provider = w.solana;
+      if (!provider?.signTransaction) {
+        window.alert('Install Phantom or Solflare and connect your Solana wallet to sign this swap.');
+        return;
+      }
+      const { VersionedTransaction, Transaction, Connection } = await import('@solana/web3.js');
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      let vtx;
+      try {
+        vtx = VersionedTransaction.deserialize(bytes);
+      } catch {
+        vtx = Transaction.from(bytes);
+      }
+      if (provider.connect && !provider.isConnected) {
+        await provider.connect();
+      }
+      const signed = await provider.signTransaction(vtx);
+      const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+      const raw = signed.serialize();
+      const sig = await connection.sendRawTransaction(raw, {
+        skipPreflight: false,
+        maxRetries: 3,
+      });
+      if (sig && swapId) {
+        try {
+          await notifySourceTxHash(swapId, sig);
+        } catch (notifyError) {
+          console.warn('Failed to notify backend of Solana signature:', notifyError);
+        }
+      }
+      setTxConfirmed(true);
+    } catch (err) {
+      console.warn('Solana sign/send failed:', err?.message || err);
+    } finally {
+      setSolanaBusy(false);
+    }
+  }, [symbiosisSolana, swapId]);
+
   // If user needs to manually send a deposit, make the banner label explicit.
-  if (status === 'user_transfer_pending' && depositAction && !canSignRangoTx) {
+  if (
+    status === 'user_transfer_pending' &&
+    depositAction &&
+    !canSignRangoTx &&
+    !(sourceChainId === SOLANA_CHAIN_ID && symbiosisSolana?.instructions)
+  ) {
     const sym = depositAction.token?.symbol || '';
     label = `Send ${depositAction.amount} ${sym}`.trim();
   }
@@ -253,6 +310,8 @@ export default function CrossChainSwapStatusBanner({
     }
   }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransactionAsync, canSignRangoTx, rangoTx, approvalTxDone, canSendNative, canSendErc20, tokenIn, amountIn, writeContractAsync, swapId, onDismiss]);
 
+  if (!status) return null;
+
   return (
     <div className={`mb-4 p-4 rounded-xl border ${bgClass}`}>
       <p className={`text-sm font-medium ${textClass}`}>{label}</p>
@@ -273,7 +332,11 @@ export default function CrossChainSwapStatusBanner({
             : 'Sign the transaction to execute the cross-chain swap.'}
         </p>
       )}
-      {status === 'user_transfer_pending' && !txConfirmed && depositAction && !canSignRangoTx && (
+      {status === 'user_transfer_pending' &&
+        !txConfirmed &&
+        depositAction &&
+        !canSignRangoTx &&
+        !(sourceChainId === SOLANA_CHAIN_ID && symbiosisSolana?.instructions) && (
         <>
           <p className="text-gray-300 text-xs mt-2 break-all">
             Send {depositAction.amount} {depositAction.token?.symbol || ''} to: {toRawEthereumAddress(depositAction.to_address) || depositAction.to_address}
@@ -319,6 +382,40 @@ export default function CrossChainSwapStatusBanner({
                   Load transaction
                 </button>
               )}
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="block w-full text-sm text-[#3CF902] hover:underline"
+            >
+              Start new swap
+            </button>
+          )}
+        </div>
+      )}
+      {status === 'user_transfer_pending' && sourceChainId === SOLANA_CHAIN_ID && symbiosisSolana?.instructions && (
+        <div className="mt-2 space-y-2">
+          {!txConfirmed ? (
+            <>
+              <p className="text-gray-300 text-xs">
+                Use Phantom or Solflare on Solana. The connected wallet must match the Solana sender address you entered when starting the swap.
+              </p>
+              <button
+                type="button"
+                onClick={handleSignSymbiosisSolana}
+                disabled={solanaBusy}
+                className="w-full py-2 px-3 rounded-lg bg-[#3CF902]/20 border border-[#3CF902]/50 text-[#3CF902] text-sm font-medium hover:bg-[#3CF902]/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {solanaBusy ? 'Signing…' : 'Sign & send (Solana)'}
+              </button>
+              <button
+                type="button"
+                onClick={onDismiss}
+                className="block w-full text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Transaction sent? Start new swap
+              </button>
             </>
           ) : (
             <button

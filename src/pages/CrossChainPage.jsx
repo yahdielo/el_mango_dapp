@@ -29,6 +29,7 @@ import {
   getNetworkName,
 } from '../services/bridgeApi';
 import { isLayerSwapVerifiedCrossAssetCorridor } from '../config/layerswapVerifiedCorridors';
+import { isSymbiosisOnlyPair } from '../config/symbiosisOnlyPairs';
 import { getReferralChain, syncReferral } from '../services/referralApi';
 import { isCrossChainViaBackendAvailable } from '../services/crossChainSwapApi';
 import { formatBalance } from '../utils/formatBalance';
@@ -39,6 +40,9 @@ import { getStoredReferrer } from '../utils/referrerStorage';
 import { getAuthSessionNonce, buildAuthSessionMessage, createAuthSessionToken } from '../services/authSessionApi';
 
 const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
+const SOLANA_CHAIN_ID = 501111;
+/** Matches backend validateSolanaAddress (base58, 32–44 chars) */
+const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 // LayerSwap-native route discovery missing pairs (86) are all directed pairs where either endpoint
 // is XRP (144) or Sui (101) when using native token inputs/outputs.
@@ -201,11 +205,14 @@ export default function CrossChainPage() {
   const [destinationAddress, setDestinationAddress] = useState('');
   /** When source is Bitcoin, bridge needs sender's Bitcoin address (where BTC will be sent from) */
   const [bitcoinSenderAddress, setBitcoinSenderAddress] = useState('');
+  /** When source is Solana (Symbiosis), backend requires a Solana userAddress — not the EVM wagmi address */
+  const [solanaSenderAddress, setSolanaSenderAddress] = useState('');
 
   const bridgeProvider = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
   /** Sending *from* Bitcoin (chain 0): backend uses Rango only (not LayerSwap). EVM→BTC (e.g. WBTC→BTC) can use LayerSwap. */
   const bitcoinSource = Number(sourceChainId) === 0;
+  const solanaSource = Number(sourceChainId) === SOLANA_CHAIN_ID;
 
   const {
     startSwap,
@@ -213,6 +220,7 @@ export default function CrossChainPage() {
     status: bridgeStatus,
     depositActions,
     rangoTx,
+    symbiosisSolana,
     provider: activeProvider,
     error: bridgeError,
     isLoading: bridgeLoading,
@@ -372,6 +380,8 @@ export default function CrossChainPage() {
   const layerSwapExecutionPairOk =
     sameAssetCrossChainPair ||
     isLayerSwapVerifiedCrossAssetCorridor(sourceChainId, destChainId, tokenIn?.symbol, tokenOut?.symbol);
+  /** Symbiosis-only corridors (Solana↔EVM): not LayerSwap “same token” semantics — allow slide + hide amber box. */
+  const symbiosisCorridorOk = isSymbiosisOnlyPair(sourceChainId, destChainId);
 
   const slippageBps = getSlippageToleranceInBasisPoints(sourceChainId, { getSlippage }, slippage);
 
@@ -405,7 +415,7 @@ export default function CrossChainPage() {
     balance: balanceTokenIn,
     address,
     // BTC is paid from the user's Bitcoin wallet; wagmi balance on chain 0 is not reliable here.
-    skipBalanceCheck: Number(sourceChainId) === 0,
+    skipBalanceCheck: Number(sourceChainId) === 0 || Number(sourceChainId) === SOLANA_CHAIN_ID,
   });
 
   // When using Rango, restrict visible chains to those Rango reports as enabled.
@@ -460,6 +470,18 @@ export default function CrossChainPage() {
   useEffect(() => {
     if (!tokenOut && tokensOut[0]) setTokenOut(tokensOut[0]);
   }, [tokensOut]);
+
+  // Prefill Solana sender from Phantom when switching to Solana as source (user can edit).
+  useEffect(() => {
+    if (!solanaSource) {
+      setSolanaSenderAddress('');
+      return;
+    }
+    if (typeof window !== 'undefined' && window.solana?.publicKey) {
+      const pk = window.solana.publicKey.toString();
+      setSolanaSenderAddress((prev) => (prev && prev.trim() ? prev : pk));
+    }
+  }, [solanaSource]);
   useEffect(() => {
     if (tokenIn?.symbol === 'MANGO' && tokensIn.length && !tokensIn.some((t) => t.symbol === 'MANGO')) {
       setTokenIn(tokensIn[0] || null);
@@ -536,7 +558,12 @@ export default function CrossChainPage() {
         const recipient = isNonEvmDest(destChainId)
           ? (destinationAddress || '').trim()
           : address;
-        const senderAddress = sourceChainId === 0 ? (bitcoinSenderAddress || '').trim() : address;
+        const senderAddress =
+          sourceChainId === 0
+            ? (bitcoinSenderAddress || '').trim()
+            : Number(sourceChainId) === SOLANA_CHAIN_ID
+              ? (solanaSenderAddress || '').trim()
+              : address;
         let userToken;
         try {
           if (address) {
@@ -598,6 +625,7 @@ export default function CrossChainPage() {
     tokenOut,
     amountIn,
     signMessageAsync,
+    solanaSenderAddress,
   ]);
 
   const destAddrRequired = isNonEvmDest(destChainId);
@@ -606,6 +634,11 @@ export default function CrossChainPage() {
   const bitcoinSenderTrimmed = (bitcoinSenderAddress || '').trim();
   const bitcoinSenderValid = !bitcoinSourceRequired || (bitcoinSenderTrimmed.length > 0 && isValidBitcoinAddress(bitcoinSenderTrimmed));
   const bitcoinSenderInvalidFormat = bitcoinSourceRequired && bitcoinSenderTrimmed.length > 0 && !isValidBitcoinAddress(bitcoinSenderTrimmed);
+  const solanaSenderTrimmed = (solanaSenderAddress || '').trim();
+  const solanaSenderInvalidFormat =
+    solanaSource && solanaSenderTrimmed.length > 0 && !SOLANA_ADDRESS_REGEX.test(solanaSenderTrimmed);
+  const solanaSenderValid =
+    !solanaSource || (solanaSenderTrimmed.length > 0 && SOLANA_ADDRESS_REGEX.test(solanaSenderTrimmed));
   const recipientForEstimate = destAddrRequired ? (destinationAddress || '').trim() : (address || '');
 
   const {
@@ -624,25 +657,34 @@ export default function CrossChainPage() {
       parseFloat(amountIn) > 0 &&
       !!tokenIn &&
       !!tokenOut &&
-      (!bitcoinSourceRequired || bitcoinSenderValid),
+      (!bitcoinSourceRequired || bitcoinSenderValid) &&
+      (!solanaSource || solanaSenderValid),
     sourceChainId,
     destChainId,
     tokenIn,
     tokenOut,
     amountIn,
     recipient: recipientForEstimate,
-    userAddress: bitcoinSourceRequired ? bitcoinSenderTrimmed : undefined,
+    userAddress: bitcoinSourceRequired
+      ? bitcoinSenderTrimmed
+      : solanaSource
+        ? solanaSenderTrimmed || undefined
+        : undefined,
   });
   // true / null = proceed (null matches "Route check unavailable; you can still slide"). false = explicit unsupported.
   const canConfirmCrossChain =
     isCrossChain &&
     !routeLoading &&
     routeSupported !== false &&
-    // LayerSwap: same-asset or verified cross-asset (see layerswapVerifiedCorridors.js); from-Bitcoin uses Rango.
-    (effectiveBridgeProvider !== 'layerswap' || layerSwapExecutionPairOk || bitcoinSource) &&
+    // LayerSwap: same-asset or verified cross-asset; from-Bitcoin uses Rango; Symbiosis Solana↔EVM corridors bypass LayerSwap-only pairing.
+    (effectiveBridgeProvider !== 'layerswap' ||
+      layerSwapExecutionPairOk ||
+      bitcoinSource ||
+      symbiosisCorridorOk) &&
     canSwap &&
     destAddrValid &&
     bitcoinSenderValid &&
+    solanaSenderValid &&
     !amountTooLow &&
     !amountTooHigh &&
     !bridgeLoading &&
@@ -832,6 +874,24 @@ export default function CrossChainPage() {
           />
         </div>
 
+        {solanaSource && (
+          <div className="mt-4">
+            <label className="block text-gray-400 text-sm mb-2">
+              Solana sender address (must match Phantom / Solflare when signing)
+            </label>
+            <input
+              type="text"
+              value={solanaSenderAddress}
+              onChange={(e) => setSolanaSenderAddress(e.target.value)}
+              placeholder="e.g. from Phantom…"
+              className={`w-full bg-[#1a1a1a] border rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:border-transparent ${solanaSenderInvalidFormat ? 'border-amber-500' : 'border-gray-600'}`}
+              spellCheck={false}
+            />
+            {solanaSenderInvalidFormat && (
+              <p className="text-amber-400 text-xs mt-1">Invalid Solana address (base58, 32–44 characters).</p>
+            )}
+          </div>
+        )}
         {bitcoinSourceRequired && (
           <div className="mt-4">
             <label className="block text-gray-400 text-sm mb-2">
@@ -879,6 +939,7 @@ export default function CrossChainPage() {
               swapId={swapId}
               depositActions={depositActions}
               rangoTx={rangoTx}
+              symbiosisSolana={symbiosisSolana}
               sourceChainId={sourceChainId}
               sourceChain={sourceChain}
               tokenIn={tokenIn}
@@ -911,6 +972,7 @@ export default function CrossChainPage() {
             tokenIn?.symbol &&
             tokenOut?.symbol &&
             !layerSwapExecutionPairOk &&
+            !symbiosisCorridorOk &&
             !bitcoinSource && (
               <div
                 className="mb-3 rounded-xl border border-amber-500/30 bg-gradient-to-b from-amber-500/[0.08] to-amber-950/30 px-4 py-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
@@ -945,6 +1007,13 @@ export default function CrossChainPage() {
           {showRouteUnknownMessage && (
             <p className="text-gray-500 text-xs text-center mb-2">
               Route check unavailable — you can still slide to continue; swap completes via the bridge.
+            </p>
+          )}
+          {solanaSource && !solanaSenderValid && amountIn && parseFloat(amountIn) > 0 && (
+            <p className="text-amber-400 text-sm text-center mb-2">
+              {solanaSenderInvalidFormat
+                ? 'Fix the Solana sender address format (base58).'
+                : 'Enter your Solana wallet address (sender) to continue — it must match the wallet that signs the swap.'}
             </p>
           )}
           {bitcoinSourceRequired && !bitcoinSenderValid && amountIn && parseFloat(amountIn) > 0 && (

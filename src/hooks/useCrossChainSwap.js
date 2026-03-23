@@ -43,6 +43,7 @@ export function useCrossChainSwap() {
   const [status, setStatus] = useState(null);
   const [depositActions, setDepositActions] = useState([]);
   const [rangoTx, setRangoTx] = useState(null);
+  const [symbiosisSolana, setSymbiosisSolana] = useState(null);
   const [provider, setProvider] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -147,10 +148,13 @@ export function useCrossChainSwap() {
         // Normalize rangoTx so frontend always has txTo/txData (backend may send to/data)
         const rtx = result.rangoTx != null ? normalizeRangoTx(result.rangoTx) : null;
         setRangoTx(rtx);
+        const symSol = result.symbiosisSolana?.instructions ? result.symbiosisSolana : null;
+        setSymbiosisSolana(symSol);
         // If initiate response missing tx or deposit details, fetch once so "Preparing transaction..." doesn't stick
         const missingTxOrDeposit =
           (result.status === 'user_transfer_pending' || !result.status) &&
           result.swapId &&
+          !symSol?.instructions &&
           (!rtx || !rawDepositAddress || !(result.depositActions?.length));
         if (missingTxOrDeposit) {
           getDepositFromBackend(result.swapId)
@@ -166,7 +170,7 @@ export function useCrossChainSwap() {
             })
             .catch(() => {});
         }
-        return { swapId: result.swapId, depositActions: acts, rangoTx: rtx };
+        return { swapId: result.swapId, depositActions: acts, rangoTx: rtx, symbiosisSolana: symSol };
       }
       useBackendStatusRef.current = false;
       throw new Error(
@@ -186,6 +190,7 @@ export function useCrossChainSwap() {
     setStatus(null);
     setDepositActions([]);
     setRangoTx(null);
+    setSymbiosisSolana(null);
     setProvider(null);
     setError(null);
   }, [stopPolling]);
@@ -214,6 +219,7 @@ export function useCrossChainSwap() {
     status,
     depositActions,
     rangoTx,
+    symbiosisSolana,
     provider,
     error,
     isLoading,

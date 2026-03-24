@@ -1060,7 +1060,7 @@ export default function CrossChainPage() {
                     ⚠️ 0 BTC at this address
                   </p>
                   <p className="text-amber-200 text-xs text-center mb-2">
-                    This address has no on-chain BTC. If you have multiple Bitcoin accounts in MetaMask, check the others for the funded one.
+                    In MetaMask: go to <strong>Tokens</strong> → tap <strong>&quot;Bitcoin Native SegWit&quot;</strong> → <strong>Receive</strong> → copy that address and paste it above.
                   </p>
                   {bitcoinSenderAddress && (
                     <div className="flex justify-center gap-3">
@@ -1070,15 +1070,7 @@ export default function CrossChainPage() {
                         rel="noopener noreferrer"
                         className="text-xs text-amber-400 hover:text-white underline transition-colors"
                       >
-                        View on Mempool ↗
-                      </a>
-                      <a
-                        href={`https://blockstream.info/address/${bitcoinSenderAddress.trim()}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-amber-400 hover:text-white underline transition-colors"
-                      >
-                        Blockstream ↗
+                        Verify on Mempool ↗
                       </a>
                     </div>
                   )}

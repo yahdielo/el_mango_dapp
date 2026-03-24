@@ -709,9 +709,8 @@ export default function CrossChainPage() {
     destAddrValid &&
     bitcoinSenderValid &&
     solanaSenderValid &&
-    // For bitcoin source, don't block on estimate min/max — the backend fallback
-    // allows createSwap to succeed even when the estimate says amount is out of range.
-    (bitcoinSource || (!amountTooLow && !amountTooHigh)) &&
+    !amountTooLow &&
+    !amountTooHigh &&
     !bridgeLoading;
   const canConfirm = isCrossChain ? canConfirmCrossChain : false;
   const showUnsupportedWarning =
@@ -908,7 +907,7 @@ export default function CrossChainPage() {
         {bitcoinSourceRequired && (
           <div className="mt-4">
             <label className="block text-gray-400 text-sm mb-2">
-              Bitcoin sender address (where you will send BTC from)
+              Bitcoin sender address
             </label>
             <input
               type="text"
@@ -920,11 +919,21 @@ export default function CrossChainPage() {
             />
             {bitcoinSenderInvalidFormat && (
               <p className="text-amber-400 text-xs mt-1">
-                Invalid format. Use bc1..., 1..., or 3... with no spaces or special characters (e.g. /).
+                Invalid format. Use bc1..., 1..., or 3... with no spaces or special characters.
               </p>
             )}
             <p className="text-gray-500 text-xs mt-1">
-              In MetaMask: Bitcoin snap → Receive → copy your current bc1... address.
+              ⚠ Must be your <strong className="text-gray-400">funded</strong> BTC address — the one that actually holds BTC.{' '}
+              {bitcoinSenderTrimmed.length >= 26 && (
+                <a
+                  href={`https://mempool.space/address/${bitcoinSenderTrimmed}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#3CF902] underline"
+                >
+                  Check on mempool.space ↗
+                </a>
+              )}
             </p>
           </div>
         )}

@@ -336,6 +336,43 @@ export default function CrossChainSwapStatusBanner({
         !txConfirmed &&
         depositAction &&
         !canSignRangoTx &&
+        sourceChainId === 0 && (
+        <div className="mt-3 rounded-xl border border-[#3CF902]/30 bg-[#3CF902]/5 px-4 py-3">
+          <p className="text-[#3CF902] text-xs font-semibold mb-1">Send Bitcoin to complete your swap</p>
+          <p className="text-gray-200 text-xs mb-1">
+            Amount: <span className="font-mono font-bold text-white">{depositAction.amount} BTC</span>
+            <span className="text-gray-400 ml-1">({Math.round(Number(depositAction.amount) * 1e8).toLocaleString()} sats)</span>
+          </p>
+          <p className="text-gray-400 text-xs mb-2 break-all">
+            To address: <span className="font-mono text-gray-200">{depositAction.to_address}</span>
+          </p>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => navigator.clipboard?.writeText(depositAction.to_address)}
+              className="px-3 py-1 rounded-lg bg-[#3CF902]/20 border border-[#3CF902]/40 text-[#3CF902] text-xs hover:bg-[#3CF902]/30"
+            >
+              Copy address
+            </button>
+            <a
+              href={`https://mempool.space/address/${depositAction.to_address}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1 rounded-lg bg-gray-700 text-gray-300 text-xs hover:bg-gray-600"
+            >
+              View on mempool.space ↗
+            </a>
+          </div>
+          <p className="text-amber-400 text-xs mt-2">
+            ⏱ Send within 30 minutes. Send the <strong>exact amount</strong> shown above to avoid issues.
+          </p>
+        </div>
+      )}
+      {status === 'user_transfer_pending' &&
+        !txConfirmed &&
+        depositAction &&
+        !canSignRangoTx &&
+        sourceChainId !== 0 &&
         !(sourceChainId === SOLANA_CHAIN_ID && symbiosisSolana?.instructions) && (
         <>
           <p className="text-gray-300 text-xs mt-2 break-all">

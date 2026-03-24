@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useChainId, useSwitchChain, useSendTransaction, useWriteContract, useSignMessage } from 'wagmi';
+import { useChainId, useSwitchChain, useSendTransaction, useWriteContract } from 'wagmi';
 import { parseEther, parseUnits, isAddress } from 'viem';
 import { ERC20_ABI } from '../config/abis';
 import { notifySourceTxHash } from '../services/crossChainSwapApi';
@@ -44,7 +44,6 @@ export default function CrossChainSwapStatusBanner({
   depositActions,
   rangoTx,
   symbiosisSolana,
-  loopringWithdrawalInfo,
   sourceChainId,
   sourceChain,
   tokenIn,
@@ -57,12 +56,9 @@ export default function CrossChainSwapStatusBanner({
   const { switchChain, isPending: isSwitchPending } = useSwitchChain();
   const { sendTransactionAsync, isPending: isSendPending } = useSendTransaction();
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
-  const { signMessageAsync, isPending: isSignPending } = useSignMessage();
   const [txConfirmed, setTxConfirmed] = useState(false);
   const [approvalTxDone, setApprovalTxDone] = useState(false);
   const [solanaBusy, setSolanaBusy] = useState(false);
-  const [loopringBusy, setLoopringBusy] = useState(false);
-  const [loopringError, setLoopringError] = useState(null);
 
   // Reset txConfirmed and approval when swap changes or status leaves user_transfer_pending
   useEffect(() => {
@@ -112,8 +108,6 @@ export default function CrossChainSwapStatusBanner({
       const sym = (tokenIn?.symbol || '').trim() || 'ETH';
       if (sourceChainId === SOLANA_CHAIN_ID && symbiosisSolana?.instructions) {
         label = amt ? `Sign ${amt} ${sym} on Solana` : 'Sign Solana transaction in your wallet';
-      } else if (loopringWithdrawalInfo?.keyMessage) {
-        label = amt ? `Authorize Loopring to withdraw ${amt} ${sym}` : 'Authorize Loopring withdrawal';
       } else if (rangoTx) {
         label = amt ? `Send ${amt} ${sym}` : 'Sign transaction to bridge';
       } else {
@@ -154,7 +148,7 @@ export default function CrossChainSwapStatusBanner({
     isAddress(tokenIn.address) &&
     (tokenIn?.decimals != null || tokenIn?.decimals === 0);
 
-  const canSendInApp = (canSignRangoTx || canSendNative || canSendErc20) && !loopringWithdrawalInfo;
+  const canSendInApp = canSignRangoTx || canSendNative || canSendErc20;
   const isSendPendingAny = isSendPending || isWritePending;
 
   const handleSignSymbiosisSolana = useCallback(async () => {
@@ -205,61 +199,12 @@ export default function CrossChainSwapStatusBanner({
     }
   }, [symbiosisSolana, swapId]);
 
-  /** Execute Loopring → ETH withdrawal (sign key message → backend submits to Loopring). */
-  const handleLoopringWithdrawal = useCallback(async () => {
-    if (!loopringWithdrawalInfo?.keyMessage || !swapId) return;
-    setLoopringBusy(true);
-    setLoopringError(null);
-    try {
-      // Step 1: Sign the Loopring key message with the user's Ethereum wallet.
-      const signature = await signMessageAsync({ message: loopringWithdrawalInfo.keyMessage });
-
-      // Step 2: POST the signature to our backend, which derives the EdDSA key,
-      //         signs the withdrawal, and submits it to Loopring.
-      const BACKEND_URL = import.meta.env.VITE_MANGO_SERVICES_URL || '';
-      const userToken = sessionStorage.getItem('mango_user_token') || localStorage.getItem('mango_user_token') || '';
-      const resp = await fetch(`${BACKEND_URL}/api/v1/swap/loopring-withdraw-execute`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
-        },
-        body: JSON.stringify({
-          swapId,
-          ecdsaSignature: signature,
-          toAddress: loopringWithdrawalInfo.tokenAddress
-            ? undefined  // let backend use owner address
-            : undefined,  // always use owner address for now
-          // The backend will use swap.user_address as the destination.
-        }),
-      });
-
-      const data = await resp.json();
-      if (!resp.ok) {
-        throw new Error(data?.message || data?.error || 'Loopring withdrawal failed');
-      }
-
-      // Notify backend of the hash for tracking.
-      if (data?.loopringHash && swapId) {
-        try { await notifySourceTxHash(swapId, data.loopringHash); } catch { /* ignore */ }
-      }
-
-      setTxConfirmed(true);
-    } catch (err) {
-      console.warn('Loopring withdrawal failed:', err?.message || err);
-      setLoopringError(err?.message || 'Withdrawal failed. Please try again.');
-    } finally {
-      setLoopringBusy(false);
-    }
-  }, [loopringWithdrawalInfo, swapId, signMessageAsync]);
-
   // If user needs to manually send a deposit, make the banner label explicit.
   if (
     status === 'user_transfer_pending' &&
     depositAction &&
     !canSignRangoTx &&
-    !(sourceChainId === SOLANA_CHAIN_ID && symbiosisSolana?.instructions) &&
-    !loopringWithdrawalInfo
+    !(sourceChainId === SOLANA_CHAIN_ID && symbiosisSolana?.instructions)
   ) {
     const sym = depositAction.token?.symbol || '';
     label = `Send ${depositAction.amount} ${sym}`.trim();
@@ -377,7 +322,7 @@ export default function CrossChainSwapStatusBanner({
         <p className="text-gray-400 text-xs mt-1">
           {status === 'user_transfer_pending' && txConfirmed
             ? 'It may take a couple of minutes to see your deposit.'
-            : `Powered by ${provider === 'layerswap' ? 'LayerSwap' : provider === 'rango' ? 'Rango' : provider === 'lifi' ? 'LiFi' : provider === 'squid' ? 'Squid' : provider === 'bungee' ? 'Bungee' : provider === 'wormhole' ? 'Wormhole' : provider === 'symbiosis' ? 'Symbiosis' : provider === 'inbridge' ? 'Inbridge' : provider === 'loopring' ? 'Loopring' : provider}`}
+            : `Powered by ${provider === 'layerswap' ? 'LayerSwap' : provider === 'rango' ? 'Rango' : provider === 'lifi' ? 'LiFi' : provider === 'squid' ? 'Squid' : provider === 'bungee' ? 'Bungee' : provider === 'wormhole' ? 'Wormhole' : provider === 'symbiosis' ? 'Symbiosis' : provider === 'inbridge' ? 'Inbridge' : provider}`}
         </p>
       )}
       {status === 'user_transfer_pending' && !txConfirmed && canSignRangoTx && (
@@ -463,46 +408,6 @@ export default function CrossChainSwapStatusBanner({
                 className="w-full py-2 px-3 rounded-lg bg-[#3CF902]/20 border border-[#3CF902]/50 text-[#3CF902] text-sm font-medium hover:bg-[#3CF902]/30 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {solanaBusy ? 'Signing…' : 'Sign & send (Solana)'}
-              </button>
-              <button
-                type="button"
-                onClick={onDismiss}
-                className="block w-full text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                Transaction sent? Start new swap
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={onDismiss}
-              className="block w-full text-sm text-[#3CF902] hover:underline"
-            >
-              Start new swap
-            </button>
-          )}
-        </div>
-      )}
-      {/* Loopring withdrawal section */}
-      {status === 'user_transfer_pending' && loopringWithdrawalInfo?.keyMessage && (
-        <div className="mt-2 space-y-2">
-          {!txConfirmed ? (
-            <>
-              <p className="text-gray-300 text-xs">
-                Sign the authorization message with your connected wallet. This derives your Loopring
-                key so the withdrawal can be submitted on your behalf. Your funds leave Loopring and
-                arrive on Ethereum in a few minutes.
-              </p>
-              {loopringError && (
-                <p className="text-red-400 text-xs mt-1">{loopringError}</p>
-              )}
-              <button
-                type="button"
-                onClick={handleLoopringWithdrawal}
-                disabled={loopringBusy || isSignPending}
-                className="w-full py-2 px-3 rounded-lg bg-[#3CF902]/20 border border-[#3CF902]/50 text-[#3CF902] text-sm font-medium hover:bg-[#3CF902]/30 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loopringBusy || isSignPending ? 'Signing…' : 'Sign & withdraw from Loopring'}
               </button>
               <button
                 type="button"

@@ -1,11 +1,8 @@
 /**
- * Must match mangoswap/mangoServices/src/services/symbiosisOnlyPairs.ts.
- * Group A — Solana ↔ EVM (10 pairs)
- * Group B — SEI ↔ Ethereum (USDC/USDT; no LayerSwap routes)
- * Group C — Monad ↔ Ethereum (USDC; no LayerSwap routes)
+ * Must match mangoswap/mangoServices/src/services/symbiosisOnlyPairs.ts (10 Solana↔EVM pairs).
+ * Used so LayerSwap-only UI rules do not block Symbiosis corridors when VITE_BRIDGE_PROVIDER=layerswap.
  */
 const PAIRS = [
-  // Group A: Solana ↔ EVM
   [56, 501111],
   [42161, 501111],
   [43114, 501111],
@@ -16,12 +13,6 @@ const PAIRS = [
   [501111, 8453],
   [501111, 42161],
   [501111, 43114],
-  // Group B: SEI ↔ Ethereum
-  [1, 1329],
-  [1329, 1],
-  // Group C: Monad ↔ Ethereum
-  [1, 143],
-  [143, 1],
 ];
 
 export function isSymbiosisOnlyPair(sourceChainId, destChainId) {

@@ -685,7 +685,6 @@ export default function CrossChainPage() {
         ? solanaSenderTrimmed || undefined
         : undefined,
   });
-  // Derive bridge error state early so isBtcAddressEmpty is available for canConfirmCrossChain
   const rawBridgeError = bridgeError || validationError || effectiveQuoteError || crossChainEstimateError;
   const rawBridgeMsg = String(
     rawBridgeError?.message || rawBridgeError?.shortMessage || rawBridgeError || ''
@@ -695,9 +694,6 @@ export default function CrossChainPage() {
     effectiveBridgeProvider === 'rango' && /route not available|no route/i.test(lowerBridgeMsg);
   const isRangoBelowMinimum =
     effectiveBridgeProvider === 'rango' && /amount below minimum|below minimum/i.test(lowerBridgeMsg);
-  // BTC sender address has 0 on-chain balance — PSBT cannot be built without UTXOs
-  const isBtcAddressEmpty =
-    /no btc found at|0 btc found at|bitcoin address has 0 btc|empty bitcoin address/i.test(lowerBridgeMsg);
 
   // true / null = proceed (null matches "Route check unavailable; you can still slide"). false = explicit unsupported.
   const canConfirmCrossChain =
@@ -1052,25 +1048,15 @@ export default function CrossChainPage() {
           )}
           {rawBridgeError && !bridgeStatus && (
             <>
-              {isBtcAddressEmpty ? (
-                <div className="bg-amber-900/20 border border-amber-700/40 rounded-lg p-2 mb-2">
-                  <p className="text-amber-400 text-xs text-center">
-                    ⚠️ This address shows 0 BTC on-chain. You can still attempt the swap — if BTC is available Rango will process it.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <p className="text-red-400 text-sm text-center mb-2">
-                    {mapErrorToUserMessage(rawBridgeError)}
-                  </p>
-                  {effectiveBridgeProvider === 'rango' && (isRangoRouteUnavailable || isRangoBelowMinimum) && (
-                    <p className="text-xs text-gray-400 text-center mb-2">
-                      {isRangoRouteUnavailable
-                        ? 'Rango has no route for this chain/token pair right now. Try a different token or chain.'
-                        : 'Rango requires a higher amount for this route. Increase the amount until it is above the minimum.'}
-                    </p>
-                  )}
-                </>
+              <p className="text-red-400 text-sm text-center mb-2">
+                {mapErrorToUserMessage(rawBridgeError)}
+              </p>
+              {effectiveBridgeProvider === 'rango' && (isRangoRouteUnavailable || isRangoBelowMinimum) && (
+                <p className="text-xs text-gray-400 text-center mb-2">
+                  {isRangoRouteUnavailable
+                    ? 'Rango has no route for this chain/token pair right now. Try a different token or chain.'
+                    : 'Rango requires a higher amount for this route. Increase the amount until it is above the minimum.'}
+                </p>
               )}
             </>
           )}

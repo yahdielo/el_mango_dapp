@@ -41,6 +41,7 @@ export async function getCrossChainEstimate({
   destChainId,
   tokenIn,
   tokenOut,
+  amountIn,
   amountInWei,
   recipient,
   userAddress,
@@ -51,12 +52,16 @@ export async function getCrossChainEstimate({
   const tokenInAddr = toTokenAddress(tokenIn, sourceChainId);
   const tokenOutAddr = toTokenAddress(tokenOut, destChainId);
 
+  // Prefer human-readable amount (e.g. "0.0002" BTC) so the backend can normalize correctly.
+  // Fall back to wei/satoshi value for callers that only provide amountInWei.
+  const amountForApi = amountIn != null ? String(amountIn) : String(amountInWei);
+
   const params = new URLSearchParams({
     sourceChainId: String(sourceChainId),
     destChainId: String(destChainId),
     tokenIn: tokenInAddr,
     tokenOut: tokenOutAddr,
-    amountIn: String(amountInWei),
+    amountIn: amountForApi,
   });
 
   if (recipient) {

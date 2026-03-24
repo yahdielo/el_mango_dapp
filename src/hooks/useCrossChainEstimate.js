@@ -75,6 +75,9 @@ export function useCrossChainEstimate({
           destChainId,
           tokenIn,
           tokenOut,
+          // Pass human-readable amount (e.g. "0.0002") so the backend's normalizeAmount
+          // converts it correctly. Previously passed satoshis/wei which caused double-conversion.
+          amountIn: String(amountIn),
           amountInWei: amountWei.toString(),
           recipient,
           userAddress,

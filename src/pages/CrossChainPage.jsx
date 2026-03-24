@@ -709,8 +709,9 @@ export default function CrossChainPage() {
     destAddrValid &&
     bitcoinSenderValid &&
     solanaSenderValid &&
-    !amountTooLow &&
-    !amountTooHigh &&
+    // For bitcoin source, don't block on estimate min/max — the backend fallback
+    // allows createSwap to succeed even when the estimate says amount is out of range.
+    (bitcoinSource || (!amountTooLow && !amountTooHigh)) &&
     !bridgeLoading;
   const canConfirm = isCrossChain ? canConfirmCrossChain : false;
   const showUnsupportedWarning =

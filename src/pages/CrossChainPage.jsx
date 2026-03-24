@@ -914,53 +914,9 @@ export default function CrossChainPage() {
         )}
         {bitcoinSourceRequired && (
           <div className="mt-4">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-gray-400 text-sm">
-                Bitcoin sender address (where you will send BTC from)
-              </label>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    // Try MetaMask Bitcoin snap — official snap ID
-                    const snapIds = [
-                      'npm:@metamask/bitcoin-snap',
-                      'npm:@consensys/btcsnap',
-                      'local:http://localhost:8080',
-                    ];
-                    let addr = null;
-                    for (const snapId of snapIds) {
-                      try {
-                        const res = await window.ethereum.request({
-                          method: 'wallet_invokeSnap',
-                          params: { snapId, request: { method: 'btc_getAccount' } },
-                        });
-                        addr = res?.address || res?.nativeSegwitAddress || res?.p2wpkh || null;
-                        if (addr) break;
-                      } catch { /* try next */ }
-                      try {
-                        const res = await window.ethereum.request({
-                          method: 'wallet_invokeSnap',
-                          params: { snapId, request: { method: 'btc_getAddress' } },
-                        });
-                        addr = typeof res === 'string' ? res : res?.address || null;
-                        if (addr) break;
-                      } catch { /* try next */ }
-                    }
-                    if (addr) {
-                      setBitcoinSenderAddress(addr);
-                    } else {
-                      alert('Could not auto-detect Bitcoin address.\n\nIn MetaMask: click the Bitcoin snap → Receive → copy your bc1... address, then paste it here.');
-                    }
-                  } catch (e) {
-                    alert('Could not auto-detect Bitcoin address.\n\nIn MetaMask: click the Bitcoin snap → Receive → copy your bc1... address, then paste it here.');
-                  }
-                }}
-                className="text-xs text-[#3CF902] hover:text-white border border-[#3CF902]/40 hover:border-[#3CF902] rounded px-2 py-1 transition-colors"
-              >
-                📋 Get from MetaMask
-              </button>
-            </div>
+            <label className="block text-gray-400 text-sm mb-2">
+              Bitcoin sender address (where you will send BTC from)
+            </label>
             <input
               type="text"
               value={bitcoinSenderAddress}
@@ -975,7 +931,7 @@ export default function CrossChainPage() {
               </p>
             )}
             <p className="text-gray-500 text-xs mt-1">
-              Must be the funded address from your Bitcoin wallet. Use &quot;Get from MetaMask&quot; to auto-fill.
+              In MetaMask: Bitcoin snap → Receive → copy your current bc1... address.
             </p>
           </div>
         )}
@@ -1101,13 +1057,10 @@ export default function CrossChainPage() {
               {isBtcAddressEmpty ? (
                 <div className="bg-amber-900/30 border border-amber-600/50 rounded-lg p-3 mb-2">
                   <p className="text-amber-300 text-sm font-semibold text-center mb-1">
-                    ⚠️ Bitcoin address has 0 BTC
+                    ⚠️ Wrong Bitcoin address — 0 BTC found
                   </p>
-                  <p className="text-amber-200 text-xs text-center mb-2">
-                    The address you entered has no on-chain BTC balance. To swap, you need to use a funded Bitcoin address.
-                  </p>
-                  <p className="text-gray-300 text-xs text-center">
-                    In MetaMask: tap the Bitcoin snap → <strong>Receive</strong> → copy your current BTC address, then paste it in the &quot;Bitcoin sender address&quot; field below.
+                  <p className="text-amber-200 text-xs text-center">
+                    This address has no BTC. Update the &quot;Bitcoin sender address&quot; field above with your funded address.
                   </p>
                 </div>
               ) : (

@@ -914,9 +914,53 @@ export default function CrossChainPage() {
         )}
         {bitcoinSourceRequired && (
           <div className="mt-4">
-            <label className="block text-gray-400 text-sm mb-2">
-              Bitcoin sender address (where you will send BTC from)
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-gray-400 text-sm">
+                Bitcoin sender address (where you will send BTC from)
+              </label>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    // Try MetaMask Bitcoin snap — official snap ID
+                    const snapIds = [
+                      'npm:@metamask/bitcoin-snap',
+                      'npm:@consensys/btcsnap',
+                      'local:http://localhost:8080',
+                    ];
+                    let addr = null;
+                    for (const snapId of snapIds) {
+                      try {
+                        const res = await window.ethereum.request({
+                          method: 'wallet_invokeSnap',
+                          params: { snapId, request: { method: 'btc_getAccount' } },
+                        });
+                        addr = res?.address || res?.nativeSegwitAddress || res?.p2wpkh || null;
+                        if (addr) break;
+                      } catch { /* try next */ }
+                      try {
+                        const res = await window.ethereum.request({
+                          method: 'wallet_invokeSnap',
+                          params: { snapId, request: { method: 'btc_getAddress' } },
+                        });
+                        addr = typeof res === 'string' ? res : res?.address || null;
+                        if (addr) break;
+                      } catch { /* try next */ }
+                    }
+                    if (addr) {
+                      setBitcoinSenderAddress(addr);
+                    } else {
+                      alert('Could not auto-detect Bitcoin address.\n\nIn MetaMask: click the Bitcoin snap → Receive → copy your bc1... address, then paste it here.');
+                    }
+                  } catch (e) {
+                    alert('Could not auto-detect Bitcoin address.\n\nIn MetaMask: click the Bitcoin snap → Receive → copy your bc1... address, then paste it here.');
+                  }
+                }}
+                className="text-xs text-[#3CF902] hover:text-white border border-[#3CF902]/40 hover:border-[#3CF902] rounded px-2 py-1 transition-colors"
+              >
+                📋 Get from MetaMask
+              </button>
+            </div>
             <input
               type="text"
               value={bitcoinSenderAddress}
@@ -930,6 +974,9 @@ export default function CrossChainPage() {
                 Invalid format. Use bc1..., 1..., or 3... with no spaces or special characters (e.g. /).
               </p>
             )}
+            <p className="text-gray-500 text-xs mt-1">
+              Must be the funded address from your Bitcoin wallet. Use &quot;Get from MetaMask&quot; to auto-fill.
+            </p>
           </div>
         )}
         {destAddrRequired && (

@@ -46,10 +46,14 @@ function getNetworkName(chainId) {
   return CHAIN_ID_TO_NETWORK[id] ?? null;
 }
 
-/** Keep in sync with `mangoServices/src/utils/layerswapOnlyChains.ts` */
+/**
+ * Keep in sync with `mangoServices/src/utils/layerswapOnlyChains.ts`.
+ * Chains where the UI shows LayerSwap-style deposit flow.
+ * Removed: 143 (Monad — now LiFi/AcrossV4), 122 (Fuse — no active routes), 1890 (LightLink — no active routes).
+ */
 export const LAYERSWAP_ONLY_CHAIN_IDS = new Set([
-  34443, 5000, 80094, 42220, 252, 167000, 1329, 480, 143, 7000, 48900,
-  81457, 122, 1890, 59144, 911001, 911002, 911003, 911004,
+  34443, 5000, 80094, 42220, 252, 167000, 1329, 480, 7000, 48900,
+  81457, 59144, 911001, 911002, 911003, 911004,
 ]);
 
 function getTokenSymbol(token) {

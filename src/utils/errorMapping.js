@@ -85,6 +85,15 @@ const ROUTER_PATTERNS = [
   /invalid pair|invalid pool/i,
 ];
 
+// Bitcoin sender address has 0 BTC — show full message so user gets actionable guidance
+const BTC_EMPTY_ADDRESS_PATTERNS = [
+  /no btc found at/i,
+  /0 btc found at/i,
+  /bitcoin address has 0 btc/i,
+  /empty bitcoin address/i,
+  /btc.*balance.*0/i,
+];
+
 // Bridge / LayerSwap / Rango
 const BRIDGE_PATTERNS = [
   /missing required parameters for bridge/i,
@@ -120,6 +129,12 @@ export function mapErrorToUserMessage(err) {
 
   if (REJECT_PATTERNS.some((p) => p.test(msg))) return 'Transaction rejected';
   if (SLIPPAGE_PATTERNS.some((p) => p.test(msg))) return 'Slippage exceeded';
+  // BTC empty address — return up to the first sentence of the original message so the address is visible
+  if (BTC_EMPTY_ADDRESS_PATTERNS.some((p) => p.test(msg))) {
+    const raw = String(err?.message ?? err?.shortMessage ?? (typeof err === 'string' ? err : ''));
+    const firstSentence = raw.split(/\. /)[0];
+    return firstSentence.length > 0 ? firstSentence + '.' : raw.slice(0, 120);
+  }
   if (INSUFFICIENT_BALANCE_PATTERNS.some((p) => p.test(msg))) return 'Insufficient balance';
   if (GAS_PATTERNS.some((p) => p.test(msg))) return 'Insufficient gas';
   if (ALLOWANCE_PATTERNS.some((p) => p.test(msg))) return 'Allowance too low';

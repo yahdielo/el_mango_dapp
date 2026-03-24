@@ -178,6 +178,26 @@ export const tokenLists = {
       { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: 'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8', logoURI: USDC_LOGO },
     ],
   },
+  // Sei (1329) – stables via Symbiosis
+  1329: {
+    default: [
+      { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: '0xe15fC38F6D8c56aF07bbCBe3BAf5708A2Bf42392', logoURI: USDC_LOGO },
+      { symbol: 'USDT', name: 'Tether USD', decimals: 6, address: '0xB75D0B03c06A926e488e2659DF1A861F860bD3d1', logoURI: USDT_LOGO },
+    ],
+    popular: [
+      { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: '0xe15fC38F6D8c56aF07bbCBe3BAf5708A2Bf42392', logoURI: USDC_LOGO },
+      { symbol: 'USDT', name: 'Tether USD', decimals: 6, address: '0xB75D0B03c06A926e488e2659DF1A861F860bD3d1', logoURI: USDT_LOGO },
+    ],
+  },
+  // Monad (143) – USDC via Symbiosis
+  143: {
+    default: [
+      { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: '0x754704Bc059F8C67012fEd69BC8A327a5aafb603', logoURI: USDC_LOGO },
+    ],
+    popular: [
+      { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: '0x754704Bc059F8C67012fEd69BC8A327a5aafb603', logoURI: USDC_LOGO },
+    ],
+  },
 };
 
 const ZERO = '0x0000000000000000000000000000000000000000';
@@ -195,6 +215,8 @@ const NATIVE_TOKENS = {
   728126428: { symbol: 'TRX', name: 'Tron', decimals: 6, address: 'TRX', logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/tron/info/logo.png' },
   101: { symbol: 'SUI', name: 'Sui', decimals: 9, address: 'SUI', logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/sui/info/logo.png' },
   144: { symbol: 'XRP', name: 'XRP', decimals: 6, address: 'XRP', logoURI: 'https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png' },
+  1329: { symbol: 'SEI', name: 'Sei', decimals: 18, address: ZERO, native: true, logoURI: 'https://assets.coingecko.com/coins/images/28205/large/Sei_Logo_-_Transparent.png' },
+  143: { symbol: 'MON', name: 'Monad', decimals: 18, address: ZERO, native: true, logoURI: 'https://assets.coingecko.com/coins/images/53285/large/monad.jpg' },
 };
 
 

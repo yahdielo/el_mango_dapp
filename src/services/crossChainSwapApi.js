@@ -158,12 +158,14 @@ export async function initiateCrossChainViaBackend({
     if (data?.maxAmount != null && String(data.maxAmount).length && !msg.includes(String(data.maxAmount))) {
       msg = `${msg} (maximum: ${data.maxAmount})`;
     }
-    if (data?.suggestion && msg && !msg.includes(data.suggestion)) {
+    // For BTC empty-address errors, keep message short — the frontend renders a dedicated banner
+    const isBtcEmptyAddr = data?.error === 'Empty Bitcoin address' || /no btc found at|0 btc found at/i.test(msg);
+    if (!isBtcEmptyAddr && data?.suggestion && msg && !msg.includes(data.suggestion)) {
       msg = `${msg} ${data.suggestion}`;
     }
-    // Include requested route when present (e.g. 400 Route not available)
+    // Include requested route when present (e.g. 400 Route not available) — skip for BTC empty address
     const route = data?.route;
-    if (route && (route.sourceChainId != null || route.destChainId != null)) {
+    if (!isBtcEmptyAddr && route && (route.sourceChainId != null || route.destChainId != null)) {
       const src = route.sourceChainId != null ? route.sourceChainId : '?';
       const dst = route.destChainId != null ? route.destChainId : '?';
       msg = `${msg} Requested route: chain ${src} → chain ${dst}.`;

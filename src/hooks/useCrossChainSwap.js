@@ -44,6 +44,7 @@ export function useCrossChainSwap() {
   const [depositActions, setDepositActions] = useState([]);
   const [rangoTx, setRangoTx] = useState(null);
   const [symbiosisSolana, setSymbiosisSolana] = useState(null);
+  const [loopringWithdrawalInfo, setLoopringWithdrawalInfo] = useState(null);
   const [provider, setProvider] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -150,6 +151,8 @@ export function useCrossChainSwap() {
         setRangoTx(rtx);
         const symSol = result.symbiosisSolana?.instructions ? result.symbiosisSolana : null;
         setSymbiosisSolana(symSol);
+        const loopWd = result.loopringWithdrawalInfo?.accountId ? result.loopringWithdrawalInfo : null;
+        setLoopringWithdrawalInfo(loopWd);
         // If initiate response missing tx or deposit details, fetch once so "Preparing transaction..." doesn't stick
         const missingTxOrDeposit =
           (result.status === 'user_transfer_pending' || !result.status) &&
@@ -170,7 +173,7 @@ export function useCrossChainSwap() {
             })
             .catch(() => {});
         }
-        return { swapId: result.swapId, depositActions: acts, rangoTx: rtx, symbiosisSolana: symSol };
+        return { swapId: result.swapId, depositActions: acts, rangoTx: rtx, symbiosisSolana: symSol, loopringWithdrawalInfo: loopWd };
       }
       useBackendStatusRef.current = false;
       throw new Error(
@@ -191,6 +194,7 @@ export function useCrossChainSwap() {
     setDepositActions([]);
     setRangoTx(null);
     setSymbiosisSolana(null);
+    setLoopringWithdrawalInfo(null);
     setProvider(null);
     setError(null);
   }, [stopPolling]);
@@ -220,6 +224,7 @@ export function useCrossChainSwap() {
     depositActions,
     rangoTx,
     symbiosisSolana,
+    loopringWithdrawalInfo,
     provider,
     error,
     isLoading,

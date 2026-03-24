@@ -221,6 +221,7 @@ export default function CrossChainPage() {
     depositActions,
     rangoTx,
     symbiosisSolana,
+    loopringWithdrawalInfo,
     provider: activeProvider,
     error: bridgeError,
     isLoading: bridgeLoading,
@@ -238,6 +239,7 @@ export default function CrossChainPage() {
       if (activeProvider === 'squid') return 'Squid';
       if (activeProvider === 'bungee') return 'Bungee';
       if (activeProvider === 'inbridge') return 'Inbridge';
+      if (activeProvider === 'loopring') return 'Loopring';
       return activeProvider;
     }
     // Pre-swap: derive label from the pair corridor.
@@ -701,7 +703,9 @@ export default function CrossChainPage() {
     !amountTooHigh &&
     !bridgeLoading &&
     // Rango: do not allow initiate when GET /swap/estimate already reported no route (avoids 400 on POST).
-    !(effectiveBridgeProvider === 'rango' && crossChainEstimateError && !crossChainEstimateLoading);
+    !(effectiveBridgeProvider === 'rango' && crossChainEstimateError && !crossChainEstimateLoading) &&
+    // Bitcoin sender address has 0 on-chain balance — cannot build PSBT without UTXOs, block until address is corrected.
+    !isBtcAddressEmpty;
   const canConfirm = isCrossChain ? canConfirmCrossChain : false;
   const showUnsupportedWarning =
     isCrossChain && routeSupported === false && !routeLoading && amountIn && parseFloat(amountIn) > 0;
@@ -759,6 +763,9 @@ export default function CrossChainPage() {
     effectiveBridgeProvider === 'rango' && /route not available|no route/i.test(lowerBridgeMsg);
   const isRangoBelowMinimum =
     effectiveBridgeProvider === 'rango' && /amount below minimum|below minimum/i.test(lowerBridgeMsg);
+  // BTC sender address has 0 on-chain balance — block retries until address is fixed
+  const isBtcAddressEmpty =
+    /no btc found at|0 btc found at|bitcoin address has 0 btc|empty bitcoin address/i.test(lowerBridgeMsg);
 
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center" style={{ fontFamily: "'Afacad', sans-serif" }}>
@@ -952,6 +959,7 @@ export default function CrossChainPage() {
               depositActions={depositActions}
               rangoTx={rangoTx}
               symbiosisSolana={symbiosisSolana}
+              loopringWithdrawalInfo={loopringWithdrawalInfo}
               sourceChainId={sourceChainId}
               sourceChain={sourceChain}
               tokenIn={tokenIn}
@@ -1042,15 +1050,31 @@ export default function CrossChainPage() {
           )}
           {rawBridgeError && !bridgeStatus && (
             <>
-              <p className="text-red-400 text-sm text-center mb-2">
-                {mapErrorToUserMessage(rawBridgeError)}
-              </p>
-              {effectiveBridgeProvider === 'rango' && (isRangoRouteUnavailable || isRangoBelowMinimum) && (
-                <p className="text-xs text-gray-400 text-center mb-2">
-                  {isRangoRouteUnavailable
-                    ? 'Rango has no route for this chain/token pair right now. Try a different token or chain.'
-                    : 'Rango requires a higher amount for this route. Increase the amount until it is above the minimum.'}
-                </p>
+              {isBtcAddressEmpty ? (
+                <div className="bg-amber-900/30 border border-amber-600/50 rounded-lg p-3 mb-2">
+                  <p className="text-amber-300 text-sm font-semibold text-center mb-1">
+                    ⚠️ Bitcoin address has 0 BTC
+                  </p>
+                  <p className="text-amber-200 text-xs text-center mb-2">
+                    The address you entered has no on-chain BTC balance. To swap, you need to use a funded Bitcoin address.
+                  </p>
+                  <p className="text-gray-300 text-xs text-center">
+                    In MetaMask: tap the Bitcoin snap → <strong>Receive</strong> → copy your current BTC address, then paste it in the &quot;Bitcoin sender address&quot; field below.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-red-400 text-sm text-center mb-2">
+                    {mapErrorToUserMessage(rawBridgeError)}
+                  </p>
+                  {effectiveBridgeProvider === 'rango' && (isRangoRouteUnavailable || isRangoBelowMinimum) && (
+                    <p className="text-xs text-gray-400 text-center mb-2">
+                      {isRangoRouteUnavailable
+                        ? 'Rango has no route for this chain/token pair right now. Try a different token or chain.'
+                        : 'Rango requires a higher amount for this route. Increase the amount until it is above the minimum.'}
+                    </p>
+                  )}
+                </>
               )}
             </>
           )}

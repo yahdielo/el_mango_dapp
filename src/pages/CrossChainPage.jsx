@@ -685,6 +685,20 @@ export default function CrossChainPage() {
         ? solanaSenderTrimmed || undefined
         : undefined,
   });
+  // Derive bridge error state early so isBtcAddressEmpty is available for canConfirmCrossChain
+  const rawBridgeError = bridgeError || validationError || effectiveQuoteError || crossChainEstimateError;
+  const rawBridgeMsg = String(
+    rawBridgeError?.message || rawBridgeError?.shortMessage || rawBridgeError || ''
+  );
+  const lowerBridgeMsg = rawBridgeMsg.toLowerCase();
+  const isRangoRouteUnavailable =
+    effectiveBridgeProvider === 'rango' && /route not available|no route/i.test(lowerBridgeMsg);
+  const isRangoBelowMinimum =
+    effectiveBridgeProvider === 'rango' && /amount below minimum|below minimum/i.test(lowerBridgeMsg);
+  // BTC sender address has 0 on-chain balance — PSBT cannot be built without UTXOs
+  const isBtcAddressEmpty =
+    /no btc found at|0 btc found at|bitcoin address has 0 btc|empty bitcoin address/i.test(lowerBridgeMsg);
+
   // true / null = proceed (null matches "Route check unavailable; you can still slide"). false = explicit unsupported.
   const canConfirmCrossChain =
     isCrossChain &&
@@ -753,19 +767,6 @@ export default function CrossChainPage() {
     }
     return Number.isFinite(val) && val >= 0 && val <= SANE_USD_MAX ? val : (isStablecoin(tokenOut?.symbol) ? amt : 0);
   }, [amountOut, isCrossChain, crossChainPriceOut, tokenOut?.symbol, priceOut]);
-
-  const rawBridgeError = bridgeError || validationError || effectiveQuoteError || crossChainEstimateError;
-  const rawBridgeMsg = String(
-    rawBridgeError?.message || rawBridgeError?.shortMessage || rawBridgeError || ''
-  );
-  const lowerBridgeMsg = rawBridgeMsg.toLowerCase();
-  const isRangoRouteUnavailable =
-    effectiveBridgeProvider === 'rango' && /route not available|no route/i.test(lowerBridgeMsg);
-  const isRangoBelowMinimum =
-    effectiveBridgeProvider === 'rango' && /amount below minimum|below minimum/i.test(lowerBridgeMsg);
-  // BTC sender address has 0 on-chain balance — block retries until address is fixed
-  const isBtcAddressEmpty =
-    /no btc found at|0 btc found at|bitcoin address has 0 btc|empty bitcoin address/i.test(lowerBridgeMsg);
 
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center" style={{ fontFamily: "'Afacad', sans-serif" }}>

@@ -145,6 +145,11 @@ export async function initiateCrossChainViaBackend({
   if (!res.ok) {
     // Log full response so DevTools shows the real reason for 400/5xx
     console.error('[Cross-chain API]', res.status, res.statusText, data);
+    // Retryable backend errors (e.g. Rango BTC backend temporarily down) — show a clear retry message
+    if (data?.retryable) {
+      const retryMsg = data?.message || data?.error || 'Bridge temporarily unavailable. Please try again in a few minutes.';
+      throw new Error(retryMsg);
+    }
     const rawMsg = data?.message ?? data?.error;
     let msg = typeof rawMsg === 'string' ? rawMsg : (data?.suggestion ? `${data.error || 'Error'}. ${data.suggestion}` : null) || `API error: ${res.status}`;
     if (data?.minAmount != null && String(data.minAmount).length && !msg.includes(String(data.minAmount))) {

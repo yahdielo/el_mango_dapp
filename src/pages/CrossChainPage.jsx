@@ -1057,11 +1057,31 @@ export default function CrossChainPage() {
               {isBtcAddressEmpty ? (
                 <div className="bg-amber-900/30 border border-amber-600/50 rounded-lg p-3 mb-2">
                   <p className="text-amber-300 text-sm font-semibold text-center mb-1">
-                    ⚠️ Wrong Bitcoin address — 0 BTC found
+                    ⚠️ 0 BTC at this address
                   </p>
-                  <p className="text-amber-200 text-xs text-center">
-                    This address has no BTC. Update the &quot;Bitcoin sender address&quot; field above with your funded address.
+                  <p className="text-amber-200 text-xs text-center mb-2">
+                    This address has no on-chain BTC. If you have multiple Bitcoin accounts in MetaMask, check the others for the funded one.
                   </p>
+                  {bitcoinSenderAddress && (
+                    <div className="flex justify-center gap-3">
+                      <a
+                        href={`https://mempool.space/address/${bitcoinSenderAddress.trim()}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-amber-400 hover:text-white underline transition-colors"
+                      >
+                        View on Mempool ↗
+                      </a>
+                      <a
+                        href={`https://blockstream.info/address/${bitcoinSenderAddress.trim()}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-amber-400 hover:text-white underline transition-colors"
+                      >
+                        Blockstream ↗
+                      </a>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>

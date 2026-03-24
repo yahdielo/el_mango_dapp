@@ -711,9 +711,7 @@ export default function CrossChainPage() {
     solanaSenderValid &&
     !amountTooLow &&
     !amountTooHigh &&
-    !bridgeLoading &&
-    // Rango: do not allow initiate when GET /swap/estimate already reported no route (avoids 400 on POST).
-    !(effectiveBridgeProvider === 'rango' && crossChainEstimateError && !crossChainEstimateLoading);
+    !bridgeLoading;
   const canConfirm = isCrossChain ? canConfirmCrossChain : false;
   const showUnsupportedWarning =
     isCrossChain && routeSupported === false && !routeLoading && amountIn && parseFloat(amountIn) > 0;

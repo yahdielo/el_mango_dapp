@@ -717,9 +717,7 @@ export default function CrossChainPage() {
     !amountTooHigh &&
     !bridgeLoading &&
     // Rango: do not allow initiate when GET /swap/estimate already reported no route (avoids 400 on POST).
-    !(effectiveBridgeProvider === 'rango' && crossChainEstimateError && !crossChainEstimateLoading) &&
-    // Bitcoin sender address has 0 on-chain balance — cannot build PSBT without UTXOs, block until address is corrected.
-    !isBtcAddressEmpty;
+    !(effectiveBridgeProvider === 'rango' && crossChainEstimateError && !crossChainEstimateLoading);
   const canConfirm = isCrossChain ? canConfirmCrossChain : false;
   const showUnsupportedWarning =
     isCrossChain && routeSupported === false && !routeLoading && amountIn && parseFloat(amountIn) > 0;
@@ -1055,25 +1053,10 @@ export default function CrossChainPage() {
           {rawBridgeError && !bridgeStatus && (
             <>
               {isBtcAddressEmpty ? (
-                <div className="bg-amber-900/30 border border-amber-600/50 rounded-lg p-3 mb-2">
-                  <p className="text-amber-300 text-sm font-semibold text-center mb-1">
-                    ⚠️ 0 BTC at this address
+                <div className="bg-amber-900/20 border border-amber-700/40 rounded-lg p-2 mb-2">
+                  <p className="text-amber-400 text-xs text-center">
+                    ⚠️ This address shows 0 BTC on-chain. You can still attempt the swap — if BTC is available Rango will process it.
                   </p>
-                  <p className="text-amber-200 text-xs text-center mb-2">
-                    In MetaMask: go to <strong>Tokens</strong> → tap <strong>&quot;Bitcoin Native SegWit&quot;</strong> → <strong>Receive</strong> → copy that address and paste it above.
-                  </p>
-                  {bitcoinSenderAddress && (
-                    <div className="flex justify-center gap-3">
-                      <a
-                        href={`https://mempool.space/address/${bitcoinSenderAddress.trim()}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-amber-400 hover:text-white underline transition-colors"
-                      >
-                        Verify on Mempool ↗
-                      </a>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <>

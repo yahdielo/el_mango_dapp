@@ -257,13 +257,21 @@ export default function CrossChainPage() {
   // token filtering and UI messaging to use LayerSwap semantics as well.
   // BTC source must follow Rango in the UI (quotes, min/max, tokens) — matches mangoServices (Rango-only for chain 0).
   // Symbiosis corridors (Solana↔EVM) bypass LayerSwap token semantics entirely.
+  // Tron cross-asset pairs (BNB→TRX, etc.) route to Rango; Inbridge only handles same-token Tron bridges.
+  const TRON_CHAIN_ID_FE = 728126428;
+  const isTronPair = Number(sourceChainId) === TRON_CHAIN_ID_FE || Number(destChainId) === TRON_CHAIN_ID_FE;
+  const isTronCrossAsset = isTronPair &&
+    tokenIn?.symbol && tokenOut?.symbol &&
+    normalizeSymbolForTokenCompare(tokenIn.symbol) !== normalizeSymbolForTokenCompare(tokenOut.symbol);
   const effectiveBridgeProvider = (bitcoinSource || bitcoinDest)
     ? 'rango'
-    : isSymbiosisOnlyPair(sourceChainId, destChainId)
-      ? 'symbiosis'
-      : LAYERSWAP_ONLY_CHAIN_IDS.has(Number(sourceChainId)) || LAYERSWAP_ONLY_CHAIN_IDS.has(Number(destChainId))
-        ? 'layerswap'
-        : bridgeProvider;
+    : isTronCrossAsset
+      ? 'rango'
+      : isSymbiosisOnlyPair(sourceChainId, destChainId)
+        ? 'symbiosis'
+        : LAYERSWAP_ONLY_CHAIN_IDS.has(Number(sourceChainId)) || LAYERSWAP_ONLY_CHAIN_IDS.has(Number(destChainId))
+          ? 'layerswap'
+          : bridgeProvider;
 
   // Rango support matrix (enabled chains + tokens) for display and filtering.
   const {

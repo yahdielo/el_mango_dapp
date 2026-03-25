@@ -30,6 +30,8 @@ import {
 } from '../services/bridgeApi';
 import { isLayerSwapVerifiedCrossAssetCorridor } from '../config/layerswapVerifiedCorridors';
 import { isSymbiosisOnlyPair } from '../config/symbiosisOnlyPairs';
+import { isSquidOnlyPair } from '../config/squidOnlyPairs';
+import { isLifiOnlyPair } from '../config/lifiOnlyPairs';
 import { getReferralChain, syncReferral } from '../services/referralApi';
 import { isCrossChainViaBackendAvailable } from '../services/crossChainSwapApi';
 import { formatBalance } from '../utils/formatBalance';
@@ -247,31 +249,51 @@ export default function CrossChainPage() {
     // Pre-swap: derive label from the pair corridor.
     if (bitcoinSource) return 'Rango';
     if (isSymbiosisOnlyPair(sourceChainId, destChainId)) return 'Symbiosis';
+    if (isSquidOnlyPair(sourceChainId, destChainId)) return 'Squid';
+    // LiFi cross-asset: lifi corridor + cross-asset tokens + not a LS verified pair
+    if (
+      isLifiOnlyPair(sourceChainId, destChainId) &&
+      tokenIn?.symbol && tokenOut?.symbol &&
+      normalizeSymbolForTokenCompare(tokenIn.symbol) !== normalizeSymbolForTokenCompare(tokenOut.symbol) &&
+      !isLayerSwapVerifiedCrossAssetCorridor(sourceChainId, destChainId, tokenIn?.symbol, tokenOut?.symbol)
+    ) return 'LiFi';
     if (bridgeProvider === 'auto') return 'Auto';
     if (bridgeProvider === 'layerswap') return 'LayerSwap';
     if (bridgeProvider === 'rango') return 'Rango';
     return bridgeProvider ? bridgeProvider.charAt(0).toUpperCase() + bridgeProvider.slice(1) : 'Auto';
-  }, [bridgeProvider, bitcoinSource, activeProvider, sourceChainId, destChainId]);
+  }, [bridgeProvider, bitcoinSource, activeProvider, sourceChainId, destChainId, tokenIn, tokenOut]);
 
   // If the swap involves any of our "LayerSwap-only" chainIds, force the frontend
   // token filtering and UI messaging to use LayerSwap semantics as well.
   // BTC source must follow Rango in the UI (quotes, min/max, tokens) — matches mangoServices (Rango-only for chain 0).
   // Symbiosis corridors (Solana↔EVM) bypass LayerSwap token semantics entirely.
   // Tron cross-asset pairs (BNB→TRX, etc.) route to Rango; Inbridge only handles same-token Tron bridges.
+  // Squid-only corridors (e.g. Avalanche→Ethereum) bypass LayerSwap token semantics entirely.
+  // LiFi-only corridors: cross-asset pairs (e.g. BSC BNB→ETH) use LiFi; same-asset and LS-verified pairs still use LayerSwap.
   const TRON_CHAIN_ID_FE = 728126428;
   const isTronPair = Number(sourceChainId) === TRON_CHAIN_ID_FE || Number(destChainId) === TRON_CHAIN_ID_FE;
   const isTronCrossAsset = isTronPair &&
     tokenIn?.symbol && tokenOut?.symbol &&
     normalizeSymbolForTokenCompare(tokenIn.symbol) !== normalizeSymbolForTokenCompare(tokenOut.symbol);
+  const squidCorridorOk = isSquidOnlyPair(sourceChainId, destChainId);
+  // LiFi handles cross-asset pairs on LiFi corridors UNLESS the token pair is a LayerSwap exclusive (e.g. USDT→USDT stays LS).
+  const lifiCrossAssetCorridor = isLifiOnlyPair(sourceChainId, destChainId) &&
+    tokenIn?.symbol && tokenOut?.symbol &&
+    normalizeSymbolForTokenCompare(tokenIn.symbol) !== normalizeSymbolForTokenCompare(tokenOut.symbol) &&
+    !isLayerSwapVerifiedCrossAssetCorridor(sourceChainId, destChainId, tokenIn?.symbol, tokenOut?.symbol);
   const effectiveBridgeProvider = (bitcoinSource || bitcoinDest)
     ? 'rango'
     : isTronCrossAsset
       ? 'rango'
       : isSymbiosisOnlyPair(sourceChainId, destChainId)
         ? 'symbiosis'
-        : LAYERSWAP_ONLY_CHAIN_IDS.has(Number(sourceChainId)) || LAYERSWAP_ONLY_CHAIN_IDS.has(Number(destChainId))
-          ? 'layerswap'
-          : bridgeProvider;
+        : squidCorridorOk
+          ? 'squid'
+          : lifiCrossAssetCorridor
+            ? 'lifi'
+            : LAYERSWAP_ONLY_CHAIN_IDS.has(Number(sourceChainId)) || LAYERSWAP_ONLY_CHAIN_IDS.has(Number(destChainId))
+              ? 'layerswap'
+              : bridgeProvider;
 
   // Rango support matrix (enabled chains + tokens) for display and filtering.
   const {

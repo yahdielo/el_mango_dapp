@@ -16,9 +16,9 @@ const CHAIN_ID_TO_NETWORK = {
   43114: 'AVAX_MAINNET',
   34443: 'MODE_MAINNET',
   5000: 'MANTLE_MAINNET',
-  80094: 'BERACHAIN_MAINNET',
-  42220: 'CELO_MAINNET',
-  252: 'FRAXTAL_MAINNET',
+  // 80094: BERACHAIN — ROUTE_NOT_FOUND on all pairs, removed from UI
+  // 42220: CELO — ROUTE_NOT_FOUND on all pairs, removed from UI
+  // 252: FRAXTAL — no active routes, removed from UI
   167000: 'TAIKO_MAINNET',
   1329: 'SEI_MAINNET',
   480: 'WORLDCHAIN_MAINNET',
@@ -26,13 +26,13 @@ const CHAIN_ID_TO_NETWORK = {
   7000: 'ZETACHAIN_MAINNET',
   48900: 'ZIRCUIT_MAINNET',
   81457: 'BLAST_MAINNET',
-  122: 'FUSE_MAINNET',
-  1890: 'LIGHTLINK_MAINNET',
+  // 122: FUSE — no active aggregator routes, removed from UI
+  // 1890: LIGHTLINK — no active aggregator routes, removed from UI
   59144: 'LINEA_MAINNET',
   911001: 'HYPERLIQUID_MAINNET',
   911002: 'TON_MAINNET',
   911003: 'PARADEX_MAINNET',
-  911004: 'LOOPRING_MAINNET',
+  // 911004: LOOPRING — ROUTE_NOT_FOUND on all pairs, removed from UI
   // Non-EVM (LayerSwap - per CROSS_CHAIN_SWAP_IMPLEMENTATION_COMPLETE.md)
   0: 'BITCOIN_MAINNET',
   501111: 'SOLANA_MAINNET',
@@ -52,8 +52,9 @@ function getNetworkName(chainId) {
  * Removed: 143 (Monad — now LiFi/AcrossV4), 122 (Fuse — no active routes), 1890 (LightLink — no active routes).
  */
 export const LAYERSWAP_ONLY_CHAIN_IDS = new Set([
-  34443, 5000, 80094, 42220, 252, 167000, 1329, 480, 7000, 48900,
-  81457, 59144, 911001, 911002, 911003, 911004,
+  34443, 5000, 167000, 1329, 480, 7000, 48900,
+  81457, 59144, 911001, 911002, 911003,
+  // removed: 80094 (Berachain), 42220 (Celo), 252 (Fraxtal), 122 (Fuse), 1890 (LightLink), 911004 (Loopring) — no active routes
 ]);
 
 function getTokenSymbol(token) {

@@ -210,8 +210,10 @@ export default function CrossChainPage() {
 
   const bridgeProvider = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
-  /** Sending *from* Bitcoin (chain 0): backend uses Rango only (not LayerSwap). EVM→BTC (e.g. WBTC→BTC) can use LayerSwap. */
+  /** Sending *from* Bitcoin (chain 0): backend uses Rango only (deposit-address model). */
   const bitcoinSource = Number(sourceChainId) === 0;
+  /** Sending *to* Bitcoin: backend uses Rango only (EVM tx → BTC receive address). */
+  const bitcoinDest = Number(destChainId) === 0;
   const solanaSource = Number(sourceChainId) === SOLANA_CHAIN_ID;
 
   const {
@@ -255,7 +257,7 @@ export default function CrossChainPage() {
   // token filtering and UI messaging to use LayerSwap semantics as well.
   // BTC source must follow Rango in the UI (quotes, min/max, tokens) — matches mangoServices (Rango-only for chain 0).
   // Symbiosis corridors (Solana↔EVM) bypass LayerSwap token semantics entirely.
-  const effectiveBridgeProvider = bitcoinSource
+  const effectiveBridgeProvider = (bitcoinSource || bitcoinDest)
     ? 'rango'
     : isSymbiosisOnlyPair(sourceChainId, destChainId)
       ? 'symbiosis'
@@ -700,14 +702,16 @@ export default function CrossChainPage() {
     isCrossChain &&
     !routeLoading &&
     routeSupported !== false &&
-    // LayerSwap: same-asset or verified cross-asset; from-Bitcoin uses Rango; Symbiosis Solana↔EVM corridors bypass LayerSwap-only pairing.
+    // LayerSwap: same-asset or verified cross-asset; BTC source/dest uses Rango; Symbiosis Solana↔EVM corridors bypass LayerSwap-only pairing.
     (effectiveBridgeProvider !== 'layerswap' ||
       layerSwapExecutionPairOk ||
       bitcoinSource ||
+      bitcoinDest ||
       symbiosisCorridorOk) &&
     canSwap &&
     destAddrValid &&
-    bitcoinSenderValid &&
+    // bitcoinSenderValid only required when sending FROM bitcoin (not TO bitcoin)
+    (!bitcoinSource || bitcoinSenderValid) &&
     solanaSenderValid &&
     !amountTooLow &&
     !amountTooHigh &&
@@ -940,7 +944,7 @@ export default function CrossChainPage() {
         {destAddrRequired && (
           <div className="mt-4">
             <label className="block text-gray-400 text-sm mb-2">
-              {destChainId === 0 && 'Bitcoin receive address (bc1..., 1..., or 3...)'}
+              {destChainId === 0 && 'Bitcoin receive address — where BTC will be sent'}
               {destChainId === 501111 && 'Solana receive address'}
               {destChainId === 728126428 && 'Tron receive address (T...)'}
               {destChainId === 144 && 'XRP receive address (r...)'}
@@ -954,6 +958,18 @@ export default function CrossChainPage() {
               className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:border-transparent"
               spellCheck={false}
             />
+            {destChainId === 0 && (destinationAddress || '').trim().length >= 26 && (
+              <p className="text-gray-500 text-xs mt-1">
+                <a
+                  href={`https://mempool.space/address/${(destinationAddress || '').trim()}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#3CF902] underline"
+                >
+                  Verify address on mempool.space ↗
+                </a>
+              </p>
+            )}
           </div>
         )}
 
@@ -999,7 +1015,8 @@ export default function CrossChainPage() {
             tokenOut?.symbol &&
             !layerSwapExecutionPairOk &&
             !symbiosisCorridorOk &&
-            !bitcoinSource && (
+            !bitcoinSource &&
+            !bitcoinDest && (
               <div
                 className="mb-3 rounded-xl border border-amber-500/30 bg-gradient-to-b from-amber-500/[0.08] to-amber-950/30 px-4 py-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
                 role="status"

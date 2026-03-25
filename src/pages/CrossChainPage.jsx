@@ -400,6 +400,14 @@ export default function CrossChainPage() {
   const { data: whitelist } = useWhitelist(address, sourceChainId);
 
   const isCrossChain = sourceChainId !== destChainId;
+
+  // Active referrer for badge display — read from local storage (updated on render)
+  const activeReferrer = useMemo(() => {
+    if (!address) return null;
+    const r = getStoredReferrer(address);
+    return r && r !== '0x0000000000000000000000000000000000000000' ? r : null;
+  }, [address]);
+
   const { amountOut: quoteAmountOut, loading: quoteLoading, error: quoteError, estimated: quoteEstimated, priceIn, priceOut } = useQuote({
     chainId: sourceChainId,
     tokenIn,
@@ -1114,6 +1122,12 @@ export default function CrossChainPage() {
                 </p>
               )}
             </>
+          )}
+          {isCrossChain && address && activeReferrer && (
+            <div className="mb-2 flex items-center gap-1.5 justify-center text-xs text-[#3CF902]/80">
+              <span>✓ Referral active</span>
+              <span className="font-mono text-gray-500">{activeReferrer.slice(0, 6)}…{activeReferrer.slice(-4)}</span>
+            </div>
           )}
           <SlideToSwapButton
             onSwap={address ? handleConfirmSwap : undefined}

@@ -7,6 +7,7 @@ import SwapPage from './pages/SwapPage';
 import CrossChainPage from './pages/CrossChainPage';
 import ReferralPage from './pages/ReferralPage';
 import WhitelistAdminPage from './pages/WhitelistAdminPage';
+import TelegramPage from './pages/TelegramPage';
 
 export default function App() {
   useTelegramWebApp();
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="/cross-chain" element={<CrossChainPage />} />
           <Route path="/referral" element={<ReferralPage />} />
           <Route path="/whitelist-admin" element={<WhitelistAdminPage />} />
+          <Route path="/telegram" element={<TelegramPage />} />
         </Routes>
       </BrowserRouter>
     </AppKitProvider>

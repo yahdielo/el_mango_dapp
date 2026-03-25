@@ -71,3 +71,17 @@ export async function claimAccountReferrer({ userAddress, referrerAddress, nonce
   });
 }
 
+/**
+ * GET /api/v1/referral/cross-chain-stats/:address
+ * Returns cross-chain referral fee attribution stats for a referrer.
+ */
+export async function getCrossChainReferralStats(referrerAddress) {
+  if (!RAW_BASE) return null;
+  if (!referrerAddress || !/^0x[a-fA-F0-9]{40}$/.test(referrerAddress)) return null;
+  try {
+    return await fetchOk(`${BASE}/api/v1/referral/cross-chain-stats/${encodeURIComponent(referrerAddress)}`, { method: 'GET' });
+  } catch {
+    return null;
+  }
+}
+

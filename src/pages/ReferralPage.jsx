@@ -10,7 +10,8 @@ import { syncReferral } from '../services/referralApi';
 import { LAYERSWAP_CHAIN_IDS } from '../services/bridgeApi';
 import { getAllChains } from '../utils/chainConfig';
 import { getStoredReferrer, isValidReferrerAddress, setStoredReferrer, clearStoredReferrer } from '../utils/referrerStorage';
-import { getReferralClaimNonce, buildReferralClaimMessage, claimAccountReferrer } from '../services/referralAccountApi';
+import { getReferralClaimNonce, buildReferralClaimMessage, claimAccountReferrer, getCrossChainReferralStats } from '../services/referralAccountApi';
+import { getWalletLinkNonce, buildWalletLinkMessage, linkWallet, getLinkedWallets } from '../services/walletLinkApi';
 
 function formatAddress(addr) {
   if (!addr) return '';
@@ -59,6 +60,55 @@ export default function ReferralPage() {
   const { data: perfData, loading: perfLoading, error: perfError } = useReferralPerformance(address);
   const { data: insightsData, loading: insightsLoading } = useReferralInsights(address);
   const { data: topReferrers, loading: topLoading } = useTopReferrers(10);
+  const [crossChainStats, setCrossChainStats] = useState(null);
+  const [crossChainStatsLoading, setCrossChainStatsLoading] = useState(false);
+
+  // ── Wallet linking (non-EVM addresses) ───────────────────────────────────
+  const CHAIN_TYPES = [
+    { type: 'solana',  label: 'Solana',  placeholder: 'Base58 address (e.g. 5HnF...)' },
+    { type: 'tron',    label: 'Tron',    placeholder: 'Starts with T (e.g. TK9...)' },
+    { type: 'bitcoin', label: 'Bitcoin', placeholder: '1..., 3..., or bc1...' },
+    { type: 'xrp',     label: 'XRP',     placeholder: 'Starts with r (e.g. rN7...)' },
+    { type: 'sui',     label: 'Sui',     placeholder: '0x + 64 hex chars' },
+  ];
+  const [linkedWallets, setLinkedWallets] = useState(null);
+  const [linkInputs, setLinkInputs] = useState({});    // { solana: '...', tron: '...', ... }
+  const [linkStatus, setLinkStatus] = useState({});    // { solana: 'linking' | 'linked' | 'error:...' }
+
+  useEffect(() => {
+    if (!address) { setLinkedWallets(null); return; }
+    getLinkedWallets(address).then(setLinkedWallets).catch(() => null);
+  }, [address]);
+
+  const handleLinkWallet = useCallback(async (chainType) => {
+    if (!address) return;
+    const foreignAddress = (linkInputs[chainType] || '').trim();
+    if (!foreignAddress) return;
+    setLinkStatus(s => ({ ...s, [chainType]: 'linking' }));
+    try {
+      const { nonce } = await getWalletLinkNonce(address);
+      const message = buildWalletLinkMessage({ chainType, foreignAddress, evmAddress: address.toLowerCase(), nonce });
+      const signature = await signMessageAsync({ message });
+      await linkWallet({ evmAddress: address.toLowerCase(), foreignAddress, chainType, signature, nonce });
+      setLinkStatus(s => ({ ...s, [chainType]: 'linked' }));
+      setLinkedWallets(prev => ({ ...(prev || {}), [chainType]: foreignAddress }));
+      setLinkInputs(s => ({ ...s, [chainType]: '' }));
+      setTimeout(() => setLinkStatus(s => ({ ...s, [chainType]: null })), 3000);
+    } catch (err) {
+      setLinkStatus(s => ({ ...s, [chainType]: `error: ${err?.message ?? 'failed'}` }));
+      setTimeout(() => setLinkStatus(s => ({ ...s, [chainType]: null })), 5000);
+    }
+  }, [address, linkInputs, signMessageAsync]);
+  // ── End wallet linking ───────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!address) { setCrossChainStats(null); return; }
+    setCrossChainStatsLoading(true);
+    getCrossChainReferralStats(address)
+      .then((data) => setCrossChainStats(data))
+      .catch(() => setCrossChainStats(null))
+      .finally(() => setCrossChainStatsLoading(false));
+  }, [address]);
 
   const raw = chainData?.data ?? chainData;
   const primaryReferrer = raw?.primaryReferrer ?? raw?.referral?.referrer ?? null;
@@ -275,6 +325,40 @@ export default function ReferralPage() {
               {!perfLoading && !perfError && !perfData && <p className="text-gray-500">No metrics yet.</p>}
             </ReferralSection>
 
+            <ReferralSection title="Cross-chain earnings (3% fee)">
+              {crossChainStatsLoading && <p className="text-gray-500 text-xs">Loading...</p>}
+              {!crossChainStatsLoading && crossChainStats ? (
+                <ul className="space-y-1 text-xs">
+                  <li className="flex justify-between">
+                    <span className="text-gray-400">Attributed swaps</span>
+                    <span className="text-[#3CF902]">{crossChainStats.totalSwaps ?? 0}</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <span className="text-gray-400">Total fee volume (USD)</span>
+                    <span className="text-[#3CF902]">${(crossChainStats.totalFeeUsd ?? 0).toFixed(4)}</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <span className="text-gray-400">Last 24h</span>
+                    <span>${(crossChainStats.fee24h ?? 0).toFixed(4)}</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <span className="text-gray-400">Last 7d</span>
+                    <span>${(crossChainStats.fee7d ?? 0).toFixed(4)}</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <span className="text-gray-400">Pending rewards</span>
+                    <span className="text-amber-400">${(crossChainStats.pendingFeeUsd ?? 0).toFixed(4)}</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <span className="text-gray-400">Rewarded</span>
+                    <span>${(crossChainStats.rewardedFeeUsd ?? 0).toFixed(4)}</span>
+                  </li>
+                </ul>
+              ) : !crossChainStatsLoading && (
+                <p className="text-gray-500 text-xs">No cross-chain referral activity yet. Share your link for others to swap cross-chain.</p>
+              )}
+            </ReferralSection>
+
             {insightsData.length > 0 && (
               <ReferralSection title="Insights">
                 {insightsLoading ? <p className="text-gray-500">Loading...</p> : (
@@ -302,6 +386,61 @@ export default function ReferralPage() {
                 </ul>
               )}
               {!topLoading && topReferrers.length === 0 && <p className="text-gray-500">No data yet.</p>}
+            </ReferralSection>
+
+            {/* ── Link non-EVM wallets ─────────────────────────────────── */}
+            <ReferralSection title="Link non-EVM wallets">
+              <p className="text-gray-400 text-xs mb-3">
+                Link your Solana, Tron, Bitcoin, XRP, or Sui address so swaps originating
+                from those wallets can track your referral earnings. Sign with your connected
+                EVM wallet to prove ownership.
+              </p>
+              <div className="space-y-3">
+                {CHAIN_TYPES.map(({ type, label, placeholder }) => {
+                  const current = linkedWallets?.[type];
+                  const input = linkInputs[type] || '';
+                  const status = linkStatus[type];
+                  const isLinking = status === 'linking';
+                  const isLinked = status === 'linked';
+                  const isError = status?.startsWith('error');
+                  return (
+                    <div key={type}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-gray-300 font-medium">{label}</span>
+                        {current && (
+                          <span className="text-[10px] font-mono text-[#3CF902]">
+                            {current.slice(0, 8)}…{current.slice(-4)} ✓
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={input}
+                          onChange={e => setLinkInputs(s => ({ ...s, [type]: e.target.value }))}
+                          placeholder={current ? `Update: ${placeholder}` : placeholder}
+                          className="flex-1 bg-black/30 rounded-lg px-3 py-2 text-white text-xs font-mono border border-gray-700 focus:outline-none focus:border-[#3CF902]"
+                          disabled={isLinking}
+                        />
+                        <button
+                          type="button"
+                          disabled={!input.trim() || isLinking}
+                          onClick={() => handleLinkWallet(type)}
+                          className="px-3 py-2 rounded-lg text-xs font-medium bg-[#3CF902] text-black disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#5aff20] transition-colors whitespace-nowrap"
+                        >
+                          {isLinking ? '…' : 'Link'}
+                        </button>
+                      </div>
+                      {isLinked && (
+                        <p className="text-[#3CF902] text-[10px] mt-1">✓ Linked successfully</p>
+                      )}
+                      {isError && (
+                        <p className="text-red-400 text-[10px] mt-1">{status.replace('error: ', '')}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </ReferralSection>
           </>
         )}

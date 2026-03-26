@@ -343,9 +343,22 @@ export default function CrossChainSwapStatusBanner({
             Amount: <span className="font-mono font-bold text-white">{depositAction.amount} BTC</span>
             <span className="text-gray-400 ml-1">({Math.round(Number(depositAction.amount) * 1e8).toLocaleString()} sats)</span>
           </p>
-          <p className="text-gray-400 text-xs mb-2 break-all">
+          <p className="text-gray-400 text-xs mb-1 break-all">
             To address: <span className="font-mono text-gray-200">{depositAction.to_address}</span>
           </p>
+          {depositAction.memo && (
+            <div className="mt-2 mb-2 rounded-lg border border-red-500/40 bg-red-950/30 px-3 py-2">
+              <p className="text-red-400 text-xs font-semibold mb-1">⚠️ REQUIRED: Include this memo in your transaction</p>
+              <p className="text-gray-300 text-[11px] mb-1 break-all font-mono bg-black/30 rounded px-2 py-1">{depositAction.memo}</p>
+              <p className="text-red-300 text-[11px] leading-snug">
+                You <strong>must</strong> include this memo as <strong>OP_RETURN</strong> data in your Bitcoin transaction.
+                Without it, THORChain cannot identify your swap and will <strong>refund your BTC</strong> (minus a fee).
+              </p>
+              <p className="text-gray-400 text-[11px] mt-1">
+                Most BTC wallets (Sparrow, Electrum, BlueWallet, Exodus) have a &quot;memo&quot; or &quot;OP_RETURN&quot; field in the send screen.
+              </p>
+            </div>
+          )}
           <div className="flex gap-2 flex-wrap">
             <button
               type="button"
@@ -354,6 +367,15 @@ export default function CrossChainSwapStatusBanner({
             >
               Copy address
             </button>
+            {depositAction.memo && (
+              <button
+                type="button"
+                onClick={() => navigator.clipboard?.writeText(depositAction.memo)}
+                className="px-3 py-1 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300 text-xs hover:bg-red-500/30"
+              >
+                Copy memo
+              </button>
+            )}
             <a
               href={`https://mempool.space/address/${depositAction.to_address}`}
               target="_blank"

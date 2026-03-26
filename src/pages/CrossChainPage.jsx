@@ -420,20 +420,32 @@ export default function CrossChainPage() {
     skip: isCrossChain,
   });
 
+  const sameAssetCrossChainPair =
+    normalizeSymbolForTokenCompare(tokenIn?.symbol) === normalizeSymbolForTokenCompare(tokenOut?.symbol);
+
+  // Fetch live route support + amountOut quote for cross-asset pairs (BTC→BNB, ETH→BNB, etc.)
+  const { isSupported: routeSupported, loading: routeLoading, amountOut: routeAmountOut } = useBridgeRouteSupport(
+    sourceChainId,
+    destChainId,
+    tokenIn,
+    tokenOut,
+    isCrossChain && !sameAssetCrossChainPair && amountIn && parseFloat(amountIn) > 0 ? amountIn : undefined
+  );
+
   const crossChainAmountOut = useMemo(() => {
     if (!isCrossChain || !amountIn || parseFloat(amountIn) <= 0 || !tokenIn?.symbol || !tokenOut?.symbol) return '';
     const inSym = (tokenIn.symbol || '').toUpperCase().replace(/^W/, '');
     const outSym = (tokenOut.symbol || '').toUpperCase().replace(/^W/, '');
     if (inSym === outSym) return amountIn;
+    // For cross-asset pairs (BTC→BNB, ETH→BNB, etc.), use the live route quote amountOut
+    if (routeAmountOut && parseFloat(routeAmountOut) > 0) return routeAmountOut;
     return '';
-  }, [isCrossChain, amountIn, tokenIn?.symbol, tokenOut?.symbol]);
+  }, [isCrossChain, amountIn, tokenIn?.symbol, tokenOut?.symbol, routeAmountOut]);
 
   const effectiveAmountOut = isCrossChain ? crossChainAmountOut : quoteAmountOut;
-  const effectiveQuoteLoading = isCrossChain ? false : quoteLoading;
+  const effectiveQuoteLoading = isCrossChain ? (routeLoading && !sameAssetCrossChainPair) : quoteLoading;
   const effectiveQuoteError = isCrossChain ? null : quoteError;
   const effectiveQuoteEstimated = isCrossChain ? true : quoteEstimated;
-  const sameAssetCrossChainPair =
-    normalizeSymbolForTokenCompare(tokenIn?.symbol) === normalizeSymbolForTokenCompare(tokenOut?.symbol);
   /** LayerSwap: same token across chains, or doc-verified cross-asset (ETH→POL/BNB/AVAX, WBTC→BTC). */
   const layerSwapExecutionPairOk =
     sameAssetCrossChainPair ||
@@ -451,13 +463,6 @@ export default function CrossChainPage() {
     slippageBps,
     enabled: !isCrossChain,
   });
-
-  const { isSupported: routeSupported, loading: routeLoading } = useBridgeRouteSupport(
-    sourceChainId,
-    destChainId,
-    tokenIn,
-    tokenOut
-  );
 
   const { priceInUsd: crossChainPriceIn, priceOutUsd: crossChainPriceOut, loading: crossChainPriceLoading } = useCrossChainUsdPrices({
     isCrossChain,

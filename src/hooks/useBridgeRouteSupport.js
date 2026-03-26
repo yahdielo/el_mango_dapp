@@ -3,6 +3,7 @@ import { isRouteSupported } from '../services/bridgeApi';
 import {
   isRouteSupportedViaBackend,
   isCrossChainViaBackendAvailable,
+  getRoutesFromBackend,
 } from '../services/crossChainSwapApi';
 import { isLayerSwapVerifiedCrossAssetCorridor } from '../config/layerswapVerifiedCorridors';
 
@@ -35,11 +36,13 @@ function sameAssetSymbolsForProbe(symIn, symOut) {
  * @param {number} destChainId
  * @param {Object} tokenIn
  * @param {Object} tokenOut
- * @returns {{ isSupported: boolean|null, loading: boolean }}
+ * @param {string} [amountIn] - optional: when provided, fetches a live quote and returns amountOut
+ * @returns {{ isSupported: boolean|null, loading: boolean, amountOut: string|null }}
  */
-export function useBridgeRouteSupport(sourceChainId, destChainId, tokenIn, tokenOut) {
+export function useBridgeRouteSupport(sourceChainId, destChainId, tokenIn, tokenOut, amountIn) {
   const [isSupported, setIsSupported] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [amountOut, setAmountOut] = useState(null);
 
   useEffect(() => {
     if (
@@ -50,6 +53,7 @@ export function useBridgeRouteSupport(sourceChainId, destChainId, tokenIn, token
       !tokenOut?.symbol
     ) {
       setIsSupported(null);
+      setAmountOut(null);
       return;
     }
 
@@ -62,11 +66,15 @@ export function useBridgeRouteSupport(sourceChainId, destChainId, tokenIn, token
       try {
         if (!useBackend) {
           const ls = await isRouteSupported(sourceChainId, destChainId, tokenIn, tokenOut);
-          if (!cancelled) setIsSupported(ls);
+          if (!cancelled) { setIsSupported(ls); setAmountOut(null); }
           return;
         }
 
-        const backendRes = await isRouteSupportedViaBackend(sourceChainId, destChainId, tokenIn, tokenOut);
+        const { routes, amountOut: routeAmountOut } = await getRoutesFromBackend(
+          sourceChainId, destChainId, tokenIn, tokenOut,
+          amountIn && parseFloat(amountIn) > 0 ? amountIn : undefined,
+        );
+        const backendRes = Array.isArray(routes) && routes.length > 0;
         if (cancelled) return;
 
         // If mangoServices returned no routes (empty cache, proxy glitch, transient API) but the pair
@@ -87,6 +95,7 @@ export function useBridgeRouteSupport(sourceChainId, destChainId, tokenIn, token
             const ls = await isRouteSupported(sourceChainId, destChainId, tokenIn, tokenOut);
             if (!cancelled && ls) {
               setIsSupported(true);
+              setAmountOut(null);
               return;
             }
           } catch {
@@ -94,9 +103,12 @@ export function useBridgeRouteSupport(sourceChainId, destChainId, tokenIn, token
           }
         }
 
-        if (!cancelled) setIsSupported(backendRes);
+        if (!cancelled) {
+          setIsSupported(backendRes);
+          setAmountOut(routeAmountOut ? String(routeAmountOut) : null);
+        }
       } catch {
-        if (!cancelled) setIsSupported(null);
+        if (!cancelled) { setIsSupported(null); setAmountOut(null); }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -114,7 +126,8 @@ export function useBridgeRouteSupport(sourceChainId, destChainId, tokenIn, token
     tokenOut?.address,
     tokenIn?.native,
     tokenOut?.native,
+    amountIn,
   ]);
 
-  return { isSupported, loading };
+  return { isSupported, loading, amountOut };
 }

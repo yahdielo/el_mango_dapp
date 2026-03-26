@@ -292,18 +292,21 @@ export async function getBridgeMeta() {
  * @param {number} destChainId
  * @param {Object} tokenIn - { address, symbol }
  * @param {Object} tokenOut - { address, symbol }
- * @returns {Promise<{ routes: Array, provider?: string }>}
+ * @param {string} [amountIn] - optional human-readable amount for quote
+ * @returns {Promise<{ routes: Array, provider?: string, amountOut?: string }>}
  */
-export async function getRoutesFromBackend(sourceChainId, destChainId, tokenIn, tokenOut) {
+export async function getRoutesFromBackend(sourceChainId, destChainId, tokenIn, tokenOut, amountIn) {
   if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
   const tokenInAddr = resolveTokenAddressForBridgeApi(tokenIn, sourceChainId);
   const tokenOutAddr = resolveTokenAddressForBridgeApi(tokenOut, destChainId);
-  const params = new URLSearchParams({
+  const paramObj = {
     sourceChainId: String(sourceChainId),
     destChainId: String(destChainId),
     tokenIn: tokenInAddr,
     tokenOut: tokenOutAddr,
-  });
+  };
+  if (amountIn && parseFloat(amountIn) > 0) paramObj.amountIn = String(amountIn);
+  const params = new URLSearchParams(paramObj);
   const res = await fetch(`${BASE}/api/v1/swap/routes?${params}`, {
     method: 'GET',
     headers: headers(),
@@ -311,7 +314,8 @@ export async function getRoutesFromBackend(sourceChainId, destChainId, tokenIn, 
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) return { routes: [], error: data?.error };
-  return { routes: data.routes ?? [], provider: data.provider };
+  const amountOut = data.amountOut ?? data.routes?.[0]?.amountOut ?? null;
+  return { routes: data.routes ?? [], provider: data.provider, amountOut };
 }
 
 /**

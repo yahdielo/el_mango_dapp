@@ -247,16 +247,18 @@ export default function CrossChainPage() {
       return activeProvider;
     }
     // Pre-swap: derive label from the pair corridor.
-    if (bitcoinSource) return 'Rango';
+    if (bitcoinSource) return 'THORChain';
     if (isSymbiosisOnlyPair(sourceChainId, destChainId)) return 'Symbiosis';
     if (isSquidOnlyPair(sourceChainId, destChainId)) return 'Squid';
-    // LiFi cross-asset: lifi corridor + cross-asset tokens + not a LS verified pair
+    // LiFi corridors: backend tries LiFi first, then falls back to Rango/LayerSwap
+    // automatically — show "Auto" pre-swap so we don't lock in a specific brand
+    // before we know which provider actually quotes the route.
     if (
       isLifiOnlyPair(sourceChainId, destChainId) &&
       tokenIn?.symbol && tokenOut?.symbol &&
       normalizeSymbolForTokenCompare(tokenIn.symbol) !== normalizeSymbolForTokenCompare(tokenOut.symbol) &&
       !isLayerSwapVerifiedCrossAssetCorridor(sourceChainId, destChainId, tokenIn?.symbol, tokenOut?.symbol)
-    ) return 'LiFi';
+    ) return 'Auto';
     if (bridgeProvider === 'auto') return 'Auto';
     if (bridgeProvider === 'layerswap') return 'LayerSwap';
     if (bridgeProvider === 'rango') return 'Rango';
@@ -281,6 +283,8 @@ export default function CrossChainPage() {
     tokenIn?.symbol && tokenOut?.symbol &&
     normalizeSymbolForTokenCompare(tokenIn.symbol) !== normalizeSymbolForTokenCompare(tokenOut.symbol) &&
     !isLayerSwapVerifiedCrossAssetCorridor(sourceChainId, destChainId, tokenIn?.symbol, tokenOut?.symbol);
+  // Bitcoin routes via THORChain (primary) → Rango fallback; treat as 'rango' for
+  // token/UI filtering purposes since the effectiveBridgeProvider drives token lists.
   const effectiveBridgeProvider = (bitcoinSource || bitcoinDest)
     ? 'rango'
     : isTronCrossAsset
@@ -290,7 +294,7 @@ export default function CrossChainPage() {
         : squidCorridorOk
           ? 'squid'
           : lifiCrossAssetCorridor
-            ? 'lifi'
+            ? 'auto'
             : LAYERSWAP_ONLY_CHAIN_IDS.has(Number(sourceChainId)) || LAYERSWAP_ONLY_CHAIN_IDS.has(Number(destChainId))
               ? 'layerswap'
               : bridgeProvider;

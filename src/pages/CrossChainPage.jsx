@@ -1063,7 +1063,8 @@ export default function CrossChainPage() {
             !layerSwapExecutionPairOk &&
             !symbiosisCorridorOk &&
             !bitcoinSource &&
-            !bitcoinDest && (
+            !bitcoinDest &&
+            routeSupported !== true && (
               <div
                 className="mb-3 rounded-xl border border-amber-500/30 bg-gradient-to-b from-amber-500/[0.08] to-amber-950/30 px-4 py-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
                 role="status"

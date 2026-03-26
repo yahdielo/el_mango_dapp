@@ -31,18 +31,22 @@ function key(sc, dc, a, b) {
 
 // Cross-asset only (same-symbol pairs use sameAssetCrossChainPair in the UI).
 const CROSS_ASSET_KEYS = new Set([
-  // 5.1 Base ETH → Polygon / BSC / Avalanche (native)
+  // ETH → Polygon/BSC/Avalanche native
   key(8453, 137, 'ETH', 'POL'),
   key(8453, 56, 'ETH', 'BNB'),
   key(8453, 43114, 'ETH', 'AVAX'),
-  // 5.2 Ethereum ETH → Polygon / BSC / Avalanche
   key(1, 137, 'ETH', 'POL'),
   key(1, 56, 'ETH', 'BNB'),
   key(1, 43114, 'ETH', 'AVAX'),
-  // 5.3 Arbitrum ETH → Polygon / BSC
   key(42161, 137, 'ETH', 'POL'),
   key(42161, 56, 'ETH', 'BNB'),
-  // 5.2 Ethereum WBTC → Bitcoin BTC
+  // Polygon POL → ETH/BNB (reverse of above — all verified via LayerSwap)
+  key(137, 1, 'POL', 'ETH'),
+  key(137, 8453, 'POL', 'ETH'),
+  key(137, 42161, 'POL', 'ETH'),
+  key(137, 10, 'POL', 'ETH'),
+  key(137, 56, 'POL', 'BNB'),
+  // WBTC ↔ BTC
   key(1, 0, 'WBTC', 'BTC'),
 ]);
 

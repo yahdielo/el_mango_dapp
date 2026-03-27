@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useReadContract, useBalance } from 'wagmi';
 import { ERC20_ABI } from '../config/abis';
 import { formatBalanceDisplay } from '../utils/formatBalance';
+import { isNativeToken } from '../utils/tokenUtils';
 export { isNativeToken } from '../utils/tokenUtils';
 
 /**

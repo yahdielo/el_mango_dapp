@@ -76,30 +76,43 @@ const CUSTOM_WALLETS = [
   },
 ];
 
-const wagmiAdapter = new WagmiAdapter({
-  networks,
-  projectId,
-  ssr: false,
-});
+// Lazy singleton — deferred until first render so all vendor modules (wagmi, @reown)
+// are fully initialized before WagmiAdapter / createAppKit access their exports.
+// Running these at module-scope causes TDZ crashes on Vercel because Rollup's chunk
+// splitting may load this file before wagmi's circular-dep chain fully resolves.
+let _adapter = null;
 
-createAppKit({
-  adapters: [wagmiAdapter],
-  networks,
-  defaultNetwork: base,
-  projectId,
-  metadata,
-  // Hide the full wallet list so users can't choose WalletConnect.
-  // (WalletConnect RPC endpoints are blocked by CORS + rate limited in the browser.)
-  allWallets: 'HIDE',
-  featuredWalletIds: FEATURED_WALLET_IDS,
-  customWallets: CUSTOM_WALLETS,
-  enableWallets: true,
-  features: { analytics: false },
-});
+function getAdapter() {
+  if (_adapter) return _adapter;
+
+  _adapter = new WagmiAdapter({
+    networks,
+    projectId,
+    ssr: false,
+  });
+
+  createAppKit({
+    adapters: [_adapter],
+    networks,
+    defaultNetwork: base,
+    projectId,
+    metadata,
+    // Hide the full wallet list so users can't choose WalletConnect.
+    // (WalletConnect RPC endpoints are blocked by CORS + rate limited in the browser.)
+    allWallets: 'HIDE',
+    featuredWalletIds: FEATURED_WALLET_IDS,
+    customWallets: CUSTOM_WALLETS,
+    enableWallets: true,
+    features: { analytics: false },
+  });
+
+  return _adapter;
+}
 
 export function AppKitProvider({ children }) {
+  const adapter = getAdapter();
   return (
-    <WagmiProvider config={wagmiAdapter.wagmiConfig}>
+    <WagmiProvider config={adapter.wagmiConfig}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </WagmiProvider>
   );

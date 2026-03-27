@@ -6,7 +6,14 @@
 
 import { parseUnits, formatUnits } from 'viem';
 import { ZERO_ADDRESS } from '../utils/chainConfig';
-import { isNativeToken } from '../utils/tokenUtils';
+// Inline to avoid importing from a hook file (would pull wagmi into the service graph → TDZ)
+function isNativeToken(token) {
+  if (!token) return false;
+  const addr = token.address;
+  if (!addr || addr === ZERO_ADDRESS) return true;
+  if (typeof addr === 'string' && !addr.startsWith('0x')) return true;
+  return !!token.native;
+}
 import { resolveMangoServicesBaseUrl } from '../utils/mangoServicesBaseUrl';
 import { isPolygonBridgedWethSwap, POLYGON_USE_WMATIC_MESSAGE } from '../utils/mangoRouterPolygonSupport';
 

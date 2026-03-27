@@ -1,5 +1,12 @@
 import { ZERO_ADDRESS } from '../utils/chainConfig';
-import { isNativeToken } from '../utils/tokenUtils';
+
+function isNativeToken(token) {
+  if (!token) return false;
+  const addr = token.address;
+  if (!addr || addr === ZERO_ADDRESS) return true;
+  if (typeof addr === 'string' && !addr.startsWith('0x')) return true;
+  return !!token.native;
+}
 
 import { resolveMangoServicesBaseUrl } from '../utils/mangoServicesBaseUrl';
 

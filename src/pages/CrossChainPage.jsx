@@ -744,6 +744,16 @@ export default function CrossChainPage() {
   const isRangoBelowMinimum =
     effectiveBridgeProvider === 'rango' && /amount below minimum|below minimum/i.test(lowerBridgeMsg);
 
+  const tokenInIsNative =
+    !!tokenIn?.native || (typeof tokenIn?.address === 'string' && tokenIn.address.toLowerCase() === ZERO_ADDRESS);
+  const tokenOutIsNative =
+    !!tokenOut?.native || (typeof tokenOut?.address === 'string' && tokenOut.address.toLowerCase() === ZERO_ADDRESS);
+
+  // THORChain only supports native-to-native pairs (BTC.BTC, BSC.BNB, ETH.ETH, AVAX.AVAX, BASE.ETH).
+  // Block ERC-20→BTC or BTC→ERC-20 combos before the user attempts a doomed swap.
+  const thorchainErc20Block =
+    (bitcoinSource || bitcoinDest) && (!tokenInIsNative || !tokenOutIsNative);
+
   // true / null = proceed (null matches "Route check unavailable; you can still slide"). false = explicit unsupported.
   const canConfirmCrossChain =
     isCrossChain &&
@@ -768,16 +778,6 @@ export default function CrossChainPage() {
   const showUnsupportedWarning =
     isCrossChain && routeSupported === false && !routeLoading && amountIn && parseFloat(amountIn) > 0;
   const showRouteUnknownMessage = isCrossChain && routeSupported === null && !routeLoading && amountIn && parseFloat(amountIn) > 0;
-
-  const tokenInIsNative =
-    !!tokenIn?.native || (typeof tokenIn?.address === 'string' && tokenIn.address.toLowerCase() === ZERO_ADDRESS);
-  const tokenOutIsNative =
-    !!tokenOut?.native || (typeof tokenOut?.address === 'string' && tokenOut.address.toLowerCase() === ZERO_ADDRESS);
-
-  // THORChain only supports native-to-native pairs (BTC.BTC, BSC.BNB, ETH.ETH, AVAX.AVAX, BASE.ETH).
-  // Block ERC-20→BTC or BTC→ERC-20 combos before the user attempts a doomed swap.
-  const thorchainErc20Block =
-    (bitcoinSource || bitcoinDest) && (!tokenInIsNative || !tokenOutIsNative);
 
   const isLayerSwapNativeRouteMissing =
     isCrossChain &&

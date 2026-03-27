@@ -1,5 +1,5 @@
 import { ZERO_ADDRESS } from '../utils/chainConfig';
-import { isNativeToken } from '../hooks/useTokenBalance';
+import { isNativeToken } from '../utils/tokenUtils';
 
 import { resolveMangoServicesBaseUrl } from '../utils/mangoServicesBaseUrl';
 

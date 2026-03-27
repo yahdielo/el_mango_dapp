@@ -1,16 +1,8 @@
 import { useMemo } from 'react';
 import { useReadContract, useBalance } from 'wagmi';
 import { ERC20_ABI } from '../config/abis';
-import { ZERO_ADDRESS } from '../utils/chainConfig';
 import { formatBalanceDisplay } from '../utils/formatBalance';
-
-export function isNativeToken(token) {
-  if (!token) return false;
-  const addr = token.address;
-  if (!addr || addr === ZERO_ADDRESS) return true;
-  if (typeof addr === 'string' && !addr.startsWith('0x')) return true;
-  return !!token.native;
-}
+export { isNativeToken } from '../utils/tokenUtils';
 
 /**
  * @param {Object} params

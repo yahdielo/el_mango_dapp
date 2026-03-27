@@ -6,7 +6,7 @@
 
 import { parseUnits, formatUnits } from 'viem';
 import { ZERO_ADDRESS } from '../utils/chainConfig';
-import { isNativeToken } from '../hooks/useTokenBalance';
+import { isNativeToken } from '../utils/tokenUtils';
 import { resolveMangoServicesBaseUrl } from '../utils/mangoServicesBaseUrl';
 import { isPolygonBridgedWethSwap, POLYGON_USE_WMATIC_MESSAGE } from '../utils/mangoRouterPolygonSupport';
 

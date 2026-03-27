@@ -17,24 +17,42 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
-    // Ensure only one copy of wagmi/viem is resolved — prevents TDZ crashes
-    // ("Cannot access 'X' before initialization") caused by Rollup loading
-    // multiple instances of wagmi-internal modules in different chunk order.
-    dedupe: ['wagmi', 'viem', '@wagmi/core', '@wagmi/connectors'],
+    // One physical copy of wagmi/viem — avoids duplicate context instances.
+    dedupe: ['wagmi', 'viem', '@wagmi/core', '@wagmi/connectors', 'react', 'react-dom'],
   },
-  // Force Vite to pre-bundle wagmi + viem so their module initialization order
-  // is fixed at build time and not subject to Rollup's chunk-ordering heuristics.
   optimizeDeps: {
-    include: [
-      'wagmi',
-      'viem',
-      '@wagmi/core',
-      '@wagmi/connectors',
-    ],
+    include: ['wagmi', 'viem', '@wagmi/core', '@wagmi/connectors'],
   },
   build: {
-    // Avoid manualChunks: splitting wagmi/viem caused "Cannot access 'pT' before initialization";
-    // splitting react/react-query caused "createContext" of undefined. Use default chunking.
     chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // Keep ALL wagmi + viem + @wagmi in one dedicated chunk so their
+          // internal circular-dep initialization order stays deterministic and
+          // never hits a TDZ ("Cannot access 'X' before initialization").
+          // NOTE: do NOT split wagmi from viem — they import each other and
+          // splitting them is what originally caused this crash.
+          if (
+            id.includes('/node_modules/wagmi/') ||
+            id.includes('/node_modules/@wagmi/') ||
+            id.includes('/node_modules/viem/') ||
+            id.includes('/node_modules/@tanstack/react-query') ||
+            id.includes('/node_modules/@tanstack/query-core')
+          ) {
+            return 'vendor-wagmi';
+          }
+          // Keep React in its own chunk — prevents "createContext of undefined"
+          // when react-query renders before React is ready.
+          if (
+            id.includes('/node_modules/react/') ||
+            id.includes('/node_modules/react-dom/') ||
+            id.includes('/node_modules/scheduler/')
+          ) {
+            return 'vendor-react';
+          }
+        },
+      },
+    },
   },
 });

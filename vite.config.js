@@ -24,8 +24,12 @@ export default defineConfig({
     include: ['wagmi', 'viem', '@wagmi/core', '@wagmi/connectors'],
   },
   build: {
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 4096,
     rollupOptions: {
+      // 'safest' preserves all module-level side-effects / initialization code.
+      // Without this, Rollup tree-shakes wagmi internals and the remaining
+      // stubs reference const/let that were removed → TDZ at runtime.
+      treeshake: 'safest',
       output: {
         manualChunks(id) {
           // Keep ALL wagmi + viem + @wagmi in one dedicated chunk so their
@@ -38,7 +42,10 @@ export default defineConfig({
             id.includes('/node_modules/@wagmi/') ||
             id.includes('/node_modules/viem/') ||
             id.includes('/node_modules/@tanstack/react-query') ||
-            id.includes('/node_modules/@tanstack/query-core')
+            id.includes('/node_modules/@tanstack/query-core') ||
+            // @reown packages import wagmi/viem internally — must be co-located
+            // in the same chunk so their wagmi imports are already initialised
+            id.includes('/node_modules/@reown/')
           ) {
             return 'vendor-wagmi';
           }

@@ -17,6 +17,20 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+    // Ensure only one copy of wagmi/viem is resolved — prevents TDZ crashes
+    // ("Cannot access 'X' before initialization") caused by Rollup loading
+    // multiple instances of wagmi-internal modules in different chunk order.
+    dedupe: ['wagmi', 'viem', '@wagmi/core', '@wagmi/connectors'],
+  },
+  // Force Vite to pre-bundle wagmi + viem so their module initialization order
+  // is fixed at build time and not subject to Rollup's chunk-ordering heuristics.
+  optimizeDeps: {
+    include: [
+      'wagmi',
+      'viem',
+      '@wagmi/core',
+      '@wagmi/connectors',
+    ],
   },
   build: {
     // Avoid manualChunks: splitting wagmi/viem caused "Cannot access 'pT' before initialization";

@@ -762,7 +762,8 @@ export default function CrossChainPage() {
     solanaSenderValid &&
     !amountTooLow &&
     !amountTooHigh &&
-    !bridgeLoading;
+    !bridgeLoading &&
+    !thorchainErc20Block;
   const canConfirm = isCrossChain ? canConfirmCrossChain : false;
   const showUnsupportedWarning =
     isCrossChain && routeSupported === false && !routeLoading && amountIn && parseFloat(amountIn) > 0;
@@ -772,6 +773,11 @@ export default function CrossChainPage() {
     !!tokenIn?.native || (typeof tokenIn?.address === 'string' && tokenIn.address.toLowerCase() === ZERO_ADDRESS);
   const tokenOutIsNative =
     !!tokenOut?.native || (typeof tokenOut?.address === 'string' && tokenOut.address.toLowerCase() === ZERO_ADDRESS);
+
+  // THORChain only supports native-to-native pairs (BTC.BTC, BSC.BNB, ETH.ETH, AVAX.AVAX, BASE.ETH).
+  // Block ERC-20→BTC or BTC→ERC-20 combos before the user attempts a doomed swap.
+  const thorchainErc20Block =
+    (bitcoinSource || bitcoinDest) && (!tokenInIsNative || !tokenOutIsNative);
 
   const isLayerSwapNativeRouteMissing =
     isCrossChain &&
@@ -910,7 +916,7 @@ export default function CrossChainPage() {
             label="You Receive"
             chain={destChain}
             token={tokenOut}
-            amount={effectiveQuoteLoading ? '...' : amountOut}
+            amount={(effectiveQuoteLoading || (routeLoading && bitcoinDest && amountIn && parseFloat(amountIn) > 0)) ? '...' : amountOut}
             usdValue={effectiveQuoteLoading ? 0 : usdOut}
             onChainClick={() => setShowDestChainModal(true)}
             onTokenClick={() => setShowTokenOutModal(true)}
@@ -924,7 +930,7 @@ export default function CrossChainPage() {
           sourceChain={sourceChain}
           destChain={destChain}
           estimated={effectiveQuoteEstimated}
-          gasCostFormatted={isCrossChain && !gasCostFormatted ? '~<0.0001 ETH' : gasCostFormatted}
+          gasCostFormatted={isCrossChain && !gasCostFormatted ? `~<0.0001 ${sourceChain?.nativeCurrency?.symbol || 'ETH'}` : gasCostFormatted}
           bridgeLabel={bridgeLabelDisplay}
         />
 
@@ -1046,6 +1052,18 @@ export default function CrossChainPage() {
             <p className="text-gray-400 text-sm text-center mb-2">
               Select different source and destination chains for cross-chain swap
             </p>
+          )}
+          {thorchainErc20Block && (
+            <div className="mb-3 rounded-xl border border-red-500/30 bg-red-950/20 px-4 py-3">
+              <p className="text-center text-sm text-red-300 font-semibold">
+                ⚠️ THORChain only supports native tokens
+              </p>
+              <p className="mt-1 text-center text-xs text-red-200/70">
+                BTC swaps only work with native chain assets (BNB, ETH, AVAX).
+                ERC-20 tokens like {tokenIn?.symbol || 'this token'} are not supported.
+                Switch to the native token of the source chain.
+              </p>
+            </div>
           )}
           {showUnsupportedWarning && (
             showNotAvailableMissingLayerSwapNative ? (

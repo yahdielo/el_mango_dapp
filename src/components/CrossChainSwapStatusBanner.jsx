@@ -1,12 +1,30 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useChainId, useSwitchChain, useSendTransaction, useWriteContract } from 'wagmi';
 import { parseEther, parseUnits, isAddress } from 'viem';
 import { ERC20_ABI } from '../config/abis';
 import { notifySourceTxHash } from '../services/crossChainSwapApi';
 
 const EVM_CHAIN_IDS = [1, 8453, 42161, 10, 137, 43114, 56];
-const NATIVE_SYMBOLS = ['ETH', 'AVAX', 'MATIC', 'BNB'];
+const NATIVE_SYMBOLS = ['ETH', 'AVAX', 'MATIC', 'BNB', 'POL'];
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
+// THORChain EVM router ABI — used for EVM→BTC deposits (BSC/ETH/AVAX source).
+// Must call depositWithExpiry(vault, asset, amount, memo, expiry) with msg.value = amount.
+const THORCHAIN_ROUTER_ABI = [
+  {
+    inputs: [
+      { name: 'vault', type: 'address' },
+      { name: 'asset', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+      { name: 'memo', type: 'string' },
+      { name: 'expiry', type: 'uint256' },
+    ],
+    name: 'depositWithExpiry',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+];
 
 function isERC20Token(tok) {
   const addr = tok?.address;
@@ -37,6 +55,171 @@ function isValidDepositAction(action) {
 }
 
 const SOLANA_CHAIN_ID = 501111;
+
+// ── Expiry countdown hook ─────────────────────────────────────────────────────
+function useThorchainCountdown(expiryUnix) {
+  const [secondsLeft, setSecondsLeft] = useState(() => {
+    if (!expiryUnix) return null;
+    return Math.max(0, expiryUnix - Math.floor(Date.now() / 1000));
+  });
+
+  useEffect(() => {
+    if (!expiryUnix) return;
+    const tick = () => {
+      const left = Math.max(0, expiryUnix - Math.floor(Date.now() / 1000));
+      setSecondsLeft(left);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [expiryUnix]);
+
+  return secondsLeft;
+}
+
+// ── Expiry badge (inline, for EVM→BTC THORChain deposits) ────────────────────
+function ThorchainExpiryBadge({ expiryUnix }) {
+  const secondsLeft = useThorchainCountdown(expiryUnix);
+  if (secondsLeft === null) return null;
+  const expired = secondsLeft <= 0;
+  const fmtCountdown = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  return (
+    <p className={`text-xs mt-1 font-mono ${expired ? 'text-red-400' : secondsLeft < 120 ? 'text-amber-400' : 'text-gray-400'}`}>
+      {expired
+        ? '⛔ Quote expired — go back and get a fresh quote before sending'
+        : `⏱ Quote window: ${fmtCountdown(secondsLeft)} remaining`}
+    </p>
+  );
+}
+
+// ── BTC deposit card ──────────────────────────────────────────────────────────
+function BtcDepositCard({ depositAction }) {
+  const secondsLeft = useThorchainCountdown(depositAction?.expiry ?? null);
+  const expired = secondsLeft !== null && secondsLeft <= 0;
+
+  const btcUri = useMemo(() => {
+    if (!depositAction?.to_address) return '';
+    const addr = depositAction.to_address;
+    const amt = depositAction.amount ? `?amount=${depositAction.amount}` : '';
+    return `bitcoin:${addr}${amt}`;
+  }, [depositAction]);
+
+  const qrUrl = useMemo(() => {
+    if (!btcUri) return '';
+    return `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(btcUri)}&bgcolor=0d1117&color=3CF902&margin=8`;
+  }, [btcUri]);
+
+  const fmtCountdown = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${String(sec).padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="mt-3 rounded-xl border border-[#3CF902]/30 bg-[#3CF902]/5 px-4 py-3">
+      <p className="text-[#3CF902] text-xs font-semibold mb-2">Send Bitcoin to complete your swap</p>
+
+      {/* Expiry countdown */}
+      {secondsLeft !== null && (
+        <div className={`mb-2 rounded-md px-2 py-1 text-center text-xs font-mono ${
+          expired ? 'bg-red-900/40 text-red-300 border border-red-500/40' :
+          secondsLeft < 120 ? 'bg-amber-900/40 text-amber-300 border border-amber-500/40' :
+          'bg-black/20 text-gray-300 border border-gray-600/30'
+        }`}>
+          {expired
+            ? '⛔ Quote expired — go back and refresh to get a new quote'
+            : `⏱ Quote expires in ${fmtCountdown(secondsLeft)}`}
+        </div>
+      )}
+
+      <div className="flex gap-4 items-start">
+        {/* QR code */}
+        {qrUrl && !expired && (
+          <div className="flex-shrink-0">
+            <img
+              src={qrUrl}
+              alt="BTC deposit address QR"
+              className="w-[80px] h-[80px] rounded-lg border border-[#3CF902]/20"
+              loading="lazy"
+            />
+            <p className="text-gray-500 text-[9px] text-center mt-0.5">Scan to send</p>
+          </div>
+        )}
+
+        <div className="flex-1 min-w-0">
+          <p className="text-gray-200 text-xs mb-1">
+            Amount:{' '}
+            <span className="font-mono font-bold text-white">{depositAction.amount} BTC</span>
+            <span className="text-gray-400 ml-1">({Math.round(Number(depositAction.amount) * 1e8).toLocaleString()} sats)</span>
+          </p>
+          <p className="text-gray-400 text-xs mb-1 break-all">
+            To: <span className="font-mono text-gray-200 select-all">{depositAction.to_address}</span>
+          </p>
+        </div>
+      </div>
+
+      {depositAction.memo && (
+        <div className="mt-2 mb-2 rounded-lg border border-red-500/40 bg-red-950/30 px-3 py-2">
+          <p className="text-red-400 text-xs font-semibold mb-1">⚠️ REQUIRED: Include this memo (OP_RETURN) in your BTC transaction</p>
+          <p className="text-gray-300 text-[11px] mb-2 break-all font-mono bg-black/30 rounded px-2 py-1 select-all">{depositAction.memo}</p>
+          <p className="text-red-300 text-[11px] leading-snug mb-2">
+            You <strong>must</strong> include this memo as <strong>OP_RETURN</strong> data.
+            Without it, THORChain will <strong>refund your BTC</strong> (minus a ~$1 fee).
+          </p>
+          <div className="rounded-md border border-amber-500/30 bg-amber-950/30 px-2 py-1.5 mb-2">
+            <p className="text-amber-300 text-[11px] font-semibold">⚡ MetaMask cannot set OP_RETURN data.</p>
+            <p className="text-amber-200/80 text-[11px] mt-0.5">Use a BTC wallet with OP_RETURN/memo support:</p>
+            <div className="flex gap-2 flex-wrap mt-1">
+              {[
+                ['Sparrow Wallet', 'https://sparrowwallet.com'],
+                ['Electrum', 'https://electrum.org'],
+                ['BlueWallet', 'https://bluewallet.io'],
+              ].map(([name, href]) => (
+                <a key={name} href={href} target="_blank" rel="noopener noreferrer"
+                   className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-200 text-[11px] hover:bg-amber-500/30">
+                  {name} ↗
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-2 flex-wrap mt-2">
+        <button
+          type="button"
+          onClick={() => navigator.clipboard?.writeText(depositAction.to_address)}
+          className="px-3 py-1 rounded-lg bg-[#3CF902]/20 border border-[#3CF902]/40 text-[#3CF902] text-xs hover:bg-[#3CF902]/30"
+        >
+          Copy address
+        </button>
+        {depositAction.memo && (
+          <button
+            type="button"
+            onClick={() => navigator.clipboard?.writeText(depositAction.memo)}
+            className="px-3 py-1 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300 text-xs hover:bg-red-500/30"
+          >
+            Copy memo
+          </button>
+        )}
+        <a
+          href={`https://mempool.space/address/${depositAction.to_address}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1 rounded-lg bg-gray-700 text-gray-300 text-xs hover:bg-gray-600"
+        >
+          View on mempool.space ↗
+        </a>
+      </div>
+      {!expired && (
+        <p className="text-amber-400 text-xs mt-2">
+          Send the <strong>exact amount</strong> shown. The swap window is{' '}
+          {secondsLeft !== null ? `${fmtCountdown(secondsLeft)} remaining` : '~10 minutes'}.
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function CrossChainSwapStatusBanner({
   status,
@@ -279,13 +462,35 @@ export default function CrossChainSwapStatusBanner({
       const rawToAddress = toRawEthereumAddress(depositAction.to_address);
       if (canSendNative) {
         const value = parseEther(String(depositAction.amount));
-        const tx = await sendTransactionAsync({
-          to: rawToAddress,
-          value,
-        });
-        if (tx?.hash && swapId) {
+        let txHash;
+
+        if (depositAction.router && depositAction.memo) {
+          // THORChain EVM deposit: must call depositWithExpiry on the router contract.
+          // Plain ETH/BNB transfers to the vault without memo are silently refunded by THORChain.
+          const routerAddr = toRawEthereumAddress(depositAction.router) || depositAction.router;
+          const expiry = depositAction.expiry
+            ? BigInt(depositAction.expiry)
+            : BigInt(Math.floor(Date.now() / 1000) + 1800); // 30-min window
+          const tx = await writeContractAsync({
+            address: routerAddr,
+            abi: THORCHAIN_ROUTER_ABI,
+            functionName: 'depositWithExpiry',
+            args: [rawToAddress, ZERO_ADDRESS, value, depositAction.memo, expiry],
+            value,
+            chainId: Number(sourceChainId),
+          });
+          txHash = tx;
+        } else {
+          const tx = await sendTransactionAsync({
+            to: rawToAddress,
+            value,
+          });
+          txHash = tx?.hash;
+        }
+
+        if (txHash && swapId) {
           try {
-            await notifySourceTxHash(swapId, tx.hash);
+            await notifySourceTxHash(swapId, txHash);
           } catch (notifyError) {
             console.warn('Failed to notify backend of source tx hash:', notifyError);
           }
@@ -337,58 +542,7 @@ export default function CrossChainSwapStatusBanner({
         depositAction &&
         !canSignRangoTx &&
         sourceChainId === 0 && (
-        <div className="mt-3 rounded-xl border border-[#3CF902]/30 bg-[#3CF902]/5 px-4 py-3">
-          <p className="text-[#3CF902] text-xs font-semibold mb-1">Send Bitcoin to complete your swap</p>
-          <p className="text-gray-200 text-xs mb-1">
-            Amount: <span className="font-mono font-bold text-white">{depositAction.amount} BTC</span>
-            <span className="text-gray-400 ml-1">({Math.round(Number(depositAction.amount) * 1e8).toLocaleString()} sats)</span>
-          </p>
-          <p className="text-gray-400 text-xs mb-1 break-all">
-            To address: <span className="font-mono text-gray-200">{depositAction.to_address}</span>
-          </p>
-          {depositAction.memo && (
-            <div className="mt-2 mb-2 rounded-lg border border-red-500/40 bg-red-950/30 px-3 py-2">
-              <p className="text-red-400 text-xs font-semibold mb-1">⚠️ REQUIRED: Include this memo in your transaction</p>
-              <p className="text-gray-300 text-[11px] mb-1 break-all font-mono bg-black/30 rounded px-2 py-1">{depositAction.memo}</p>
-              <p className="text-red-300 text-[11px] leading-snug">
-                You <strong>must</strong> include this memo as <strong>OP_RETURN</strong> data in your Bitcoin transaction.
-                Without it, THORChain cannot identify your swap and will <strong>refund your BTC</strong> (minus a fee).
-              </p>
-              <p className="text-gray-400 text-[11px] mt-1">
-                Most BTC wallets (Sparrow, Electrum, BlueWallet, Exodus) have a &quot;memo&quot; or &quot;OP_RETURN&quot; field in the send screen.
-              </p>
-            </div>
-          )}
-          <div className="flex gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => navigator.clipboard?.writeText(depositAction.to_address)}
-              className="px-3 py-1 rounded-lg bg-[#3CF902]/20 border border-[#3CF902]/40 text-[#3CF902] text-xs hover:bg-[#3CF902]/30"
-            >
-              Copy address
-            </button>
-            {depositAction.memo && (
-              <button
-                type="button"
-                onClick={() => navigator.clipboard?.writeText(depositAction.memo)}
-                className="px-3 py-1 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300 text-xs hover:bg-red-500/30"
-              >
-                Copy memo
-              </button>
-            )}
-            <a
-              href={`https://mempool.space/address/${depositAction.to_address}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1 rounded-lg bg-gray-700 text-gray-300 text-xs hover:bg-gray-600"
-            >
-              View on mempool.space ↗
-            </a>
-          </div>
-          <p className="text-amber-400 text-xs mt-2">
-            ⏱ Send within 30 minutes. Send the <strong>exact amount</strong> shown above to avoid issues.
-          </p>
-        </div>
+        <BtcDepositCard depositAction={depositAction} />
       )}
       {status === 'user_transfer_pending' &&
         !txConfirmed &&
@@ -400,6 +554,9 @@ export default function CrossChainSwapStatusBanner({
           <p className="text-gray-300 text-xs mt-2 break-all">
             Send {depositAction.amount} {depositAction.token?.symbol || ''} to: {toRawEthereumAddress(depositAction.to_address) || depositAction.to_address}
           </p>
+          {depositAction.expiry && (
+            <ThorchainExpiryBadge expiryUnix={depositAction.expiry} />
+          )}
           <p className="text-gray-400 text-xs mt-1">
             Status updates every few seconds. If your transaction failed in your wallet, try sending again with the button below.
           </p>

@@ -26,11 +26,20 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 4096,
     rollupOptions: {
-      // 'safest' preserves all module-level side-effects / initialization code.
-      // Without this, Rollup tree-shakes wagmi internals and the remaining
-      // stubs reference const/let that were removed → TDZ at runtime.
+      // treeshake: 'safest' preserves all module-level side-effects so wagmi/reown
+      // initialization code is never removed by tree-shaking.
       treeshake: 'safest',
       output: {
+        // externalLiveBindings: false — use plain variable refs instead of getter-based
+        // live bindings for cross-chunk exports. Combined with hoistTransitiveImports: false
+        // this lets Rollup produce a stable initialization order for circular-dep packages
+        // (wagmi, viem, @reown) without triggering TDZ.
+        // DO NOT force wagmi/viem/@reown into a single manualChunk — that forces Rollup to
+        // linearize their circular dependency graph, which picks the wrong order → TDZ.
+        // Instead, let Rollup auto-chunk them; it handles circular deps correctly when given
+        // freedom to create natural split points.
+        externalLiveBindings: false,
+        hoistTransitiveImports: false,
         manualChunks(id) {
           // Only process node_modules
           if (!id.includes('node_modules')) return;
@@ -44,11 +53,11 @@ export default defineConfig({
             return 'vendor-react';
           }
 
-          // EVERYTHING else from node_modules goes into one chunk.
-          // This prevents wagmi/viem/@reown from ever landing in a lazy app
-          // chunk where Rollup cannot guarantee initialization order,
-          // which is the root cause of "Cannot access 'X' before initialization".
-          return 'vendor';
+          // Stable vendor chunks for large, non-circular libraries.
+          // wagmi / viem / @reown / @walletconnect are intentionally NOT listed here —
+          // forcing them into a single chunk creates TDZ in Vercel's build environment.
+          if (id.includes('/node_modules/@tanstack/')) return 'vendor-tanstack';
+          if (id.includes('/node_modules/date-fns')) return 'vendor-date';
         },
       },
     },

@@ -32,25 +32,10 @@ export default defineConfig({
       treeshake: 'safest',
       output: {
         manualChunks(id) {
-          // Keep ALL wagmi + viem + @wagmi in one dedicated chunk so their
-          // internal circular-dep initialization order stays deterministic and
-          // never hits a TDZ ("Cannot access 'X' before initialization").
-          // NOTE: do NOT split wagmi from viem — they import each other and
-          // splitting them is what originally caused this crash.
-          if (
-            id.includes('/node_modules/wagmi/') ||
-            id.includes('/node_modules/@wagmi/') ||
-            id.includes('/node_modules/viem/') ||
-            id.includes('/node_modules/@tanstack/react-query') ||
-            id.includes('/node_modules/@tanstack/query-core') ||
-            // @reown packages import wagmi/viem internally — must be co-located
-            // in the same chunk so their wagmi imports are already initialised
-            id.includes('/node_modules/@reown/')
-          ) {
-            return 'vendor-wagmi';
-          }
-          // Keep React in its own chunk — prevents "createContext of undefined"
-          // when react-query renders before React is ready.
+          // Only process node_modules
+          if (!id.includes('node_modules')) return;
+
+          // React must be isolated — splitting it causes "createContext of undefined"
           if (
             id.includes('/node_modules/react/') ||
             id.includes('/node_modules/react-dom/') ||
@@ -58,6 +43,12 @@ export default defineConfig({
           ) {
             return 'vendor-react';
           }
+
+          // EVERYTHING else from node_modules goes into one chunk.
+          // This prevents wagmi/viem/@reown from ever landing in a lazy app
+          // chunk where Rollup cannot guarantee initialization order,
+          // which is the root cause of "Cannot access 'X' before initialization".
+          return 'vendor';
         },
       },
     },

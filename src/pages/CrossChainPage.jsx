@@ -247,7 +247,7 @@ export default function CrossChainPage() {
       return activeProvider;
     }
     // Pre-swap: derive label from the pair corridor.
-    if (bitcoinSource) return 'THORChain';
+    if (bitcoinSource) return 'Rango'; // Rango is primary for BTC (deposit-address, no memo)
     if (isSymbiosisOnlyPair(sourceChainId, destChainId)) return 'Symbiosis';
     if (isSquidOnlyPair(sourceChainId, destChainId)) return 'Squid';
     // LiFi corridors: backend tries LiFi first, then falls back to Rango/LayerSwap

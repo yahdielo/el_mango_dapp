@@ -17,4 +17,4 @@ export function isPolygonBridgedWethSwap(chainId, tokenIn, tokenOut) {
 }
 
 export const POLYGON_USE_WMATIC_MESSAGE =
-  'On Polygon, Mango Swap routes through WMATIC. Use native MATIC or WMATIC instead of bridged WETH — WETH swaps revert on the router.';
+  'Bridged WETH cannot be swapped same-chain on Polygon. Use the Cross-Chain tab to bridge your WETH to Ethereum, Base, or Arbitrum — or swap WMATIC / USDC instead.';

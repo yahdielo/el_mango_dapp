@@ -335,11 +335,22 @@ export default function SwapPage() {
               </button>
             </div>
           )}
-          {(polygonBridgedWethError || routerError || validationError || quoteError || swapError) && !swapSuccess && (
+          {polygonBridgedWethError && !swapSuccess && (
+            <div className="mb-4 rounded-lg bg-yellow-900/30 border border-yellow-600/40 px-3 py-2.5">
+              <p className="text-yellow-300 text-sm mb-1.5">{polygonBridgedWethError}</p>
+              <button
+                type="button"
+                onClick={() => navigate('/cross-chain')}
+                className="text-[#3CF902] text-xs font-semibold hover:underline"
+              >
+                → Go to Cross-Chain Bridge
+              </button>
+            </div>
+          )}
+          {!polygonBridgedWethError && (routerError || validationError || quoteError || swapError) && !swapSuccess && (
             <div className="mb-4 flex items-center justify-between gap-2">
               <p className="text-red-400 text-sm flex-1">
-                {polygonBridgedWethError ||
-                  routerError ||
+                {routerError ||
                   mapErrorToUserMessage(validationError || quoteError || swapError)}
               </p>
               {swapError && (

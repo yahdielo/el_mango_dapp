@@ -103,7 +103,7 @@ function getAdapter() {
     featuredWalletIds: FEATURED_WALLET_IDS,
     customWallets: CUSTOM_WALLETS,
     enableWallets: true,
-    features: { analytics: false },
+    features: { analytics: true },
   });
 
   return _adapter;

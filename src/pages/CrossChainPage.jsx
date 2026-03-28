@@ -749,11 +749,6 @@ export default function CrossChainPage() {
   const tokenOutIsNative =
     !!tokenOut?.native || (typeof tokenOut?.address === 'string' && tokenOut.address.toLowerCase() === ZERO_ADDRESS);
 
-  // THORChain only supports native-to-native pairs (BTC.BTC, BSC.BNB, ETH.ETH, AVAX.AVAX, BASE.ETH).
-  // Block ERC-20→BTC or BTC→ERC-20 combos before the user attempts a doomed swap.
-  const thorchainErc20Block =
-    (bitcoinSource || bitcoinDest) && (!tokenInIsNative || !tokenOutIsNative);
-
   // true / null = proceed (null matches "Route check unavailable; you can still slide"). false = explicit unsupported.
   const canConfirmCrossChain =
     isCrossChain &&
@@ -772,8 +767,7 @@ export default function CrossChainPage() {
     solanaSenderValid &&
     !amountTooLow &&
     !amountTooHigh &&
-    !bridgeLoading &&
-    !thorchainErc20Block;
+    !bridgeLoading;
   const canConfirm = isCrossChain ? canConfirmCrossChain : false;
   const showUnsupportedWarning =
     isCrossChain && routeSupported === false && !routeLoading && amountIn && parseFloat(amountIn) > 0;
@@ -1052,18 +1046,6 @@ export default function CrossChainPage() {
             <p className="text-gray-400 text-sm text-center mb-2">
               Select different source and destination chains for cross-chain swap
             </p>
-          )}
-          {thorchainErc20Block && (
-            <div className="mb-3 rounded-xl border border-red-500/30 bg-red-950/20 px-4 py-3">
-              <p className="text-center text-sm text-red-300 font-semibold">
-                ⚠️ THORChain only supports native tokens
-              </p>
-              <p className="mt-1 text-center text-xs text-red-200/70">
-                BTC swaps only work with native chain assets (BNB, ETH, AVAX).
-                ERC-20 tokens like {tokenIn?.symbol || 'this token'} are not supported.
-                Switch to the native token of the source chain.
-              </p>
-            </div>
           )}
           {showUnsupportedWarning && (
             showNotAvailableMissingLayerSwapNative ? (

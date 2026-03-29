@@ -47,6 +47,7 @@ export function useCrossChainSwap() {
   const [loopringWithdrawalInfo, setLoopringWithdrawalInfo] = useState(null);
   const [provider, setProvider] = useState(null);
   const [error, setError] = useState(null);
+  const [errorMinAmount, setErrorMinAmount] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const pollRef = useRef(null);
   const useBackendStatusRef = useRef(false);
@@ -181,6 +182,7 @@ export function useCrossChainSwap() {
       );
     } catch (err) {
       setError(err?.message || 'Failed to initiate swap');
+      setErrorMinAmount(err?.minAmount ?? null);
       throw err;
     } finally {
       setIsLoading(false);
@@ -197,6 +199,7 @@ export function useCrossChainSwap() {
     setLoopringWithdrawalInfo(null);
     setProvider(null);
     setError(null);
+    setErrorMinAmount(null);
   }, [stopPolling]);
 
   /** Refetch deposit/tx from backend when stuck on "Preparing transaction..." */
@@ -227,6 +230,7 @@ export function useCrossChainSwap() {
     loopringWithdrawalInfo,
     provider,
     error,
+    errorMinAmount,
     isLoading,
     reset,
     refetchDeposit,

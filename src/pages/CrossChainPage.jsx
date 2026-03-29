@@ -228,6 +228,7 @@ export default function CrossChainPage() {
     loopringWithdrawalInfo,
     provider: activeProvider,
     error: bridgeError,
+    errorMinAmount,
     isLoading: bridgeLoading,
     reset: resetBridge,
     refetchDeposit,
@@ -1124,6 +1125,18 @@ export default function CrossChainPage() {
               <p className="text-red-400 text-sm text-center mb-2">
                 {mapErrorToUserMessage(rawBridgeError)}
               </p>
+              {/* "Use minimum" shortcut when the bridge rejected the amount as too low */}
+              {errorMinAmount && /below minimum|amount outside|provider limit/i.test(rawBridgeMsg) && (
+                <div className="flex items-center justify-center mb-2">
+                  <button
+                    type="button"
+                    onClick={() => { setAmountIn(String(errorMinAmount)); resetBridge(); }}
+                    className="text-[#3CF902] text-xs font-semibold hover:underline"
+                  >
+                    → Use minimum ({errorMinAmount} {tokenIn?.symbol})
+                  </button>
+                </div>
+              )}
               {effectiveBridgeProvider === 'rango' && (isRangoRouteUnavailable || isRangoBelowMinimum) && (
                 <p className="text-xs text-gray-400 text-center mb-2">
                   {isRangoRouteUnavailable

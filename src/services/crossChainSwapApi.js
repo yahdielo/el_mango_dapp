@@ -152,25 +152,26 @@ export async function initiateCrossChainViaBackend({
     }
     const rawMsg = data?.message ?? data?.error;
     let msg = typeof rawMsg === 'string' ? rawMsg : (data?.suggestion ? `${data.error || 'Error'}. ${data.suggestion}` : null) || `API error: ${res.status}`;
-    if (data?.minAmount != null && String(data.minAmount).length && !msg.includes(String(data.minAmount))) {
-      msg = `${msg} (minimum: ${data.minAmount})`;
-    }
-    if (data?.maxAmount != null && String(data.maxAmount).length && !msg.includes(String(data.maxAmount))) {
-      msg = `${msg} (maximum: ${data.maxAmount})`;
-    }
     // For BTC empty-address errors, keep message short — the frontend renders a dedicated banner
     const isBtcEmptyAddr = data?.error === 'Empty Bitcoin address' || /no btc found at|0 btc found at/i.test(msg);
-    if (!isBtcEmptyAddr && data?.suggestion && msg && !msg.includes(data.suggestion)) {
+    // For amount-limit errors the message already states the minimum; don't append the long suggestion
+    const isAmountLimitError = data?.error === 'Amount outside provider limits' ||
+      /below minimum|provider limit/i.test(msg);
+    if (!isBtcEmptyAddr && !isAmountLimitError && data?.suggestion && msg && !msg.includes(data.suggestion)) {
       msg = `${msg} ${data.suggestion}`;
     }
-    // Include requested route when present (e.g. 400 Route not available) — skip for BTC empty address
+    // Include requested route when present (e.g. 400 Route not available) — skip for BTC empty address / amount errors
     const route = data?.route;
-    if (!isBtcEmptyAddr && route && (route.sourceChainId != null || route.destChainId != null)) {
+    if (!isBtcEmptyAddr && !isAmountLimitError && route && (route.sourceChainId != null || route.destChainId != null)) {
       const src = route.sourceChainId != null ? route.sourceChainId : '?';
       const dst = route.destChainId != null ? route.destChainId : '?';
       msg = `${msg} Requested route: chain ${src} → chain ${dst}.`;
     }
-    throw new Error(msg);
+    const err = new Error(msg);
+    // Attach structured data so the UI can offer a "Use minimum" action
+    if (data?.minAmount != null) err.minAmount = String(data.minAmount);
+    if (data?.maxAmount != null) err.maxAmount = String(data.maxAmount);
+    throw err;
   }
   return {
     swapId: data.swapId,

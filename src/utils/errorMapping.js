@@ -110,6 +110,15 @@ const BRIDGE_PATTERNS = [
   /503/i,
 ];
 
+// Amount-limit errors from bridge providers (show first sentence of raw message — it's short and actionable)
+const AMOUNT_LIMIT_PATTERNS = [
+  /amount.*below.*minimum/i,
+  /amount outside provider limits/i,
+  /below minimum.*layerswap/i,
+  /below minimum.*via/i,
+  /amount.*provider.*limit/i,
+];
+
 // Config / validation
 const CONFIG_PATTERNS = [
   /router not configured/i,
@@ -128,6 +137,13 @@ export function mapErrorToUserMessage(err) {
   const msg = String((err?.message ?? err?.shortMessage ?? (typeof err === 'string' ? err : '')) || '').toLowerCase();
 
   if (REJECT_PATTERNS.some((p) => p.test(msg))) return 'Transaction rejected';
+  // Amount-limit errors: show the first sentence of the raw message (short, actionable, already includes the minimum)
+  if (AMOUNT_LIMIT_PATTERNS.some((p) => p.test(msg))) {
+    const raw = String(err?.message ?? err?.shortMessage ?? (typeof err === 'string' ? err : '')).trim();
+    // Return up to the first sentence break so the minimum value is visible
+    const firstDot = raw.search(/\.\s/);
+    return firstDot > 0 ? raw.slice(0, firstDot + 1) : raw.slice(0, 160) || 'Amount below bridge minimum.';
+  }
   if (SLIPPAGE_PATTERNS.some((p) => p.test(msg))) return 'Slippage exceeded';
   // BTC empty address — return up to the first sentence of the original message so the address is visible
   if (BTC_EMPTY_ADDRESS_PATTERNS.some((p) => p.test(msg))) {

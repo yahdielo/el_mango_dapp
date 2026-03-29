@@ -13,7 +13,6 @@ import { resolveMangoServicesBaseUrl } from '../utils/mangoServicesBaseUrl';
 const RAW_BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
 const BASE = resolveMangoServicesBaseUrl(RAW_BASE);
 const API_KEY = import.meta.env.VITE_MANGO_SERVICES_API_KEY || '';
-const BRIDGE_PROVIDER = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
 function getBaseUrl() {
   const raw = BASE;
@@ -26,7 +25,6 @@ function getBaseUrl() {
 function headers() {
   const h = { Accept: 'application/json' };
   if (API_KEY) h['x-api-key'] = API_KEY;
-  if (BRIDGE_PROVIDER) h['x-bridge-provider'] = BRIDGE_PROVIDER;
   return h;
 }
 

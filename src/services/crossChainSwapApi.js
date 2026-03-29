@@ -8,7 +8,6 @@ import { resolveMangoServicesBaseUrl } from '../utils/mangoServicesBaseUrl';
 const RAW_BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
 const BASE = resolveMangoServicesBaseUrl(RAW_BASE);
 const API_KEY = import.meta.env.VITE_MANGO_SERVICES_API_KEY || '';
-const BRIDGE_PROVIDER = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
 const ZERO = '0x0000000000000000000000000000000000000000';
 const WETH_BY_CHAIN = {
@@ -59,7 +58,6 @@ function toRawAddress(addr) {
 function headers(userToken) {
   const h = { Accept: 'application/json', 'Content-Type': 'application/json' };
   if (API_KEY) h['x-api-key'] = API_KEY;
-  if (BRIDGE_PROVIDER) h['x-bridge-provider'] = BRIDGE_PROVIDER;
   if (userToken) h['x-user-token'] = userToken;
   return h;
 }

@@ -51,6 +51,22 @@ export async function getAccountReferrer(userAddress) {
   return fetchOk(`${baseUrl}/api/v1/referral/${encodeURIComponent(userAddress)}`, { method: 'GET' });
 }
 
+/**
+ * Build the canonical message string the user must sign to claim a referrer.
+ * Must stay in sync with buildClaimMessage() in referralAccount.routes.ts.
+ */
+export function buildReferralClaimMessage({ userAddress, referrerAddress, nonce }) {
+  return [
+    'MangoSwap Referral Claim',
+    '',
+    `User: ${userAddress.trim().toLowerCase()}`,
+    `Referrer: ${referrerAddress.trim().toLowerCase()}`,
+    `Nonce: ${nonce.trim()}`,
+    '',
+    'By signing, you confirm you want to set your referrer for MangoSwap.',
+  ].join('\n');
+}
+
 export async function getReferralClaimNonce(userAddress) {
   const baseUrl = getBaseUrl();
   if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not configured');

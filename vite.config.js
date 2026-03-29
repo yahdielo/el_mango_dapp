@@ -2,8 +2,13 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react()],
+  // Strip all console.* and debugger statements from production bundles.
+  // Scoping to `command === 'build'` keeps console output available in `vite dev`.
+  esbuild: {
+    drop: command === 'build' ? ['console', 'debugger'] : [],
+  },
   test: {
     environment: 'node',
     include: ['src/**/*.test.js', 'src/**/*.spec.js'],
@@ -62,4 +67,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

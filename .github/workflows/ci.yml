@@ -1,0 +1,39 @@
+name: el_mango_dapp CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'el_mango_dapp/**'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'el_mango_dapp/**'
+  workflow_dispatch:
+
+jobs:
+  ci:
+    name: Test & build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: el_mango_dapp
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: el_mango_dapp/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Vitest tests
+        run: npm test
+
+      - name: Build (Vite)
+        run: npm run build

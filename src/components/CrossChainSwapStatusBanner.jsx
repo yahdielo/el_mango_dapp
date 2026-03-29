@@ -26,6 +26,30 @@ const THORCHAIN_ROUTER_ABI = [
   },
 ];
 
+// MangoFeeRelay ABI — on-chain fee collection before bridging.
+// relay(destination): send ETH with msg.value; relay keeps feeBps%, forwards rest to destination.
+// relayToken(token, amount, destination): ERC-20 equivalent (requires prior approval).
+const MANGO_FEE_RELAY_ABI = [
+  {
+    inputs: [{ name: 'destination', type: 'address' }],
+    name: 'relay',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { name: 'token', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+      { name: 'destination', type: 'address' },
+    ],
+    name: 'relayToken',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+];
+
 function isERC20Token(tok) {
   const addr = tok?.address;
   if (!addr || typeof addr !== 'string') return false;
@@ -464,7 +488,20 @@ export default function CrossChainSwapStatusBanner({
         const value = parseEther(String(depositAction.amount));
         let txHash;
 
-        if (depositAction.router && depositAction.memo) {
+        if (depositAction.relay_address && isAddress(depositAction.relay_address)) {
+          // ── MangoFeeRelay path: collect 3% on-chain, forward 97% to bridge ───
+          // relay(destination) is payable; relay contract keeps feeBps% and sends
+          // the rest to rawToAddress (the bridge deposit address).
+          const tx = await writeContractAsync({
+            address: depositAction.relay_address,
+            abi: MANGO_FEE_RELAY_ABI,
+            functionName: 'relay',
+            args: [rawToAddress],
+            value,
+            chainId: Number(sourceChainId),
+          });
+          txHash = tx;
+        } else if (depositAction.router && depositAction.memo) {
           // THORChain EVM deposit: must call depositWithExpiry on the router contract.
           // Plain ETH/BNB transfers to the vault without memo are silently refunded by THORChain.
           const routerAddr = toRawEthereumAddress(depositAction.router) || depositAction.router;
@@ -501,19 +538,45 @@ export default function CrossChainSwapStatusBanner({
       if (canSendErc20 && tokenIn?.address) {
         const decimals = tokenIn.decimals ?? 18;
         const amountWei = parseUnits(String(depositAction.amount), decimals);
-        await writeContractAsync({
-          address: tokenIn.address,
-          abi: ERC20_ABI,
-          functionName: 'transfer',
-          args: [rawToAddress, amountWei],
-          chainId: Number(sourceChainId),
-        });
+
+        if (depositAction.relay_address && isAddress(depositAction.relay_address)) {
+          // ── MangoFeeRelay ERC-20 path ─────────────────────────────────────
+          // Step 1: approve the relay contract to pull tokens.
+          // Step 2: call relayToken(token, amount, bridgeDepositAddress).
+          // approvalTxDone guards the two-step flow so the user clicks twice.
+          if (!approvalTxDone) {
+            await writeContractAsync({
+              address: tokenIn.address,
+              abi: ERC20_ABI,
+              functionName: 'approve',
+              args: [depositAction.relay_address, amountWei],
+              chainId: Number(sourceChainId),
+            });
+            setApprovalTxDone(true);
+            return; // user clicks again to send relayToken
+          }
+          await writeContractAsync({
+            address: depositAction.relay_address,
+            abi: MANGO_FEE_RELAY_ABI,
+            functionName: 'relayToken',
+            args: [tokenIn.address, amountWei, rawToAddress],
+            chainId: Number(sourceChainId),
+          });
+        } else {
+          await writeContractAsync({
+            address: tokenIn.address,
+            abi: ERC20_ABI,
+            functionName: 'transfer',
+            args: [rawToAddress, amountWei],
+            chainId: Number(sourceChainId),
+          });
+        }
         setTxConfirmed(true);
       }
     } catch (err) {
       console.warn('Deposit/send failed:', err?.message || err);
     }
-  }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransactionAsync, canSignRangoTx, rangoTx, approvalTxDone, canSendNative, canSendErc20, tokenIn, amountIn, writeContractAsync, swapId, onDismiss]);
+  }, [depositAction, needsSwitch, sourceChainId, switchChain, sendTransactionAsync, canSignRangoTx, rangoTx, approvalTxDone, canSendNative, canSendErc20, tokenIn, amountIn, writeContractAsync, swapId, onDismiss, isAddress]);
 
   if (!status) return null;
 

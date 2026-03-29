@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useAccount, useSignMessage } from 'wagmi';
 import { useConnectWallet } from '../hooks/useConnectWallet';
+import { useSolanaWallet } from '../hooks/useSolanaWallet';
 import { useNavigate } from 'react-router-dom';
 import SwapHeader from '../components/SwapHeader';
 import CrossChainSwapCard from '../components/CrossChainSwapCard';
@@ -180,6 +181,7 @@ export default function CrossChainPage() {
   const { address } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const { handleConnect } = useConnectWallet();
+  const { solanaAddress, isConnected: isSolanaConnected, connect: connectSolana, disconnect: disconnectSolana } = useSolanaWallet();
   const navigate = useNavigate();
   const allChains = useMemo(() => getAllChains(), []);
   const [chains, setChains] = useState(
@@ -535,17 +537,18 @@ export default function CrossChainPage() {
     if (!tokenOut && tokensOut[0]) setTokenOut(tokensOut[0]);
   }, [tokensOut]);
 
-  // Prefill Solana sender from Phantom when switching to Solana as source (user can edit).
+  // Auto-populate Solana sender when the AppKit Solana wallet connects or source changes.
+  // When a wallet connects mid-session the address updates and overrides any previous value
+  // only if the field is still empty (preserves manual overrides).
   useEffect(() => {
     if (!solanaSource) {
       setSolanaSenderAddress('');
       return;
     }
-    if (typeof window !== 'undefined' && window.solana?.publicKey) {
-      const pk = window.solana.publicKey.toString();
-      setSolanaSenderAddress((prev) => (prev && prev.trim() ? prev : pk));
+    if (solanaAddress) {
+      setSolanaSenderAddress((prev) => (prev && prev.trim() ? prev : solanaAddress));
     }
-  }, [solanaSource]);
+  }, [solanaSource, solanaAddress]);
   useEffect(() => {
     if (tokenIn?.symbol === 'MANGO' && tokensIn.length && !tokensIn.some((t) => t.symbol === 'MANGO')) {
       setTokenIn(tokensIn[0] || null);
@@ -940,19 +943,71 @@ export default function CrossChainPage() {
 
         {solanaSource && (
           <div className="mt-4">
-            <label className="block text-gray-400 text-sm mb-2">
-              Solana sender address (must match Phantom / Solflare when signing)
-            </label>
-            <input
-              type="text"
-              value={solanaSenderAddress}
-              onChange={(e) => setSolanaSenderAddress(e.target.value)}
-              placeholder="e.g. from Phantom…"
-              className={`w-full bg-[#1a1a1a] border rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:border-transparent ${solanaSenderInvalidFormat ? 'border-amber-500' : 'border-gray-600'}`}
-              spellCheck={false}
-            />
-            {solanaSenderInvalidFormat && (
-              <p className="text-amber-400 text-xs mt-1">Invalid Solana address (base58, 32–44 characters).</p>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-gray-400 text-sm">Solana sender wallet</label>
+              {isSolanaConnected ? (
+                <button
+                  type="button"
+                  onClick={disconnectSolana}
+                  className="text-xs text-gray-500 hover:text-[#3CF902] transition-colors"
+                >
+                  Change wallet
+                </button>
+              ) : null}
+            </div>
+
+            {isSolanaConnected ? (
+              /* Connected — show address chip + optional manual override */
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 bg-[#1a1a1a] border border-[#3CF902]/40 rounded-lg px-4 py-3">
+                  <span className="w-2 h-2 rounded-full bg-[#3CF902] shrink-0" />
+                  <span className="text-[#3CF902] text-sm font-mono truncate">
+                    {solanaAddress.slice(0, 8)}…{solanaAddress.slice(-6)}
+                  </span>
+                  <span className="text-gray-500 text-xs ml-auto">Connected</span>
+                </div>
+                {/* Allow manual override (e.g. hardware wallet on Ledger Live) */}
+                {solanaSenderAddress && solanaSenderAddress !== solanaAddress && (
+                  <p className="text-amber-400 text-xs">
+                    Using a custom address — make sure it matches the signing wallet.
+                  </p>
+                )}
+              </div>
+            ) : (
+              /* Not connected — connect button + optional manual fallback */
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={connectSolana}
+                  className="w-full flex items-center justify-center gap-2 bg-[#1a1a1a] border border-gray-600
+                             hover:border-[#3CF902] rounded-lg px-4 py-3 text-white text-sm font-medium
+                             transition-colors active:scale-95"
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                    <circle cx="10" cy="10" r="9" stroke="#9945FF" strokeWidth="2" />
+                    <path d="M6 10h8M10 6v8" stroke="#9945FF" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                  Connect Solana Wallet
+                </button>
+                <div className="flex items-center gap-2">
+                  <div className="h-px flex-1 bg-gray-700" />
+                  <span className="text-gray-600 text-xs">or enter manually</span>
+                  <div className="h-px flex-1 bg-gray-700" />
+                </div>
+                <input
+                  type="text"
+                  value={solanaSenderAddress}
+                  onChange={(e) => setSolanaSenderAddress(e.target.value)}
+                  placeholder="Base58 address (32–44 chars)…"
+                  className={`w-full bg-[#1a1a1a] border rounded-lg px-4 py-3 text-white text-sm
+                              placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3CF902]
+                              focus:border-transparent ${solanaSenderInvalidFormat ? 'border-amber-500' : 'border-gray-600'}`}
+                  spellCheck={false}
+                />
+                {solanaSenderInvalidFormat && (
+                  <p className="text-amber-400 text-xs">Invalid Solana address (base58, 32–44 characters).</p>
+                )}
+              </div>
             )}
           </div>
         )}

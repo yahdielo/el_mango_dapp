@@ -9,9 +9,11 @@ import {
   polygon,
   avalanche,
   tron,
+  solana,
 } from '@reown/appkit/networks';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
+import { SolanaAdapter } from '@reown/appkit-adapter-solana/react';
 
 const queryClient = new QueryClient();
 // Reown project ID. In Reown Dashboard you must add Allowed Origins (e.g. https://el-mango-dapp.vercel.app)
@@ -25,20 +27,10 @@ const metadata = {
   icons: ['https://mangodefi.wtf/static/media/mango.d01e53f401b1e8ed51a3.png'],
 };
 
-// Chains that match our chains.json (EVM + Tron). Only these appear in "Choose Network"
-// and are supported in the app. Order: Base first (default), then rest.
-const chains = [
-  base,
-  mainnet,
-  arbitrum,
-  optimism,
-  polygon,
-  bsc,
-  avalanche,
-  tron,
-];
-
-const networks = chains;
+// All networks supported by the app. Base is default; solana appended last so the
+// EVM chains stay at the top of the "Choose Network" list.
+const evmChains = [base, mainnet, arbitrum, optimism, polygon, bsc, avalanche, tron];
+const networks = [...evmChains, solana];
 
 // Known wallet IDs from Reown WalletGuide so the "All Wallets" list is never empty
 // even when the Explorer API fails or projectId is misconfigured.
@@ -76,29 +68,29 @@ const CUSTOM_WALLETS = [
   },
 ];
 
-// Lazy singleton — deferred until first render so all vendor modules (wagmi, @reown)
-// are fully initialized before WagmiAdapter / createAppKit access their exports.
-// Running these at module-scope causes TDZ crashes on Vercel because Rollup's chunk
-// splitting may load this file before wagmi's circular-dep chain fully resolves.
-let _adapter = null;
+// Lazy singleton — deferred until first render so all vendor modules are fully
+// initialized before WagmiAdapter / createAppKit access their exports.
+// Running these at module-scope causes TDZ crashes on Vercel due to Rollup chunk ordering.
+let _wagmiAdapter = null;
 
 function getAdapter() {
-  if (_adapter) return _adapter;
+  if (_wagmiAdapter) return _wagmiAdapter;
 
-  _adapter = new WagmiAdapter({
-    networks,
+  _wagmiAdapter = new WagmiAdapter({
+    networks: evmChains,   // Wagmi only manages EVM chains; Solana is handled by SolanaAdapter
     projectId,
     ssr: false,
   });
 
+  const solanaAdapter = new SolanaAdapter();
+
   createAppKit({
-    adapters: [_adapter],
+    adapters: [_wagmiAdapter, solanaAdapter],
     networks,
     defaultNetwork: base,
     projectId,
     metadata,
     // Hide the full wallet list so users can't choose WalletConnect.
-    // (WalletConnect RPC endpoints are blocked by CORS + rate limited in the browser.)
     allWallets: 'HIDE',
     featuredWalletIds: FEATURED_WALLET_IDS,
     customWallets: CUSTOM_WALLETS,
@@ -106,7 +98,7 @@ function getAdapter() {
     features: { analytics: true },
   });
 
-  return _adapter;
+  return _wagmiAdapter;
 }
 
 export function AppKitProvider({ children }) {

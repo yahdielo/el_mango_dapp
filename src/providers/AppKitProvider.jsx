@@ -17,7 +17,13 @@ import { SolanaAdapter } from '@reown/appkit-adapter-solana/react';
 const queryClient = new QueryClient();
 // Reown project ID. In Reown Dashboard you must add Allowed Origins (e.g. https://el-mango-dapp.vercel.app)
 // or you get 403 and WebSocket 3000 (Unauthorized: invalid key).
-const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || 'd1e4867bd0b1fdc19e40af935262591e';
+const projectId = import.meta.env.VITE_REOWN_PROJECT_ID;
+if (!projectId) {
+  throw new Error(
+    'VITE_REOWN_PROJECT_ID is not set. ' +
+    'Get a project ID at https://cloud.reown.com and add it to your .env file.'
+  );
+}
 
 const metadata = {
   name: 'MangoSwap',

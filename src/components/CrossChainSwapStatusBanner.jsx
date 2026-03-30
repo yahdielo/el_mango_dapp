@@ -266,6 +266,24 @@ export default function CrossChainSwapStatusBanner({
   const [txConfirmed, setTxConfirmed] = useState(false);
   const [approvalTxDone, setApprovalTxDone] = useState(false);
   const [solanaBusy, setSolanaBusy] = useState(false);
+  const [processingElapsedMin, setProcessingElapsedMin] = useState(0);
+  const processingStartRef = useRef(null);
+
+  // Track how long we've been in "processing" so we can show a delay warning.
+  useEffect(() => {
+    if (status === 'processing' || status === 'ls_transfer_pending') {
+      if (!processingStartRef.current) processingStartRef.current = Date.now();
+      const timer = setInterval(() => {
+        setProcessingElapsedMin(
+          Math.floor((Date.now() - processingStartRef.current) / 60000)
+        );
+      }, 30000); // update every 30 s
+      return () => clearInterval(timer);
+    } else {
+      processingStartRef.current = null;
+      setProcessingElapsedMin(0);
+    }
+  }, [status]);
 
   // Reset txConfirmed and approval when swap changes or status leaves user_transfer_pending
   useEffect(() => {
@@ -592,6 +610,25 @@ export default function CrossChainSwapStatusBanner({
             ? 'It may take a couple of minutes to see your deposit.'
             : `Powered by ${provider === 'layerswap' ? 'LayerSwap' : provider === 'rango' ? 'Rango' : provider === 'lifi' ? 'LiFi' : provider === 'squid' ? 'Squid' : provider === 'bungee' ? 'Bungee' : provider === 'wormhole' ? 'Wormhole' : provider === 'symbiosis' ? 'Symbiosis' : provider === 'inbridge' ? 'Inbridge' : provider}`}
         </p>
+      )}
+      {(status === 'processing' || status === 'ls_transfer_pending') && processingElapsedMin >= 30 && (
+        <div className="mt-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+          <p className="text-amber-400 text-xs font-medium">
+            Taking longer than expected ({processingElapsedMin} min)
+          </p>
+          <p className="text-amber-400/80 text-xs mt-0.5">
+            Cross-chain bridges can take 20–60 min. Check the bridge explorer for your
+            transaction, or{' '}
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="underline hover:text-amber-300"
+            >
+              start a new swap
+            </button>
+            {' '}if funds were not sent.
+          </p>
+        </div>
       )}
       {status === 'user_transfer_pending' && !txConfirmed && canSignRangoTx && (
         <p className="text-gray-300 text-xs mt-2">

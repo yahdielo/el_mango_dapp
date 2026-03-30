@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useAccount, useSignMessage } from 'wagmi';
 import { useConnectWallet } from '../hooks/useConnectWallet';
 import { useSolanaWallet } from '../hooks/useSolanaWallet';
+import { useTronWallet } from '../hooks/useTronWallet';
 import { useNavigate } from 'react-router-dom';
 import SwapHeader from '../components/SwapHeader';
 import CrossChainSwapCard from '../components/CrossChainSwapCard';
@@ -89,6 +90,12 @@ function getCanonicalLayerSwapNativeSymbol(chainId) {
   if (id === 122) return 'FUSE';
   if (id === 911001) return 'USDC'; // Hyperliquid
   if (id === 911002) return 'TON';
+  // Non-EVM native tokens
+  if (id === 728126428) return 'TRX'; // Tron
+  if (id === 501111) return 'SOL';    // Solana
+  if (id === 0) return 'BTC';         // Bitcoin
+  if (id === 144) return 'XRP';       // XRP
+  if (id === 101) return 'SUI';       // Sui
   // Fallback: try to match whatever LayerSwap returns for known wrapped native symbols
   return null;
 }
@@ -185,6 +192,7 @@ export default function CrossChainPage() {
   const { signMessageAsync } = useSignMessage();
   const { handleConnect } = useConnectWallet();
   const { solanaAddress, isConnected: isSolanaConnected, connect: connectSolana, disconnect: disconnectSolana } = useSolanaWallet();
+  const { tronAddress: tronWalletAddress, isConnected: isTronConnected, isAvailable: isTronAvailable, connect: connectTronLink, disconnect: disconnectTronLink } = useTronWallet();
   const navigate = useNavigate();
   const allChains = useMemo(() => getAllChains(), []);
   const [chains, setChains] = useState(
@@ -548,8 +556,19 @@ export default function CrossChainPage() {
   // When a wallet connects mid-session the address updates and overrides any previous value
   // only if the field is still empty (preserves manual overrides).
   useEffect(() => {
-    if (!tronSource) setTronSenderAddress('');
-  }, [tronSource]);
+    if (!tronSource) {
+      setTronSenderAddress('');
+      disconnectTronLink();
+    }
+  }, [tronSource, disconnectTronLink]);
+
+  // Auto-populate Tron sender when TronLink connects or source changes to Tron
+  useEffect(() => {
+    if (!tronSource) return;
+    if (tronWalletAddress) {
+      setTronSenderAddress((prev) => (prev && prev.trim() ? prev : tronWalletAddress));
+    }
+  }, [tronSource, tronWalletAddress]);
 
   useEffect(() => {
     if (!solanaSource) {
@@ -708,6 +727,7 @@ export default function CrossChainPage() {
     amountIn,
     signMessageAsync,
     solanaSenderAddress,
+    tronSenderAddress,
   ]);
 
   const destAddrRequired = isNonEvmDest(destChainId);
@@ -1037,27 +1057,84 @@ export default function CrossChainPage() {
         )}
         {tronSource && (
           <div className="mt-4">
-            <label className="block text-gray-400 text-sm mb-2">
-              Tron sender address (T…)
-            </label>
-            <input
-              type="text"
-              value={tronSenderAddress}
-              onChange={(e) => setTronSenderAddress(e.target.value)}
-              placeholder="TXxx... (34 chars starting with T)"
-              className={`w-full bg-[#1a1a1a] border rounded-lg px-4 py-3 text-white text-sm
-                          placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3CF902]
-                          focus:border-transparent ${tronSenderInvalidFormat ? 'border-amber-500' : 'border-gray-600'}`}
-              spellCheck={false}
-            />
-            {tronSenderInvalidFormat && (
-              <p className="text-amber-400 text-xs mt-1">
-                Invalid Tron address. Must start with T and be 34 characters (base58).
-              </p>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-gray-400 text-sm">Tron sender wallet</label>
+              {isTronConnected ? (
+                <button
+                  type="button"
+                  onClick={disconnectTronLink}
+                  className="text-xs text-gray-500 hover:text-[#3CF902] transition-colors"
+                >
+                  Change wallet
+                </button>
+              ) : null}
+            </div>
+
+            {isTronConnected ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 bg-[#1a1a1a] border border-[#3CF902]/40 rounded-lg px-4 py-3">
+                  <span className="w-2 h-2 rounded-full bg-[#3CF902] shrink-0" />
+                  <span className="text-[#3CF902] text-sm font-mono truncate">
+                    {tronWalletAddress.slice(0, 8)}…{tronWalletAddress.slice(-6)}
+                  </span>
+                  <span className="text-gray-500 text-xs ml-auto">Connected</span>
+                </div>
+                {tronSenderAddress && tronSenderAddress !== tronWalletAddress && (
+                  <p className="text-amber-400 text-xs">
+                    Using a custom address — make sure it matches the signing wallet.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {isTronAvailable ? (
+                  <button
+                    type="button"
+                    onClick={connectTronLink}
+                    className="w-full flex items-center justify-center gap-2 bg-[#1a1a1a] border border-gray-600
+                               hover:border-[#3CF902] rounded-lg px-4 py-3 text-white text-sm font-medium
+                               transition-colors active:scale-95"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                      <circle cx="10" cy="10" r="9" stroke="#EF4444" strokeWidth="2" />
+                      <path d="M13 7L7 10l6 3V7z" fill="#EF4444" />
+                    </svg>
+                    Connect TronLink
+                  </button>
+                ) : (
+                  <p className="text-gray-500 text-xs text-center">
+                    TronLink not detected —{' '}
+                    <a
+                      href="https://www.tronlink.org"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#3CF902] underline"
+                    >
+                      install TronLink ↗
+                    </a>{' '}
+                    or enter your address below.
+                  </p>
+                )}
+                <div className="flex items-center gap-2">
+                  <div className="h-px flex-1 bg-gray-700" />
+                  <span className="text-gray-600 text-xs">or enter manually</span>
+                  <div className="h-px flex-1 bg-gray-700" />
+                </div>
+                <input
+                  type="text"
+                  value={tronSenderAddress}
+                  onChange={(e) => setTronSenderAddress(e.target.value)}
+                  placeholder="TXxx... (34 chars starting with T)"
+                  className={`w-full bg-[#1a1a1a] border rounded-lg px-4 py-3 text-white text-sm
+                              placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3CF902]
+                              focus:border-transparent ${tronSenderInvalidFormat ? 'border-amber-500' : 'border-gray-600'}`}
+                  spellCheck={false}
+                />
+                {tronSenderInvalidFormat && (
+                  <p className="text-amber-400 text-xs">Invalid Tron address (T..., 34 characters).</p>
+                )}
+              </div>
             )}
-            <p className="text-gray-500 text-xs mt-1">
-              Your Tron wallet address — the one holding TRX or TRC-20 tokens to swap.
-            </p>
           </div>
         )}
         {bitcoinSourceRequired && (
@@ -1101,12 +1178,18 @@ export default function CrossChainPage() {
               {destChainId === 728126428 && 'Tron receive address (T...)'}
               {destChainId === 144 && 'XRP receive address (r...)'}
               {destChainId === 101 && 'Sui receive address'}
+              {destChainId === 911002 && 'TON receive address (UQ...)'}
             </label>
             <input
               type="text"
               value={destinationAddress}
               onChange={(e) => setDestinationAddress(e.target.value)}
-              placeholder={destChainId === 0 ? 'bc1q... or 1...' : destChainId === 501111 ? 'e.g. 7xKX...' : 'Enter address'}
+              placeholder={
+                destChainId === 0 ? 'bc1q... or 1...' :
+                destChainId === 501111 ? 'e.g. 7xKX...' :
+                destChainId === 911002 ? 'UQ...' :
+                'Enter address'
+              }
               className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3CF902] focus:border-transparent"
               spellCheck={false}
             />

@@ -8,7 +8,6 @@ import {
   optimism,
   polygon,
   avalanche,
-  tron,
   solana,
 } from '@reown/appkit/networks';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -29,7 +28,9 @@ const metadata = {
 
 // All networks supported by the app. Base is default; solana appended last so the
 // EVM chains stay at the top of the "Choose Network" list.
-const evmChains = [base, mainnet, arbitrum, optimism, polygon, bsc, avalanche, tron];
+// Tron is intentionally excluded: it is NOT EVM and has no AppKit adapter installed.
+// Tron wallet connections are handled via the TronLink browser extension (useTronWallet hook).
+const evmChains = [base, mainnet, arbitrum, optimism, polygon, bsc, avalanche];
 const networks = [...evmChains, solana];
 
 // Known wallet IDs from Reown WalletGuide so the "All Wallets" list is never empty

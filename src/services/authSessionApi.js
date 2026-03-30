@@ -10,11 +10,14 @@ function headers() {
   return h;
 }
 
+/** Tron base58 is case-sensitive — do not lowercase T… addresses. */
 export function buildAuthSessionMessage({ userAddress, nonce }) {
+  const raw = String(userAddress || '').trim();
+  const userLine = /^0x[a-fA-F0-9]{40}$/i.test(raw) ? raw.toLowerCase() : raw;
   return [
     'MangoSwap Session Authentication',
     '',
-    `User: ${String(userAddress || '').trim().toLowerCase()}`,
+    `User: ${userLine}`,
     `Nonce: ${String(nonce || '').trim()}`,
     '',
     'By signing, you authorize a short-lived session token for protected API actions.',

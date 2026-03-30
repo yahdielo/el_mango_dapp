@@ -35,5 +35,11 @@ jobs:
       - name: Run Vitest tests
         run: npm test
 
+      # Vite loads VITE_* from .env.production in this repo. Optional: set repository secret
+      # VITE_REOWN_PROJECT_ID to override (useful if you remove the ID from committed files).
       - name: Build (Vite)
-        run: npm run build
+        run: |
+          if [ -n "${{ secrets.VITE_REOWN_PROJECT_ID }}" ]; then
+            export VITE_REOWN_PROJECT_ID="${{ secrets.VITE_REOWN_PROJECT_ID }}"
+          fi
+          npm run build

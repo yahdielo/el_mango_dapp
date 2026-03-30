@@ -665,12 +665,28 @@ export default function CrossChainPage() {
               : tronSource
                 ? (tronSenderAddress || '').trim()
                 : address;
-        // Auth session JWT is EVM-only: GET /auth/nonce/:address and POST /auth/token
-        // require a 0x address and ethers.verifyMessage. Tron / BTC / Solana source
-        // swaps proceed without x-user-token (backend allows initiation).
+        // JWT: EVM via personal_sign; Tron via TronLink trx.signMessageV2 (verified with TronWeb.verifyMessageV2).
         let userToken;
         try {
-          if (address) {
+          if (tronSource && tronWalletAddress) {
+            const tw = typeof window !== 'undefined' ? window.tronLink?.tronWeb || window.tronWeb : null;
+            if (tw?.trx?.signMessageV2) {
+              const noncePayload = await getAuthSessionNonce(tronWalletAddress);
+              const message = buildAuthSessionMessage({
+                userAddress: tronWalletAddress,
+                nonce: noncePayload?.nonce,
+              });
+              const signature = await tw.trx.signMessageV2(message);
+              if (signature) {
+                const tokenPayload = await createAuthSessionToken({
+                  userAddress: tronWalletAddress,
+                  nonce: noncePayload?.nonce,
+                  signature,
+                });
+                userToken = tokenPayload?.token;
+              }
+            }
+          } else if (address) {
             const noncePayload = await getAuthSessionNonce(address);
             const message = buildAuthSessionMessage({
               userAddress: address,
@@ -727,6 +743,8 @@ export default function CrossChainPage() {
     signMessageAsync,
     solanaSenderAddress,
     tronSenderAddress,
+    tronSource,
+    tronWalletAddress,
   ]);
 
   const destAddrRequired = isNonEvmDest(destChainId);

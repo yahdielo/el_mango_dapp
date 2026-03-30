@@ -665,31 +665,12 @@ export default function CrossChainPage() {
               : tronSource
                 ? (tronSenderAddress || '').trim()
                 : address;
+        // Auth session JWT is EVM-only: GET /auth/nonce/:address and POST /auth/token
+        // require a 0x address and ethers.verifyMessage. Tron / BTC / Solana source
+        // swaps proceed without x-user-token (backend allows initiation).
         let userToken;
         try {
-          if (tronSource && tronWalletAddress) {
-            // TronLink signing: use window.tronLink.tronWeb.trx.sign to sign the auth message.
-            const noncePayload = await getAuthSessionNonce(tronWalletAddress);
-            const message = buildAuthSessionMessage({
-              userAddress: tronWalletAddress,
-              nonce: noncePayload?.nonce,
-            });
-            const tronWeb = window.tronLink?.tronWeb || window.tronWeb;
-            const hexMsg = tronWeb?.toHex
-              ? tronWeb.toHex(message)
-              : Array.from(new TextEncoder().encode(message))
-                  .map((b) => b.toString(16).padStart(2, '0'))
-                  .join('');
-            const signature = await tronWeb?.trx?.sign(hexMsg);
-            if (signature) {
-              const tokenPayload = await createAuthSessionToken({
-                userAddress: tronWalletAddress,
-                nonce: noncePayload?.nonce,
-                signature,
-              });
-              userToken = tokenPayload?.token;
-            }
-          } else if (address) {
+          if (address) {
             const noncePayload = await getAuthSessionNonce(address);
             const message = buildAuthSessionMessage({
               userAddress: address,
@@ -703,8 +684,7 @@ export default function CrossChainPage() {
             });
             userToken = tokenPayload?.token;
           }
-        } catch (authErr) {
-          // Non-blocking: proceed without x-user-token on any auth failure.
+        } catch {
           userToken = undefined;
         }
         await startSwap({

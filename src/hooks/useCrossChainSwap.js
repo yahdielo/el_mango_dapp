@@ -48,6 +48,7 @@ export function useCrossChainSwap() {
   const [provider, setProvider] = useState(null);
   const [error, setError] = useState(null);
   const [errorMinAmount, setErrorMinAmount] = useState(null);
+  const [errorSuggestion, setErrorSuggestion] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const pollRef = useRef(null);
   const useBackendStatusRef = useRef(false);
@@ -183,6 +184,7 @@ export function useCrossChainSwap() {
     } catch (err) {
       setError(err?.message || 'Failed to initiate swap');
       setErrorMinAmount(err?.minAmount ?? null);
+      setErrorSuggestion(err?.suggestion ?? null);
       throw err;
     } finally {
       setIsLoading(false);
@@ -200,6 +202,7 @@ export function useCrossChainSwap() {
     setProvider(null);
     setError(null);
     setErrorMinAmount(null);
+    setErrorSuggestion(null);
   }, [stopPolling]);
 
   /** Refetch deposit/tx from backend when stuck on "Preparing transaction..." */
@@ -231,6 +234,7 @@ export function useCrossChainSwap() {
     provider,
     error,
     errorMinAmount,
+    errorSuggestion,
     isLoading,
     reset,
     refetchDeposit,

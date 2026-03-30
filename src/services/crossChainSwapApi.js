@@ -166,9 +166,10 @@ export async function initiateCrossChainViaBackend({
       msg = `${msg} Requested route: chain ${src} → chain ${dst}.`;
     }
     const err = new Error(msg);
-    // Attach structured data so the UI can offer a "Use minimum" action
+    // Attach structured data so the UI can offer a "Use minimum" action and show hints
     if (data?.minAmount != null) err.minAmount = String(data.minAmount);
     if (data?.maxAmount != null) err.maxAmount = String(data.maxAmount);
+    if (data?.suggestion) err.suggestion = String(data.suggestion);
     throw err;
   }
   return {

@@ -44,8 +44,11 @@ import { getAuthSessionNonce, buildAuthSessionMessage, createAuthSessionToken } 
 
 const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
 const SOLANA_CHAIN_ID = 501111;
+const TRON_CHAIN_ID = 728126428;
 /** Matches backend validateSolanaAddress (base58, 32–44 chars) */
 const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+/** Matches backend validateTronAddress (T + 33 base58 chars) */
+const TRON_ADDRESS_REGEX = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 
 // LayerSwap-native route discovery missing pairs (86) are all directed pairs where either endpoint
 // is XRP (144) or Sui (101) when using native token inputs/outputs.
@@ -211,6 +214,8 @@ export default function CrossChainPage() {
   const [bitcoinSenderAddress, setBitcoinSenderAddress] = useState('');
   /** When source is Solana (Symbiosis), backend requires a Solana userAddress — not the EVM wagmi address */
   const [solanaSenderAddress, setSolanaSenderAddress] = useState('');
+  /** When source is Tron, backend requires a Tron sender address (T...) */
+  const [tronSenderAddress, setTronSenderAddress] = useState('');
 
   const bridgeProvider = (import.meta.env.VITE_BRIDGE_PROVIDER || 'layerswap').toLowerCase();
 
@@ -219,6 +224,7 @@ export default function CrossChainPage() {
   /** Sending *to* Bitcoin: backend uses Rango only (EVM tx → BTC receive address). */
   const bitcoinDest = Number(destChainId) === 0;
   const solanaSource = Number(sourceChainId) === SOLANA_CHAIN_ID;
+  const tronSource = Number(sourceChainId) === TRON_CHAIN_ID;
 
   const {
     startSwap,
@@ -231,6 +237,7 @@ export default function CrossChainPage() {
     provider: activeProvider,
     error: bridgeError,
     errorMinAmount,
+    errorSuggestion,
     isLoading: bridgeLoading,
     reset: resetBridge,
     refetchDeposit,
@@ -481,7 +488,7 @@ export default function CrossChainPage() {
     balance: balanceTokenIn,
     address,
     // BTC is paid from the user's Bitcoin wallet; wagmi balance on chain 0 is not reliable here.
-    skipBalanceCheck: Number(sourceChainId) === 0 || Number(sourceChainId) === SOLANA_CHAIN_ID,
+    skipBalanceCheck: Number(sourceChainId) === 0 || Number(sourceChainId) === SOLANA_CHAIN_ID || tronSource,
   });
 
   // When using Rango, restrict visible chains to those Rango reports as enabled.
@@ -541,6 +548,10 @@ export default function CrossChainPage() {
   // When a wallet connects mid-session the address updates and overrides any previous value
   // only if the field is still empty (preserves manual overrides).
   useEffect(() => {
+    if (!tronSource) setTronSenderAddress('');
+  }, [tronSource]);
+
+  useEffect(() => {
     if (!solanaSource) {
       setSolanaSenderAddress('');
       return;
@@ -589,6 +600,8 @@ export default function CrossChainPage() {
   const handleAmountChange = (v) => {
     setAmountIn(v);
     if (!v || parseFloat(v) <= 0) setAmountOut('');
+    // Clear any previous bridge error so the slide button re-enables after a correction
+    if (bridgeError || errorMinAmount) resetBridge();
     // amountOut updates from useQuote
   };
 
@@ -630,7 +643,9 @@ export default function CrossChainPage() {
             ? (bitcoinSenderAddress || '').trim()
             : Number(sourceChainId) === SOLANA_CHAIN_ID
               ? (solanaSenderAddress || '').trim()
-              : address;
+              : tronSource
+                ? (tronSenderAddress || '').trim()
+                : address;
         let userToken;
         try {
           if (address) {
@@ -706,6 +721,11 @@ export default function CrossChainPage() {
     solanaSource && solanaSenderTrimmed.length > 0 && !SOLANA_ADDRESS_REGEX.test(solanaSenderTrimmed);
   const solanaSenderValid =
     !solanaSource || (solanaSenderTrimmed.length > 0 && SOLANA_ADDRESS_REGEX.test(solanaSenderTrimmed));
+  const tronSenderTrimmed = (tronSenderAddress || '').trim();
+  const tronSenderInvalidFormat =
+    tronSource && tronSenderTrimmed.length > 0 && !TRON_ADDRESS_REGEX.test(tronSenderTrimmed);
+  const tronSenderValid =
+    !tronSource || (tronSenderTrimmed.length > 0 && TRON_ADDRESS_REGEX.test(tronSenderTrimmed));
   const recipientForEstimate = destAddrRequired ? (destinationAddress || '').trim() : (address || '');
 
   const {
@@ -725,7 +745,8 @@ export default function CrossChainPage() {
       !!tokenIn &&
       !!tokenOut &&
       (!bitcoinSourceRequired || bitcoinSenderValid) &&
-      (!solanaSource || solanaSenderValid),
+      (!solanaSource || solanaSenderValid) &&
+      (!tronSource || tronSenderValid),
     sourceChainId,
     destChainId,
     tokenIn,
@@ -736,7 +757,9 @@ export default function CrossChainPage() {
       ? bitcoinSenderTrimmed
       : solanaSource
         ? solanaSenderTrimmed || undefined
-        : undefined,
+        : tronSource
+          ? tronSenderTrimmed || undefined
+          : undefined,
   });
   const rawBridgeError = bridgeError || validationError || effectiveQuoteError || crossChainEstimateError;
   const rawBridgeMsg = String(
@@ -769,6 +792,7 @@ export default function CrossChainPage() {
     // bitcoinSenderValid only required when sending FROM bitcoin (not TO bitcoin)
     (!bitcoinSource || bitcoinSenderValid) &&
     solanaSenderValid &&
+    tronSenderValid &&
     !amountTooLow &&
     !amountTooHigh &&
     !bridgeLoading;
@@ -876,7 +900,7 @@ export default function CrossChainPage() {
             onMaxClick={handleMaxClick}
           />
 
-          {effectiveBridgeProvider === 'rango' && minAmount && (
+          {minAmount && (
             <p className="mt-2 text-xs text-gray-400 text-right">
               Min: {minAmount} {tokenIn?.symbol}
               {maxAmount && (
@@ -887,11 +911,11 @@ export default function CrossChainPage() {
               )}
             </p>
           )}
-          {effectiveBridgeProvider === 'rango' && (amountTooLow || amountTooHigh) && (
+          {(amountTooLow || amountTooHigh) && (
             <p className="mt-1 text-xs text-amber-400 text-right">
               {amountTooLow
-                ? 'Amount below bridge minimum for this route.'
-                : 'Amount above bridge maximum for this route.'}
+                ? `Amount too low — minimum is ${minAmount} ${tokenIn?.symbol ?? ''}.`.trim()
+                : `Amount too high — maximum is ${maxAmount} ${tokenIn?.symbol ?? ''}.`.trim()}
             </p>
           )}
 
@@ -1009,6 +1033,31 @@ export default function CrossChainPage() {
                 )}
               </div>
             )}
+          </div>
+        )}
+        {tronSource && (
+          <div className="mt-4">
+            <label className="block text-gray-400 text-sm mb-2">
+              Tron sender address (T…)
+            </label>
+            <input
+              type="text"
+              value={tronSenderAddress}
+              onChange={(e) => setTronSenderAddress(e.target.value)}
+              placeholder="TXxx... (34 chars starting with T)"
+              className={`w-full bg-[#1a1a1a] border rounded-lg px-4 py-3 text-white text-sm
+                          placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3CF902]
+                          focus:border-transparent ${tronSenderInvalidFormat ? 'border-amber-500' : 'border-gray-600'}`}
+              spellCheck={false}
+            />
+            {tronSenderInvalidFormat && (
+              <p className="text-amber-400 text-xs mt-1">
+                Invalid Tron address. Must start with T and be 34 characters (base58).
+              </p>
+            )}
+            <p className="text-gray-500 text-xs mt-1">
+              Your Tron wallet address — the one holding TRX or TRC-20 tokens to swap.
+            </p>
           </div>
         )}
         {bitcoinSourceRequired && (
@@ -1163,6 +1212,13 @@ export default function CrossChainPage() {
                 : 'Enter your Solana wallet address (sender) to continue — it must match the wallet that signs the swap.'}
             </p>
           )}
+          {tronSource && !tronSenderValid && amountIn && parseFloat(amountIn) > 0 && (
+            <p className="text-amber-400 text-sm text-center mb-2">
+              {tronSenderInvalidFormat
+                ? 'Fix the Tron sender address (must start with T, 34 characters).'
+                : 'Enter your Tron address (T...) to continue.'}
+            </p>
+          )}
           {bitcoinSourceRequired && !bitcoinSenderValid && amountIn && parseFloat(amountIn) > 0 && (
             <p className="text-amber-400 text-sm text-center mb-2">
               {bitcoinSenderInvalidFormat
@@ -1181,22 +1237,26 @@ export default function CrossChainPage() {
                 {mapErrorToUserMessage(rawBridgeError)}
               </p>
               {/* "Use minimum" shortcut when the bridge rejected the amount as too low */}
-              {errorMinAmount && /below minimum|amount outside|provider limit/i.test(rawBridgeMsg) && (
-                <div className="flex items-center justify-center mb-2">
-                  <button
-                    type="button"
-                    onClick={() => { setAmountIn(String(errorMinAmount)); resetBridge(); }}
-                    className="text-[#3CF902] text-xs font-semibold hover:underline"
-                  >
-                    → Use minimum ({errorMinAmount} {tokenIn?.symbol})
-                  </button>
+              {/below minimum|amount outside|provider limit/i.test(rawBridgeMsg) && (
+                <div className="flex flex-col items-center gap-1 mb-2">
+                  {errorMinAmount ? (
+                    <button
+                      type="button"
+                      onClick={() => { setAmountIn(String(errorMinAmount)); resetBridge(); }}
+                      className="text-[#3CF902] text-xs font-semibold hover:underline"
+                    >
+                      → Use minimum ({errorMinAmount} {tokenIn?.symbol})
+                    </button>
+                  ) : (
+                    <p className="text-xs text-amber-400 text-center">
+                      {errorSuggestion || 'Try increasing the amount — bridge minimums are typically $20–$50.'}
+                    </p>
+                  )}
                 </div>
               )}
-              {effectiveBridgeProvider === 'rango' && (isRangoRouteUnavailable || isRangoBelowMinimum) && (
+              {effectiveBridgeProvider === 'rango' && isRangoRouteUnavailable && (
                 <p className="text-xs text-gray-400 text-center mb-2">
-                  {isRangoRouteUnavailable
-                    ? 'Rango has no route for this chain/token pair right now. Try a different token or chain.'
-                    : 'Rango requires a higher amount for this route. Increase the amount until it is above the minimum.'}
+                  Rango has no route for this chain/token pair right now. Try a different token or chain.
                 </p>
               )}
             </>

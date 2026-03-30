@@ -476,7 +476,7 @@
         "nativeCurrency": {
             "name": "TRX",
             "symbol": "TRX",
-            "decimals": 18
+            "decimals": 6
         },
         "rpcUrls": [
             "https://api.trongrid.io",

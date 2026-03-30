@@ -92,23 +92,24 @@ export function useCrossChainEstimate({
         let tooLow = false;
         let tooHigh = false;
 
+        // rawMin/rawMax from the estimate endpoint are human-readable amounts
+        // (e.g. "30.5" for 30.5 USDC) — NOT wei.  BigInt("30.5") throws, so
+        // compare as floats directly against the human-readable amountIn.
+        const inputFloat = parseFloat(String(amountIn));
+
         if (rawMin) {
-          try {
-            const minWei = BigInt(rawMin);
-            minHuman = formatUnits(minWei, decimals);
-            if (amountWei < minWei) tooLow = true;
-          } catch {
-            // ignore parse issues
+          const minFloat = parseFloat(String(rawMin));
+          if (!isNaN(minFloat) && minFloat > 0) {
+            minHuman = String(minFloat);
+            if (!isNaN(inputFloat) && inputFloat < minFloat) tooLow = true;
           }
         }
 
         if (rawMax) {
-          try {
-            const maxWei = BigInt(rawMax);
-            maxHuman = formatUnits(maxWei, decimals);
-            if (amountWei > maxWei) tooHigh = true;
-          } catch {
-            // ignore parse issues
+          const maxFloat = parseFloat(String(rawMax));
+          if (!isNaN(maxFloat) && maxFloat > 0) {
+            maxHuman = String(maxFloat);
+            if (!isNaN(inputFloat) && inputFloat > maxFloat) tooHigh = true;
           }
         }
 

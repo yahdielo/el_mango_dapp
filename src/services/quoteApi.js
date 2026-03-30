@@ -199,60 +199,27 @@ export async function getTokenPriceUsd({ chainId, token }) {
   return 0;
 }
 
-/** CoinGecko `ids` for common symbols (no API key; rate-limited). Used when backend has no price. */
-const COINGECKO_PUBLIC_ID_BY_SYMBOL = {
-  BTC: 'bitcoin',
-  WBTC: 'wrapped-bitcoin',
-  ETH: 'ethereum',
-  WETH: 'ethereum',
-  SOL: 'solana',
-  USDC: 'usd-coin',
-  USDT: 'tether',
-  DAI: 'dai',
-  BNB: 'binancecoin',
-  WBNB: 'binancecoin',
-  AVAX: 'avalanche-2',
-  POL: 'matic-network',
-  MATIC: 'matic-network',
-  TRX: 'tron',
-  XRP: 'ripple',
-  DOGE: 'dogecoin',
-  TON: 'the-open-network',
-  SUI: 'sui',
+/**
+ * Known stablecoin prices — always $1.00. Short-circuits any API call and avoids
+ * browser-side CoinGecko requests (which are CORS-blocked in production).
+ */
+const STABLECOIN_PRICE_USD = {
+  USDC: 1, USDT: 1, DAI: 1, BUSD: 1, TUSD: 1, USDP: 1, FRAX: 1, LUSD: 1,
+  SUSD: 1, CUSD: 1, CEUR: 1, USDD: 1, GUSD: 1, USDX: 1, XUSD: 1,
 };
 
 /**
- * Best-effort USD from CoinGecko public API (browser; may be CORS/rate-limited).
- * @param {string} symbolUpper
- * @returns {Promise<number>}
- */
-async function getTokenPriceUsdFromCoinGeckoPublic(symbolUpper) {
-  const id = COINGECKO_PUBLIC_ID_BY_SYMBOL[symbolUpper];
-  if (!id) return 0;
-  try {
-    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(id)}&vs_currencies=usd`;
-    const res = await fetch(url, {
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return 0;
-    const data = await res.json();
-    const usd = data?.[id]?.usd;
-    return typeof usd === 'number' && usd > 0 ? usd : 0;
-  } catch {
-    return 0;
-  }
-}
-
-/**
- * Backend USD price (GET /api/v1/price?symbol=) then public CoinGecko fallback.
- * Use when quote API returns 0 (e.g. Bitcoin chain 0, or no DEX path).
+ * Backend USD price (GET /api/v1/price?symbol=).
+ * Use when quote API returns 0 (e.g. Bitcoin chain, or no DEX path).
  * @param {string} symbol - Token symbol (ETH, USDC, BTC, etc.)
  * @returns {Promise<number>}
  */
 export async function getTokenPriceUsdFromBackend(symbol) {
   if (!symbol) return 0;
   const upper = String(symbol).toUpperCase();
+
+  // Stablecoins are always $1 — skip any network call.
+  if (STABLECOIN_PRICE_USD[upper] !== undefined) return STABLECOIN_PRICE_USD[upper];
 
   if (RAW_MANGO_SERVICES_URL) {
     try {
@@ -267,9 +234,11 @@ export async function getTokenPriceUsdFromBackend(symbol) {
         if (typeof price === 'number' && price > 0) return price;
       }
     } catch {
-      // fall through to public API
+      // fall through — return 0 rather than making a CORS-blocked browser request
     }
   }
 
-  return getTokenPriceUsdFromCoinGeckoPublic(upper);
+  // No browser-side CoinGecko fallback: the public API blocks cross-origin requests
+  // in production (CORS + 429). Prices come from the backend proxy only.
+  return 0;
 }

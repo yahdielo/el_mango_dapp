@@ -455,10 +455,12 @@ export default function CrossChainPage() {
     const inSym = (tokenIn.symbol || '').toUpperCase().replace(/^W/, '');
     const outSym = (tokenOut.symbol || '').toUpperCase().replace(/^W/, '');
     if (inSym === outSym) return amountIn;
-    // For cross-asset pairs (BTC→BNB, ETH→BNB, etc.), use the live route quote amountOut
+    // For cross-asset pairs, prefer the live route quote (e.g. THORChain), then fall back
+    // to the estimate hook's amountOut (Rango cross-asset like ETH→TRX, BTC→ETH).
     if (routeAmountOut && parseFloat(routeAmountOut) > 0) return routeAmountOut;
+    if (crossChainEstimatedAmountOut && parseFloat(crossChainEstimatedAmountOut) > 0) return crossChainEstimatedAmountOut;
     return '';
-  }, [isCrossChain, amountIn, tokenIn?.symbol, tokenOut?.symbol, routeAmountOut]);
+  }, [isCrossChain, amountIn, tokenIn?.symbol, tokenOut?.symbol, routeAmountOut, crossChainEstimatedAmountOut]);
 
   const effectiveAmountOut = isCrossChain ? crossChainAmountOut : quoteAmountOut;
   const effectiveQuoteLoading = isCrossChain ? (routeLoading && !sameAssetCrossChainPair) : quoteLoading;
@@ -772,6 +774,7 @@ export default function CrossChainPage() {
     maxAmount,
     amountTooLow,
     amountTooHigh,
+    estimatedAmountOut: crossChainEstimatedAmountOut,
   } = useCrossChainEstimate({
     enabled:
       isCrossChain &&

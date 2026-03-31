@@ -23,6 +23,7 @@ export function useCrossChainEstimate({
   const [maxAmount, setMaxAmount] = useState(null);
   const [amountTooLow, setAmountTooLow] = useState(false);
   const [amountTooHigh, setAmountTooHigh] = useState(false);
+  const [estimatedAmountOut, setEstimatedAmountOut] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,11 +87,36 @@ export function useCrossChainEstimate({
         const backendError = data?.error || null;
         const rawMin = data?.minAmount ?? data?.route?.minAmount ?? null;
         const rawMax = data?.maxAmount ?? data?.route?.maxAmount ?? null;
+        const rawAmountOut = data?.amountOut ?? null;
 
         let minHuman = null;
         let maxHuman = null;
         let tooLow = false;
         let tooHigh = false;
+
+        // Convert raw amountOut (Rango returns in token's smallest unit) to human-readable.
+        let humanAmountOut = null;
+        if (rawAmountOut && !backendError) {
+          const outDecimals =
+            tokenOut?.decimals != null && tokenOut.decimals !== ''
+              ? Number(tokenOut.decimals)
+              : 18;
+          try {
+            const raw = BigInt(rawAmountOut);
+            const divisor = BigInt(10) ** BigInt(outDecimals);
+            const whole = raw / divisor;
+            const remainder = raw % divisor;
+            if (remainder === 0n) {
+              humanAmountOut = whole.toString();
+            } else {
+              const fracStr = remainder.toString().padStart(outDecimals, '0').replace(/0+$/, '');
+              humanAmountOut = `${whole}.${fracStr}`;
+            }
+          } catch {
+            // rawAmountOut is already human-readable (LayerSwap returns it that way)
+            humanAmountOut = String(rawAmountOut);
+          }
+        }
 
         // rawMin/rawMax from the estimate endpoint are human-readable amounts
         // (e.g. "30.5" for 30.5 USDC) — NOT wei.  BigInt("30.5") throws, so
@@ -119,6 +145,7 @@ export function useCrossChainEstimate({
           setAmountTooLow(tooLow);
           setAmountTooHigh(tooHigh);
           setError(backendError);
+          setEstimatedAmountOut(backendError ? null : humanAmountOut);
         }
       } catch (e) {
         if (!cancelled) {
@@ -127,6 +154,7 @@ export function useCrossChainEstimate({
           setMaxAmount(null);
           setAmountTooLow(false);
           setAmountTooHigh(false);
+          setEstimatedAmountOut(null);
         }
       } finally {
         if (!cancelled) {
@@ -149,6 +177,7 @@ export function useCrossChainEstimate({
     maxAmount,
     amountTooLow,
     amountTooHigh,
+    estimatedAmountOut,
   };
 }
 

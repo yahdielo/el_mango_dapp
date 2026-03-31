@@ -450,19 +450,6 @@ export default function CrossChainPage() {
     isCrossChain && !sameAssetCrossChainPair && amountIn && parseFloat(amountIn) > 0 ? amountIn : undefined
   );
 
-  const crossChainAmountOut = useMemo(() => {
-    if (!isCrossChain || !amountIn || parseFloat(amountIn) <= 0 || !tokenIn?.symbol || !tokenOut?.symbol) return '';
-    const inSym = (tokenIn.symbol || '').toUpperCase().replace(/^W/, '');
-    const outSym = (tokenOut.symbol || '').toUpperCase().replace(/^W/, '');
-    if (inSym === outSym) return amountIn;
-    // For cross-asset pairs, prefer the live route quote (e.g. THORChain), then fall back
-    // to the estimate hook's amountOut (Rango cross-asset like ETH→TRX, BTC→ETH).
-    if (routeAmountOut && parseFloat(routeAmountOut) > 0) return routeAmountOut;
-    if (crossChainEstimatedAmountOut && parseFloat(crossChainEstimatedAmountOut) > 0) return crossChainEstimatedAmountOut;
-    return '';
-  }, [isCrossChain, amountIn, tokenIn?.symbol, tokenOut?.symbol, routeAmountOut, crossChainEstimatedAmountOut]);
-
-  const effectiveAmountOut = isCrossChain ? crossChainAmountOut : quoteAmountOut;
   const effectiveQuoteLoading = isCrossChain ? (routeLoading && !sameAssetCrossChainPair) : quoteLoading;
   const effectiveQuoteError = isCrossChain ? null : quoteError;
   const effectiveQuoteEstimated = isCrossChain ? true : quoteEstimated;
@@ -638,11 +625,6 @@ export default function CrossChainPage() {
     setDestinationAddress('');
   };
 
-  useEffect(() => {
-    if (effectiveAmountOut !== '') setAmountOut(effectiveAmountOut);
-    else if (!amountIn || parseFloat(amountIn) <= 0) setAmountOut('');
-  }, [effectiveAmountOut, amountIn]);
-
   const handleConfirmSwap = useCallback(async () => {
     if (!address) {
       handleConnect();
@@ -801,6 +783,27 @@ export default function CrossChainPage() {
           ? tronSenderTrimmed || undefined
           : undefined,
   });
+  // NOTE: crossChainAmountOut and effectiveAmountOut are declared here (after useCrossChainEstimate)
+  // to avoid a TDZ — they reference crossChainEstimatedAmountOut which is only available from the hook above.
+  const crossChainAmountOut = useMemo(() => {
+    if (!isCrossChain || !amountIn || parseFloat(amountIn) <= 0 || !tokenIn?.symbol || !tokenOut?.symbol) return '';
+    const inSym = (tokenIn.symbol || '').toUpperCase().replace(/^W/, '');
+    const outSym = (tokenOut.symbol || '').toUpperCase().replace(/^W/, '');
+    if (inSym === outSym) return amountIn;
+    // For cross-asset pairs, prefer the live route quote (e.g. THORChain), then fall back
+    // to the estimate hook's amountOut (Rango cross-asset like ETH→TRX, BTC→ETH).
+    if (routeAmountOut && parseFloat(routeAmountOut) > 0) return routeAmountOut;
+    if (crossChainEstimatedAmountOut && parseFloat(crossChainEstimatedAmountOut) > 0) return crossChainEstimatedAmountOut;
+    return '';
+  }, [isCrossChain, amountIn, tokenIn?.symbol, tokenOut?.symbol, routeAmountOut, crossChainEstimatedAmountOut]);
+
+  const effectiveAmountOut = isCrossChain ? crossChainAmountOut : quoteAmountOut;
+
+  useEffect(() => {
+    if (effectiveAmountOut !== '') setAmountOut(effectiveAmountOut);
+    else if (!amountIn || parseFloat(amountIn) <= 0) setAmountOut('');
+  }, [effectiveAmountOut, amountIn]);
+
   const rawBridgeError = bridgeError || validationError || effectiveQuoteError || crossChainEstimateError;
   const rawBridgeMsg = String(
     rawBridgeError?.message || rawBridgeError?.shortMessage || rawBridgeError || ''

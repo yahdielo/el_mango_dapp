@@ -1339,17 +1339,17 @@ export default function CrossChainPage() {
               {/* "Use minimum" shortcut when the bridge rejected the amount as too low */}
               {/below minimum|amount outside|provider limit/i.test(rawBridgeMsg) && (
                 <div className="flex flex-col items-center gap-1 mb-2">
-                  {errorMinAmount ? (
+                  {(errorMinAmount || minAmount) ? (
                     <button
                       type="button"
-                      onClick={() => { setAmountIn(String(errorMinAmount)); resetBridge(); }}
+                      onClick={() => { setAmountIn(String(errorMinAmount || minAmount)); resetBridge(); }}
                       className="text-[#3CF902] text-xs font-semibold hover:underline"
                     >
-                      → Use minimum ({errorMinAmount} {tokenIn?.symbol})
+                      → Use minimum ({errorMinAmount || minAmount} {tokenIn?.symbol})
                     </button>
                   ) : (
                     <p className="text-xs text-amber-400 text-center">
-                      {errorSuggestion || 'Try increasing the amount — bridge minimums are typically $20–$50.'}
+                      {errorSuggestion || 'Try increasing the amount to meet the bridge minimum.'}
                     </p>
                   )}
                 </div>

@@ -242,25 +242,25 @@ export default function AgentDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center" style={{ fontFamily: "'Afacad', sans-serif" }}>
-      <div className="w-full max-w-4xl flex flex-col px-5 pt-[80px] pb-12">
+      <div className="w-full max-w-[402px] flex flex-col px-5 pt-[80px] pb-8 min-h-screen">
         <SwapHeader address={address} onConnect={open} />
 
         {/* Page header */}
-        <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-white text-[28px] font-medium leading-tight">🤖 Agent Dashboard</h1>
-            <p className="text-white/30 text-xs mt-1">
-              Key: <span className="text-[#3CF902]/60 font-mono">{apiKey.slice(0, 8)}{'•'.repeat(8)}</span>
+            <h1 className="text-white text-[32px] font-medium leading-tight">Agent</h1>
+            <p className="text-white/30 text-xs mt-0.5 font-mono">
+              {apiKey.slice(0, 8)}{'•'.repeat(8)}
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => load(apiKey)}
               disabled={loading}
               className="px-3 py-1.5 rounded-lg border border-white/20 text-white/60 text-xs hover:border-[#3CF902]/50 hover:text-[#3CF902] transition-colors disabled:opacity-40"
             >
-              {loading ? '↺ Loading…' : '↺ Refresh'}
+              {loading ? '↺' : '↺ Refresh'}
             </button>
             <button
               type="button"
@@ -282,20 +282,20 @@ export default function AgentDashboardPage() {
         {error && <ErrorMsg msg={error} />}
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-white/[0.03] border border-white/10 rounded-xl p-1">
+        <div className="flex gap-1 mb-5 bg-white/[0.03] border border-white/10 rounded-xl p-1">
           {TABS.map(t => (
             <button
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-sm font-medium transition-all ${
                 tab === t.id
                   ? 'bg-[#3CF902] text-black'
                   : 'text-white/50 hover:text-white/80'
               }`}
             >
               <span className="text-base leading-none">{t.icon}</span>
-              <span className="hidden sm:inline">{t.label}</span>
+              <span>{t.label}</span>
             </button>
           ))}
         </div>
@@ -304,49 +304,51 @@ export default function AgentDashboardPage() {
         {tab === 'overview' && (
           <>
             {/* Stats row */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-2 gap-3 mb-3">
               <Card>
-                <p className="text-white/40 text-xs uppercase tracking-wider mb-2">Credits</p>
-                {loading ? <Spinner /> : (
+                <p className="text-white/40 text-[10px] uppercase tracking-wider mb-1.5">Credits</p>
+                {loading ? (
+                  <div className="w-4 h-4 border-2 border-[#3CF902]/30 border-t-[#3CF902] rounded-full animate-spin" />
+                ) : (
                   <div>
-                    <p className="text-[#3CF902] text-2xl font-semibold">
+                    <p className="text-[#3CF902] text-xl font-semibold">
                       ${credits?.balance?.toFixed(4) ?? '—'}
                     </p>
-                    <p className="text-white/30 text-xs mt-1">{credits?.currency ?? 'USD'}</p>
+                    <p className="text-white/30 text-[10px] mt-0.5">{credits?.currency ?? 'USD'}</p>
                     {credits?.lowBalanceAlert && (
-                      <p className="text-amber-400 text-xs mt-1">⚠ Low balance</p>
+                      <p className="text-amber-400 text-[10px] mt-0.5">⚠ Low balance</p>
                     )}
                   </div>
                 )}
               </Card>
 
               <Card>
-                <p className="text-white/40 text-xs uppercase tracking-wider mb-2">Active Sessions</p>
-                <p className="text-white text-2xl font-semibold">{activeSessions.length}</p>
-                <p className="text-white/30 text-xs mt-1">of {sessions.length} total</p>
+                <p className="text-white/40 text-[10px] uppercase tracking-wider mb-1.5">Active Sessions</p>
+                <p className="text-white text-xl font-semibold">{activeSessions.length}</p>
+                <p className="text-white/30 text-[10px] mt-0.5">of {sessions.length} total</p>
               </Card>
 
               <Card>
-                <p className="text-white/40 text-xs uppercase tracking-wider mb-2">API Endpoint</p>
-                <p className="text-[#3CF902] text-xs font-mono break-all leading-relaxed">
+                <p className="text-white/40 text-[10px] uppercase tracking-wider mb-1.5">API Endpoint</p>
+                <p className="text-[#3CF902] text-[10px] font-mono break-all leading-relaxed">
                   {API_BASE.replace('https://', '')}
                 </p>
               </Card>
 
               <Card>
-                <p className="text-white/40 text-xs uppercase tracking-wider mb-2">Quick Links</p>
-                <div className="flex flex-col gap-1.5">
-                  <a href="/cross-chain" className="text-[#3CF902] text-xs hover:underline">↗ Cross-Chain Swap</a>
-                  <a href={`${API_BASE}/api/docs`} target="_blank" rel="noreferrer" className="text-[#3CF902] text-xs hover:underline">↗ API Docs</a>
-                  <a href="https://github.com/0tabris/mangoswap" target="_blank" rel="noreferrer" className="text-[#3CF902] text-xs hover:underline">↗ GitHub</a>
+                <p className="text-white/40 text-[10px] uppercase tracking-wider mb-1.5">Quick Links</p>
+                <div className="flex flex-col gap-1">
+                  <a href="/cross-chain" className="text-[#3CF902] text-[10px] hover:underline">↗ Cross-Chain</a>
+                  <a href={`${API_BASE}/api/docs`} target="_blank" rel="noreferrer" className="text-[#3CF902] text-[10px] hover:underline">↗ API Docs</a>
+                  <a href="https://github.com/0tabris/mangoswap" target="_blank" rel="noreferrer" className="text-[#3CF902] text-[10px] hover:underline">↗ GitHub</a>
                 </div>
               </Card>
             </div>
 
             {/* API Key card */}
-            <Card title="API Key" className="mb-4">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <code className="text-[#3CF902] font-mono text-sm">
+            <Card title="API Key" className="mb-3">
+              <div className="flex items-center justify-between gap-3">
+                <code className="text-[#3CF902] font-mono text-xs truncate">
                   {apiKey.slice(0, 10)}{'•'.repeat(Math.max(0, apiKey.length - 10))}
                 </code>
                 <CopyButton text={apiKey} label="Copy Key" />
@@ -355,13 +357,13 @@ export default function AgentDashboardPage() {
 
             {/* Session key summary */}
             {activeSessions.length > 0 && (
-              <Card title="Active Session Keys" className="mb-4">
-                <div className="flex flex-col gap-2">
+              <Card title="Active Session Keys" className="mb-3">
+                <div className="flex flex-col gap-1.5">
                   {activeSessions.slice(0, 3).map(s => (
-                    <div key={s.sessionId} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                    <div key={s.sessionId} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
                       <div className="flex items-center gap-2">
                         <StatusDot status={s.status} />
-                        <span className="text-white/60 text-xs font-mono">{s.sessionId?.slice(0, 12)}…</span>
+                        <span className="text-white/60 text-xs font-mono">{s.sessionId?.slice(0, 10)}…</span>
                       </div>
                       <span className="text-white/40 text-xs">{CHAIN_NAMES[s.chainId] ?? s.chainId} · {s.maxAmount}</span>
                     </div>
@@ -386,23 +388,23 @@ export default function AgentDashboardPage() {
           <>
             {/* Create form */}
             <Card title="Create Session Key" className="mb-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                <div>
-                  <label className="block text-white/50 text-xs font-medium mb-1.5">Wallet Address</label>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="col-span-2">
+                  <label className="block text-white/50 text-[10px] font-medium mb-1">Wallet Address</label>
                   <input
                     type="text"
                     value={newSession.walletAddress}
                     onChange={e => setNewSession(s => ({ ...s, walletAddress: e.target.value }))}
                     placeholder="0x…"
-                    className="w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-[#3CF902]/50"
+                    className="w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-white placeholder-white/20 text-xs focus:outline-none focus:ring-2 focus:ring-[#3CF902]/50"
                   />
                 </div>
                 <div>
-                  <label className="block text-white/50 text-xs font-medium mb-1.5">Chain</label>
+                  <label className="block text-white/50 text-[10px] font-medium mb-1">Chain</label>
                   <select
                     value={newSession.chainId}
                     onChange={e => setNewSession(s => ({ ...s, chainId: Number(e.target.value) }))}
-                    className="w-full rounded-xl border border-white/20 bg-[#111111] px-3 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#3CF902]/50"
+                    className="w-full rounded-xl border border-white/20 bg-[#111111] px-3 py-2 text-white text-xs focus:outline-none focus:ring-2 focus:ring-[#3CF902]/50"
                   >
                     {Object.entries(CHAIN_NAMES).map(([id, name]) => (
                       <option key={id} value={id}>{name}</option>
@@ -410,23 +412,23 @@ export default function AgentDashboardPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-white/50 text-xs font-medium mb-1.5">Max Amount</label>
+                  <label className="block text-white/50 text-[10px] font-medium mb-1">Max Amount</label>
                   <input
                     type="number"
                     value={newSession.maxAmount}
                     onChange={e => setNewSession(s => ({ ...s, maxAmount: e.target.value }))}
                     placeholder="0.1"
-                    className="w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-[#3CF902]/50"
+                    className="w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-white placeholder-white/20 text-xs focus:outline-none focus:ring-2 focus:ring-[#3CF902]/50"
                   />
                 </div>
                 <div>
-                  <label className="block text-white/50 text-xs font-medium mb-1.5">Expires In (seconds)</label>
+                  <label className="block text-white/50 text-[10px] font-medium mb-1">Expires (sec)</label>
                   <input
                     type="number"
                     value={newSession.expiresIn}
                     onChange={e => setNewSession(s => ({ ...s, expiresIn: Number(e.target.value) }))}
                     placeholder="86400"
-                    className="w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-[#3CF902]/50"
+                    className="w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-white placeholder-white/20 text-xs focus:outline-none focus:ring-2 focus:ring-[#3CF902]/50"
                   />
                 </div>
               </div>
@@ -434,7 +436,7 @@ export default function AgentDashboardPage() {
                 type="button"
                 onClick={handleCreateSession}
                 disabled={sessionCreating || !newSession.walletAddress}
-                className="px-5 py-2.5 rounded-xl bg-[#3CF902] text-black font-semibold text-sm disabled:opacity-40 active:scale-[0.98] transition-transform"
+                className="w-full px-4 py-2.5 rounded-xl bg-[#3CF902] text-black font-semibold text-sm disabled:opacity-40 active:scale-[0.98] transition-transform"
               >
                 {sessionCreating ? 'Creating…' : 'Create Session Key'}
               </button>
@@ -517,11 +519,11 @@ export default function AgentDashboardPage() {
         {tab === 'mcp' && (
           <>
             {/* Claude Desktop */}
-            <Card title="Claude Desktop — MCP Server" className="mb-4">
-              <p className="text-white/40 text-xs mb-3">
+            <Card title="Claude Desktop — MCP" className="mb-3">
+              <p className="text-white/40 text-xs mb-2">
                 Add to <code className="text-[#3CF902]/70">claude_desktop_config.json</code> and restart Claude.
               </p>
-              <CodeBlock className="mb-3">{mcpConfig}</CodeBlock>
+              <CodeBlock className="mb-2 text-[10px]">{mcpConfig}</CodeBlock>
               <div className="flex gap-2">
                 <CopyButton text={mcpConfig} label="Copy Config" />
                 <a
@@ -535,10 +537,10 @@ export default function AgentDashboardPage() {
             </Card>
 
             {/* CLI */}
-            <Card title="CLI — mango-agent" className="mb-4">
-              <p className="text-white/40 text-xs mb-3">Run swaps from the terminal or CI pipelines.</p>
-              <CodeBlock className="mb-2">npm install -g @mangoswap/agent-cli</CodeBlock>
-              <CodeBlock className="mb-3">
+            <Card title="CLI — mango-agent" className="mb-3">
+              <p className="text-white/40 text-xs mb-2">Run swaps from the terminal or CI pipelines.</p>
+              <CodeBlock className="mb-2 text-[10px]">npm install -g @mangoswap/agent-cli</CodeBlock>
+              <CodeBlock className="mb-2 text-[10px]">
 {`export MANGO_API_KEY=${apiKey}
 
 # Quote
@@ -555,9 +557,9 @@ mango-agent status --id <swapId>`}
             </Card>
 
             {/* TypeScript SDK */}
-            <Card title="TypeScript / JavaScript SDK" className="mb-4">
-              <CodeBlock className="mb-2">npm install @mangoswap/sdk</CodeBlock>
-              <CodeBlock className="mb-3">
+            <Card title="TypeScript / JavaScript SDK" className="mb-3">
+              <CodeBlock className="mb-2 text-[10px]">npm install @mangoswap/sdk</CodeBlock>
+              <CodeBlock className="mb-2 text-[10px]">
 {`import { MangoSwapSDK } from '@mangoswap/sdk';
 
 const mango = new MangoSwapSDK({ apiKey: '${apiKey}' });
@@ -574,8 +576,8 @@ const result = await mango.waitForCompletion(swap.swapId);`}
             </Card>
 
             {/* Python */}
-            <Card title="Python (REST API)" className="mb-4">
-              <CodeBlock className="mb-3">
+            <Card title="Python (REST API)" className="mb-3">
+              <CodeBlock className="mb-2 text-[10px]">
 {`import requests, time
 
 HEADERS = {"x-api-key": "${apiKey}", "Content-Type": "application/json"}
@@ -605,10 +607,10 @@ while True:
 
             {/* Embeddable Widget */}
             <Card title="Embeddable Swap Widget">
-              <p className="text-white/40 text-xs mb-3">
+              <p className="text-white/40 text-xs mb-2">
                 Drop a swap UI into any webpage — no React required.
               </p>
-              <CodeBlock className="mb-3">
+              <CodeBlock className="mb-2 text-[10px]">
 {`<script src="https://cdn.mangoswap.io/widget.js"></script>
 <mango-swap
   api-key="${apiKey}"

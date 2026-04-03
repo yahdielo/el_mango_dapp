@@ -1,4 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAccount } from 'wagmi';
+import { useAppKit } from '@reown/appkit/react';
+import SwapHeader from '../components/SwapHeader';
+import SwapFooter from '../components/SwapFooter';
 import { getCredits, listSessions, createSession, revokeSession } from '../services/agentApi';
 
 const API_KEY_STORAGE = 'mango_agent_api_key';
@@ -9,7 +14,37 @@ const CHAIN_NAMES = {
   10: 'Optimism', 137: 'Polygon', 56: 'BSC', 43114: 'Avalanche',
 };
 
-function CopyButton({ text, label = 'Copy' }) {
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function Card({ title, children, className = '' }) {
+  return (
+    <div className={`rounded-2xl border border-white/10 bg-white/[0.03] p-4 ${className}`}>
+      {title && (
+        <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">{title}</h3>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <div className="flex items-center justify-center py-6">
+      <div className="w-5 h-5 border-2 border-[#3CF902]/30 border-t-[#3CF902] rounded-full animate-spin" />
+    </div>
+  );
+}
+
+function ErrorMsg({ msg }) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 mb-4">
+      <span className="text-red-400 text-sm">⚠</span>
+      <p className="text-red-400 text-sm">{msg}</p>
+    </div>
+  );
+}
+
+function CopyButton({ text, label = 'Copy', className = '' }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard.writeText(text).then(() => {
@@ -18,46 +53,62 @@ function CopyButton({ text, label = 'Copy' }) {
     });
   };
   return (
-    <button onClick={copy} style={styles.copyBtn}>
-      {copied ? '✅ Copied' : label}
+    <button
+      type="button"
+      onClick={copy}
+      className={`px-3 py-1.5 rounded-lg border border-white/20 text-white/60 text-xs hover:border-[#3CF902]/50 hover:text-[#3CF902] transition-colors ${className}`}
+    >
+      {copied ? '✓ Copied' : label}
     </button>
   );
 }
 
-function Card({ title, children }) {
+function StatusDot({ status }) {
+  const color =
+    status === 'active' ? 'bg-[#3CF902]' :
+    status === 'revoked' ? 'bg-red-500' : 'bg-amber-400';
+  return <span className={`inline-block w-2 h-2 rounded-full ${color} shrink-0`} />;
+}
+
+function CodeBlock({ children, className = '' }) {
   return (
-    <div style={styles.card}>
-      <h3 style={styles.cardTitle}>{title}</h3>
+    <pre className={`rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[#3CF902] text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all leading-relaxed ${className}`}>
       {children}
-    </div>
+    </pre>
   );
 }
 
-function StatusBadge({ status }) {
-  const color = status === 'active' ? '#22c55e' : status === 'revoked' ? '#ef4444' : '#f59e0b';
-  return (
-    <span style={{ ...styles.badge, background: color + '22', color }}>
-      {status}
-    </span>
-  );
-}
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+
+const TABS = [
+  { id: 'overview',  label: 'Overview',     icon: '◈' },
+  { id: 'sessions',  label: 'Session Keys', icon: '⚿' },
+  { id: 'mcp',       label: 'MCP / SDK',    icon: '⟳' },
+];
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AgentDashboardPage() {
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) || '');
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [credits, setCredits] = useState(null);
-  const [sessions, setSessions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [tab, setTab] = useState('overview');
+  const navigate = useNavigate();
+  const { address } = useAccount();
+  const { open } = useAppKit();
+
+  const [apiKey, setApiKey]         = useState(() => localStorage.getItem(API_KEY_STORAGE) || '');
+  const [keyInput, setKeyInput]     = useState('');
+  const [credits, setCredits]       = useState(null);
+  const [sessions, setSessions]     = useState([]);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState('');
+  const [tab, setTab]               = useState('overview');
 
   // Session create form
   const [newSession, setNewSession] = useState({
-    walletAddress: '', tokenAddress: 'ETH', maxAmount: '0.1',
-    expiresIn: 86400, chainId: 8453,
+    walletAddress: address || '', tokenAddress: 'ETH',
+    maxAmount: '0.1', expiresIn: 86400, chainId: 8453,
   });
   const [sessionCreating, setSessionCreating] = useState(false);
-  const [createdSession, setCreatedSession] = useState(null);
+  const [createdSession, setCreatedSession]   = useState(null);
+  const [revokingId, setRevokingId]           = useState(null);
 
   const load = useCallback(async (key) => {
     if (!key) return;
@@ -75,11 +126,22 @@ export default function AgentDashboardPage() {
 
   useEffect(() => { if (apiKey) load(apiKey); }, [apiKey, load]);
 
-  const saveApiKey = () => {
-    const k = apiKeyInput.trim();
+  // Prefill wallet address from connected wallet
+  useEffect(() => {
+    if (address) setNewSession(s => ({ ...s, walletAddress: s.walletAddress || address }));
+  }, [address]);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const k = keyInput.trim();
     if (!k) return;
     localStorage.setItem(API_KEY_STORAGE, k);
-    setApiKey(k); setApiKeyInput('');
+    setApiKey(k); setKeyInput('');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(API_KEY_STORAGE);
+    setApiKey(''); setCredits(null); setSessions([]); setCreatedSession(null);
   };
 
   const handleCreateSession = async () => {
@@ -88,218 +150,356 @@ export default function AgentDashboardPage() {
       const result = await createSession(apiKey, newSession);
       setCreatedSession(result);
       await load(apiKey);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setSessionCreating(false);
-    }
+    } catch (e) { setError(e.message); }
+    finally { setSessionCreating(false); }
   };
 
-  const handleRevokeSession = async (sessionId) => {
-    if (!confirm('Revoke this session key?')) return;
-    try {
-      await revokeSession(apiKey, sessionId);
-      await load(apiKey);
-    } catch (e) {
-      setError(e.message);
-    }
+  const handleRevoke = async (sessionId) => {
+    if (!confirm('Revoke this session key? This cannot be undone.')) return;
+    setRevokingId(sessionId);
+    try { await revokeSession(apiKey, sessionId); await load(apiKey); }
+    catch (e) { setError(e.message); }
+    finally { setRevokingId(null); }
   };
+
+  const activeSessions = sessions.filter(s => s.status === 'active');
 
   const mcpConfig = JSON.stringify({
     mcpServers: {
       mangoswap: {
-        command: 'npx',
-        args: ['-y', '@mangoswap/mcp-server'],
-        env: { MANGO_API_URL: API_BASE, MANGO_API_KEY: apiKey || 'your-api-key-here' },
+        command: 'npx', args: ['-y', '@mangoswap/mcp-server'],
+        env: { MANGO_API_URL: API_BASE, MANGO_API_KEY: apiKey || 'your-api-key' },
       },
     },
   }, null, 2);
 
+  // ── Login screen ─────────────────────────────────────────────────────────
+
   if (!apiKey) {
     return (
-      <div style={styles.page}>
-        <div style={styles.container}>
-          <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={{ fontSize: 48, marginBottom: 8 }}>🤖</div>
-            <h1 style={styles.pageTitle}>Agent Dashboard</h1>
-            <p style={styles.subtitle}>
-              Manage session keys, API credits, and MCP server configuration for AI agent integrations.
-            </p>
+      <div className="min-h-screen bg-[#111111] flex flex-col items-center" style={{ fontFamily: "'Afacad', sans-serif" }}>
+        <div className="w-full max-w-[402px] flex flex-col px-5 pt-[80px] pb-8 min-h-screen">
+          <SwapHeader address={address} onConnect={open} />
+
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-white text-[28px] font-medium leading-tight">Agent Dashboard</h1>
+              <p className="text-white/40 text-sm mt-1">Manage session keys, credits & MCP config</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/cross-chain')}
+              className="text-[#3CF902] text-sm font-medium hover:underline shrink-0"
+            >
+              ← Swap
+            </button>
           </div>
-          <Card title="Enter Your API Key">
-            <input
-              style={styles.input}
-              type="text"
-              placeholder="Paste your MangoSwap API key..."
-              value={apiKeyInput}
-              onChange={e => setApiKeyInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && saveApiKey()}
-            />
-            <button style={styles.primaryBtn} onClick={saveApiKey}>Connect</button>
-            <p style={styles.hint}>
-              No API key? Contact <a href="mailto:dev@mangoswap.io" style={styles.link}>dev@mangoswap.io</a> or
-              use the public key (rate limited): <code style={styles.code}>anonymous</code>
+
+          {/* Robot icon */}
+          <div className="flex justify-center mb-8">
+            <div className="w-20 h-20 rounded-full border border-[#3CF902]/30 bg-[#3CF902]/5 flex items-center justify-center">
+              <span className="text-4xl">🤖</span>
+            </div>
+          </div>
+
+          <form onSubmit={handleLogin} className="flex flex-col gap-4">
+            <div>
+              <label className="block text-white/70 text-sm font-medium mb-1.5">API Key</label>
+              <input
+                type="password"
+                value={keyInput}
+                onChange={e => setKeyInput(e.target.value)}
+                placeholder="Enter your MangoSwap API key…"
+                autoComplete="current-password"
+                className="w-full rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-[#3CF902]/50"
+              />
+            </div>
+            {error && <ErrorMsg msg={error} />}
+            {loading && <Spinner />}
+            <button
+              type="submit"
+              disabled={loading || !keyInput.trim()}
+              className="w-full px-4 py-3 rounded-xl bg-[#3CF902] text-black font-semibold text-sm disabled:opacity-40 active:scale-[0.98] transition-transform"
+            >
+              {loading ? 'Connecting…' : 'Open Dashboard'}
+            </button>
+            <p className="text-white/30 text-xs text-center">
+              No API key?{' '}
+              <a href="mailto:dev@mangoswap.io" className="text-[#3CF902]/70 hover:text-[#3CF902]">
+                Contact us
+              </a>{' '}
+              or use anonymous access (rate-limited).
             </p>
-          </Card>
+          </form>
+
+          <SwapFooter />
         </div>
       </div>
     );
   }
 
+  // ── Dashboard ─────────────────────────────────────────────────────────────
+
   return (
-    <div style={styles.page}>
-      <div style={styles.container}>
-        <div style={styles.header}>
+    <div className="min-h-screen bg-[#111111] flex flex-col items-center" style={{ fontFamily: "'Afacad', sans-serif" }}>
+      <div className="w-full max-w-4xl flex flex-col px-5 pt-[80px] pb-12">
+        <SwapHeader address={address} onConnect={open} />
+
+        {/* Page header */}
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
           <div>
-            <h1 style={styles.pageTitle}>🤖 Agent Dashboard</h1>
-            <p style={styles.subtitle}>AI agent integration management</p>
+            <h1 className="text-white text-[28px] font-medium leading-tight">🤖 Agent Dashboard</h1>
+            <p className="text-white/30 text-xs mt-1">
+              Key: <span className="text-[#3CF902]/60 font-mono">{apiKey.slice(0, 8)}{'•'.repeat(8)}</span>
+            </p>
           </div>
-          <button style={styles.secondaryBtn} onClick={() => {
-            localStorage.removeItem(API_KEY_STORAGE); setApiKey('');
-          }}>
-            Disconnect
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => load(apiKey)}
+              disabled={loading}
+              className="px-3 py-1.5 rounded-lg border border-white/20 text-white/60 text-xs hover:border-[#3CF902]/50 hover:text-[#3CF902] transition-colors disabled:opacity-40"
+            >
+              {loading ? '↺ Loading…' : '↺ Refresh'}
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="px-3 py-1.5 rounded-lg border border-white/10 text-white/30 text-xs hover:text-red-400 hover:border-red-400/30 transition-colors"
+            >
+              Sign out
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/cross-chain')}
+              className="text-[#3CF902] text-sm font-medium hover:underline"
+            >
+              ← Swap
+            </button>
+          </div>
         </div>
 
-        {error && <div style={styles.errorBox}>{error}</div>}
+        {error && <ErrorMsg msg={error} />}
 
         {/* Tabs */}
-        <div style={styles.tabs}>
-          {['overview', 'sessions', 'mcp-setup'].map(t => (
+        <div className="flex gap-1 mb-6 bg-white/[0.03] border border-white/10 rounded-xl p-1">
+          {TABS.map(t => (
             <button
-              key={t}
-              style={{ ...styles.tab, ...(tab === t ? styles.tabActive : {}) }}
-              onClick={() => setTab(t)}
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                tab === t.id
+                  ? 'bg-[#3CF902] text-black'
+                  : 'text-white/50 hover:text-white/80'
+              }`}
             >
-              {{ overview: '📊 Overview', sessions: '🔑 Session Keys', 'mcp-setup': '⚙️ MCP Setup' }[t]}
+              <span className="text-base leading-none">{t.icon}</span>
+              <span className="hidden sm:inline">{t.label}</span>
             </button>
           ))}
         </div>
 
-        {/* Overview tab */}
+        {/* ── Overview Tab ─────────────────────────────────────────────────── */}
         {tab === 'overview' && (
-          <div style={styles.grid2}>
-            <Card title="API Key">
-              <div style={styles.keyDisplay}>
-                <code style={styles.code}>{apiKey.slice(0, 8)}{'•'.repeat(Math.max(0, apiKey.length - 8))}</code>
-                <CopyButton text={apiKey} />
+          <>
+            {/* Stats row */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+              <Card>
+                <p className="text-white/40 text-xs uppercase tracking-wider mb-2">Credits</p>
+                {loading ? <Spinner /> : (
+                  <div>
+                    <p className="text-[#3CF902] text-2xl font-semibold">
+                      ${credits?.balance?.toFixed(4) ?? '—'}
+                    </p>
+                    <p className="text-white/30 text-xs mt-1">{credits?.currency ?? 'USD'}</p>
+                    {credits?.lowBalanceAlert && (
+                      <p className="text-amber-400 text-xs mt-1">⚠ Low balance</p>
+                    )}
+                  </div>
+                )}
+              </Card>
+
+              <Card>
+                <p className="text-white/40 text-xs uppercase tracking-wider mb-2">Active Sessions</p>
+                <p className="text-white text-2xl font-semibold">{activeSessions.length}</p>
+                <p className="text-white/30 text-xs mt-1">of {sessions.length} total</p>
+              </Card>
+
+              <Card>
+                <p className="text-white/40 text-xs uppercase tracking-wider mb-2">API Endpoint</p>
+                <p className="text-[#3CF902] text-xs font-mono break-all leading-relaxed">
+                  {API_BASE.replace('https://', '')}
+                </p>
+              </Card>
+
+              <Card>
+                <p className="text-white/40 text-xs uppercase tracking-wider mb-2">Quick Links</p>
+                <div className="flex flex-col gap-1.5">
+                  <a href="/cross-chain" className="text-[#3CF902] text-xs hover:underline">↗ Cross-Chain Swap</a>
+                  <a href={`${API_BASE}/api/docs`} target="_blank" rel="noreferrer" className="text-[#3CF902] text-xs hover:underline">↗ API Docs</a>
+                  <a href="https://github.com/0tabris/mangoswap" target="_blank" rel="noreferrer" className="text-[#3CF902] text-xs hover:underline">↗ GitHub</a>
+                </div>
+              </Card>
+            </div>
+
+            {/* API Key card */}
+            <Card title="API Key" className="mb-4">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <code className="text-[#3CF902] font-mono text-sm">
+                  {apiKey.slice(0, 10)}{'•'.repeat(Math.max(0, apiKey.length - 10))}
+                </code>
+                <CopyButton text={apiKey} label="Copy Key" />
               </div>
             </Card>
 
-            <Card title="API Credits">
-              {loading ? (
-                <p style={styles.subtext}>Loading…</p>
-              ) : credits ? (
-                <div>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: '#22c55e' }}>
-                    ${credits.balance?.toFixed(4) ?? '—'}
-                  </div>
-                  <p style={styles.subtext}>{credits.currency ?? 'USD'}</p>
-                  {credits.lowBalanceAlert && (
-                    <div style={styles.warningBox}>⚠️ Low balance — top up soon</div>
+            {/* Session key summary */}
+            {activeSessions.length > 0 && (
+              <Card title="Active Session Keys" className="mb-4">
+                <div className="flex flex-col gap-2">
+                  {activeSessions.slice(0, 3).map(s => (
+                    <div key={s.sessionId} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                      <div className="flex items-center gap-2">
+                        <StatusDot status={s.status} />
+                        <span className="text-white/60 text-xs font-mono">{s.sessionId?.slice(0, 12)}…</span>
+                      </div>
+                      <span className="text-white/40 text-xs">{CHAIN_NAMES[s.chainId] ?? s.chainId} · {s.maxAmount}</span>
+                    </div>
+                  ))}
+                  {activeSessions.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={() => setTab('sessions')}
+                      className="text-[#3CF902] text-xs hover:underline text-left mt-1"
+                    >
+                      + {activeSessions.length - 3} more → View all
+                    </button>
                   )}
                 </div>
-              ) : (
-                <p style={styles.subtext}>—</p>
-              )}
-            </Card>
-
-            <Card title="Active Sessions">
-              <div style={{ fontSize: 28, fontWeight: 700, color: '#3b82f6' }}>
-                {sessions.filter(s => s.status === 'active').length}
-              </div>
-              <p style={styles.subtext}>of {sessions.length} total</p>
-            </Card>
-
-            <Card title="Quick Links">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <a href="/cross-chain" style={styles.link}>↗ Cross-Chain Swap</a>
-                <a href={`${API_BASE}/api/docs`} target="_blank" rel="noreferrer" style={styles.link}>↗ API Docs</a>
-                <a href="https://github.com/mangoswap" target="_blank" rel="noreferrer" style={styles.link}>↗ GitHub</a>
-              </div>
-            </Card>
-          </div>
+              </Card>
+            )}
+          </>
         )}
 
-        {/* Sessions tab */}
+        {/* ── Sessions Tab ─────────────────────────────────────────────────── */}
         {tab === 'sessions' && (
-          <div>
-            <Card title="Create Session Key">
-              <div style={styles.formGrid}>
+          <>
+            {/* Create form */}
+            <Card title="Create Session Key" className="mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                 <div>
-                  <label style={styles.label}>Wallet Address</label>
-                  <input style={styles.input} placeholder="0x..."
+                  <label className="block text-white/50 text-xs font-medium mb-1.5">Wallet Address</label>
+                  <input
+                    type="text"
                     value={newSession.walletAddress}
-                    onChange={e => setNewSession(s => ({ ...s, walletAddress: e.target.value }))} />
+                    onChange={e => setNewSession(s => ({ ...s, walletAddress: e.target.value }))}
+                    placeholder="0x…"
+                    className="w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-[#3CF902]/50"
+                  />
                 </div>
                 <div>
-                  <label style={styles.label}>Chain</label>
-                  <select style={styles.select}
+                  <label className="block text-white/50 text-xs font-medium mb-1.5">Chain</label>
+                  <select
                     value={newSession.chainId}
-                    onChange={e => setNewSession(s => ({ ...s, chainId: Number(e.target.value) }))}>
+                    onChange={e => setNewSession(s => ({ ...s, chainId: Number(e.target.value) }))}
+                    className="w-full rounded-xl border border-white/20 bg-[#111111] px-3 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#3CF902]/50"
+                  >
                     {Object.entries(CHAIN_NAMES).map(([id, name]) => (
                       <option key={id} value={id}>{name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label style={styles.label}>Max Amount</label>
-                  <input style={styles.input} type="number" placeholder="0.1"
+                  <label className="block text-white/50 text-xs font-medium mb-1.5">Max Amount</label>
+                  <input
+                    type="number"
                     value={newSession.maxAmount}
-                    onChange={e => setNewSession(s => ({ ...s, maxAmount: e.target.value }))} />
+                    onChange={e => setNewSession(s => ({ ...s, maxAmount: e.target.value }))}
+                    placeholder="0.1"
+                    className="w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-[#3CF902]/50"
+                  />
                 </div>
                 <div>
-                  <label style={styles.label}>Expires In (seconds)</label>
-                  <input style={styles.input} type="number" placeholder="86400"
+                  <label className="block text-white/50 text-xs font-medium mb-1.5">Expires In (seconds)</label>
+                  <input
+                    type="number"
                     value={newSession.expiresIn}
-                    onChange={e => setNewSession(s => ({ ...s, expiresIn: Number(e.target.value) }))} />
+                    onChange={e => setNewSession(s => ({ ...s, expiresIn: Number(e.target.value) }))}
+                    placeholder="86400"
+                    className="w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-[#3CF902]/50"
+                  />
                 </div>
               </div>
-              <button style={styles.primaryBtn} onClick={handleCreateSession} disabled={sessionCreating}>
+              <button
+                type="button"
+                onClick={handleCreateSession}
+                disabled={sessionCreating || !newSession.walletAddress}
+                className="px-5 py-2.5 rounded-xl bg-[#3CF902] text-black font-semibold text-sm disabled:opacity-40 active:scale-[0.98] transition-transform"
+              >
                 {sessionCreating ? 'Creating…' : 'Create Session Key'}
               </button>
             </Card>
 
+            {/* Created session JWT */}
             {createdSession && (
-              <Card title="✅ Session Created">
-                <p style={styles.subtext}>Save this JWT — it won't be shown again.</p>
-                <div style={styles.keyDisplay}>
-                  <code style={{ ...styles.code, fontSize: 11, wordBreak: 'break-all' }}>
-                    {createdSession.jwt?.slice(0, 60)}…
-                  </code>
-                  <CopyButton text={createdSession.jwt} label="Copy JWT" />
+              <div className="rounded-xl border border-[#3CF902]/30 bg-[#3CF902]/5 p-4 mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="w-2 h-2 rounded-full bg-[#3CF902] shrink-0" />
+                  <h3 className="text-[#3CF902] text-sm font-semibold">Session Created — Save your JWT</h3>
                 </div>
-                <p style={styles.subtext}>Session ID: {createdSession.sessionId}</p>
-                <p style={styles.subtext}>Expires: {new Date(createdSession.expiresAt).toLocaleString()}</p>
-              </Card>
+                <p className="text-white/40 text-xs mb-2">This token won't be shown again.</p>
+                <CodeBlock className="mb-3 text-[10px]">{createdSession.jwt}</CodeBlock>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CopyButton text={createdSession.jwt} label="Copy JWT" />
+                  <span className="text-white/30 text-xs">ID: {createdSession.sessionId}</span>
+                  <span className="text-white/30 text-xs">
+                    Expires {new Date(createdSession.expiresAt).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
             )}
 
+            {/* Session list */}
             <Card title={`Session Keys (${sessions.length})`}>
               {sessions.length === 0 ? (
-                <p style={styles.subtext}>No session keys yet. Create one above.</p>
+                <p className="text-white/30 text-sm py-4 text-center">No session keys yet. Create one above.</p>
               ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={styles.table}>
+                <div className="overflow-x-auto -mx-1">
+                  <table className="w-full text-xs">
                     <thead>
-                      <tr>
-                        {['ID', 'Wallet', 'Chain', 'Max Amount', 'Expires', 'Status', ''].map(h => (
-                          <th key={h} style={styles.th}>{h}</th>
+                      <tr className="text-white/30 text-left border-b border-white/5">
+                        {['ID', 'Wallet', 'Chain', 'Max Amt', 'Expires', 'Status', ''].map(h => (
+                          <th key={h} className="pb-2 pr-3 font-medium uppercase tracking-wider">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {sessions.map(s => (
-                        <tr key={s.sessionId}>
-                          <td style={styles.td}><code style={styles.code}>{s.sessionId?.slice(0, 8)}…</code></td>
-                          <td style={styles.td}><code style={styles.code}>{s.walletAddress?.slice(0, 10)}…</code></td>
-                          <td style={styles.td}>{CHAIN_NAMES[s.chainId] ?? s.chainId}</td>
-                          <td style={styles.td}>{s.maxAmount}</td>
-                          <td style={styles.td}>{s.expiresAt ? new Date(s.expiresAt).toLocaleDateString() : '—'}</td>
-                          <td style={styles.td}><StatusBadge status={s.status} /></td>
-                          <td style={styles.td}>
+                        <tr key={s.sessionId} className="border-b border-white/5 last:border-0">
+                          <td className="py-2.5 pr-3 font-mono text-white/60">{s.sessionId?.slice(0, 8)}…</td>
+                          <td className="py-2.5 pr-3 font-mono text-white/60">{s.walletAddress?.slice(0, 8)}…</td>
+                          <td className="py-2.5 pr-3 text-white/60">{CHAIN_NAMES[s.chainId] ?? s.chainId}</td>
+                          <td className="py-2.5 pr-3 text-white/60">{s.maxAmount}</td>
+                          <td className="py-2.5 pr-3 text-white/40">
+                            {s.expiresAt ? new Date(s.expiresAt).toLocaleDateString() : '—'}
+                          </td>
+                          <td className="py-2.5 pr-3">
+                            <div className="flex items-center gap-1.5">
+                              <StatusDot status={s.status} />
+                              <span className={s.status === 'active' ? 'text-[#3CF902]' : 'text-white/30'}>
+                                {s.status}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-2.5">
                             {s.status === 'active' && (
-                              <button style={styles.dangerBtn} onClick={() => handleRevokeSession(s.sessionId)}>
-                                Revoke
+                              <button
+                                type="button"
+                                onClick={() => handleRevoke(s.sessionId)}
+                                disabled={revokingId === s.sessionId}
+                                className="px-2 py-1 rounded-lg border border-red-500/20 text-red-400 text-xs hover:bg-red-500/10 transition-colors disabled:opacity-40"
+                              >
+                                {revokingId === s.sessionId ? '…' : 'Revoke'}
                               </button>
                             )}
                           </td>
@@ -310,111 +510,123 @@ export default function AgentDashboardPage() {
                 </div>
               )}
             </Card>
-          </div>
+          </>
         )}
 
-        {/* MCP Setup tab */}
-        {tab === 'mcp-setup' && (
-          <div>
-            <Card title="Claude Desktop Setup">
-              <p style={styles.subtext}>
-                Add to your <code style={styles.code}>claude_desktop_config.json</code>:
+        {/* ── MCP / SDK Tab ─────────────────────────────────────────────────── */}
+        {tab === 'mcp' && (
+          <>
+            {/* Claude Desktop */}
+            <Card title="Claude Desktop — MCP Server" className="mb-4">
+              <p className="text-white/40 text-xs mb-3">
+                Add to <code className="text-[#3CF902]/70">claude_desktop_config.json</code> and restart Claude.
               </p>
-              <div style={styles.codeBlock}>
-                <pre style={{ margin: 0, overflow: 'auto' }}>{mcpConfig}</pre>
-              </div>
-              <CopyButton text={mcpConfig} label="Copy Config" />
-            </Card>
-
-            <Card title="Install CLI">
-              <p style={styles.subtext}>Run cross-chain swaps from the terminal or CI pipelines:</p>
-              <div style={styles.codeBlock}>
-                <code>npm install -g @mangoswap/agent-cli</code>
-              </div>
-              <CopyButton text="npm install -g @mangoswap/agent-cli" label="Copy" />
-              <div style={{ marginTop: 16, ...styles.codeBlock }}>
-                <code>{'mango-agent quote --from ETH:8453 --to ETH:1 --amount 0.01'}</code>
+              <CodeBlock className="mb-3">{mcpConfig}</CodeBlock>
+              <div className="flex gap-2">
+                <CopyButton text={mcpConfig} label="Copy Config" />
+                <a
+                  href="https://github.com/0tabris/mangoswap/tree/main/mangoswap/packages/mcp-server"
+                  target="_blank" rel="noreferrer"
+                  className="px-3 py-1.5 rounded-lg border border-white/20 text-white/50 text-xs hover:border-[#3CF902]/50 hover:text-[#3CF902] transition-colors"
+                >
+                  ↗ Docs
+                </a>
               </div>
             </Card>
 
-            <Card title="Python SDK">
-              <p style={styles.subtext}>Call MangoSwap from Python agents:</p>
-              <div style={styles.codeBlock}>
-                <pre style={{ margin: 0 }}>{`import requests
+            {/* CLI */}
+            <Card title="CLI — mango-agent" className="mb-4">
+              <p className="text-white/40 text-xs mb-3">Run swaps from the terminal or CI pipelines.</p>
+              <CodeBlock className="mb-2">npm install -g @mangoswap/agent-cli</CodeBlock>
+              <CodeBlock className="mb-3">
+{`export MANGO_API_KEY=${apiKey}
 
-headers = {"x-api-key": "${apiKey}"}
-resp = requests.post(
-    "${API_BASE}/api/v1/swap/cross-chain",
-    headers=headers,
-    json={
-        "sourceChainId": 8453,
-        "destChainId": 1,
-        "tokenIn": "ETH",
-        "tokenOut": "ETH",
-        "amountIn": "0.01",
-        "recipient": "0xYourAddress",
-        "userAddress": "0xYourAddress",
-    }
-)
-print(resp.json())`}
-                </pre>
-              </div>
-              <CopyButton text={`import requests\n\nheaders = {"x-api-key": "${apiKey}"}\nresp = requests.post("${API_BASE}/api/v1/swap/cross-chain", headers=headers, json={"sourceChainId": 8453, "destChainId": 1, "tokenIn": "ETH", "tokenOut": "ETH", "amountIn": "0.01", "recipient": "0xYourAddress", "userAddress": "0xYourAddress"})\nprint(resp.json())`} label="Copy Python" />
+# Quote
+mango-agent quote --from ETH:8453 --to ETH:1 --amount 0.01
+
+# Swap
+mango-agent swap --from ETH:8453 --to ETH:1 --amount 0.01 \\
+  --recipient 0xYourAddress
+
+# Status
+mango-agent status --id <swapId>`}
+              </CodeBlock>
+              <CopyButton text={`npm install -g @mangoswap/agent-cli`} label="Copy Install" />
             </Card>
 
-            <Card title="Embed Widget in Any Site">
-              <p style={styles.subtext}>Drop the swap widget into any HTML page:</p>
-              <div style={styles.codeBlock}>
-                <pre style={{ margin: 0 }}>{`<script src="https://cdn.mangoswap.io/widget.js"></script>
+            {/* TypeScript SDK */}
+            <Card title="TypeScript / JavaScript SDK" className="mb-4">
+              <CodeBlock className="mb-2">npm install @mangoswap/sdk</CodeBlock>
+              <CodeBlock className="mb-3">
+{`import { MangoSwapSDK } from '@mangoswap/sdk';
+
+const mango = new MangoSwapSDK({ apiKey: '${apiKey}' });
+
+const quote = await mango.getQuote({
+  sourceChainId: 8453, destChainId: 1,
+  tokenIn: 'ETH', tokenOut: 'ETH', amountIn: '0.01',
+});
+
+const swap = await mango.createSwap({ ...params });
+const result = await mango.waitForCompletion(swap.swapId);`}
+              </CodeBlock>
+              <CopyButton text="npm install @mangoswap/sdk" label="Copy Install" />
+            </Card>
+
+            {/* Python */}
+            <Card title="Python (REST API)" className="mb-4">
+              <CodeBlock className="mb-3">
+{`import requests, time
+
+HEADERS = {"x-api-key": "${apiKey}", "Content-Type": "application/json"}
+BASE = "${API_BASE}"
+
+swap = requests.post(f"{BASE}/api/v1/swap/cross-chain", headers=HEADERS, json={
+    "sourceChainId": 8453, "destChainId": 1,
+    "tokenIn": "ETH", "tokenOut": "ETH", "amountIn": "0.01",
+    "recipient": "0xRecipient", "userAddress": "0xSender",
+}).json()
+
+print(f"Send ETH to: {swap['depositAddress']}")
+
+# Poll until done
+while True:
+    s = requests.get(f"{BASE}/api/v1/swap/{swap['swapId']}/status",
+                     headers=HEADERS).json()
+    if s["status"] in ("completed", "failed", "expired"):
+        break
+    time.sleep(10)`}
+              </CodeBlock>
+              <CopyButton
+                text={`import requests, time\n\nHEADERS = {"x-api-key": "${apiKey}", "Content-Type": "application/json"}`}
+                label="Copy Python"
+              />
+            </Card>
+
+            {/* Embeddable Widget */}
+            <Card title="Embeddable Swap Widget">
+              <p className="text-white/40 text-xs mb-3">
+                Drop a swap UI into any webpage — no React required.
+              </p>
+              <CodeBlock className="mb-3">
+{`<script src="https://cdn.mangoswap.io/widget.js"></script>
 <mango-swap
   api-key="${apiKey}"
   from-chain="8453"
   to-chain="1"
   theme="dark">
 </mango-swap>`}
-                </pre>
-              </div>
-              <CopyButton text={`<script src="https://cdn.mangoswap.io/widget.js"></script>\n<mango-swap api-key="${apiKey}" from-chain="8453" to-chain="1" theme="dark"></mango-swap>`} label="Copy HTML" />
+              </CodeBlock>
+              <CopyButton
+                text={`<script src="https://cdn.mangoswap.io/widget.js"></script>\n<mango-swap api-key="${apiKey}" from-chain="8453" to-chain="1" theme="dark"></mango-swap>`}
+                label="Copy HTML"
+              />
             </Card>
-          </div>
+          </>
         )}
+
+        <SwapFooter />
       </div>
     </div>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const styles = {
-  page: { minHeight: '100vh', background: '#0f172a', color: '#f1f5f9', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
-  container: { maxWidth: 900, margin: '0 auto', padding: '40px 20px' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 },
-  pageTitle: { fontSize: 28, fontWeight: 800, color: '#f1f5f9', margin: '0 0 4px' },
-  subtitle: { color: '#94a3b8', margin: 0, fontSize: 14 },
-  grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 },
-  card: { background: '#1e293b', border: '1px solid #334155', borderRadius: 12, padding: '20px', marginBottom: 16 },
-  cardTitle: { fontSize: 14, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 16px' },
-  tabs: { display: 'flex', gap: 4, marginBottom: 24, background: '#1e293b', borderRadius: 10, padding: 4 },
-  tab: { flex: 1, padding: '8px 12px', border: 'none', borderRadius: 8, background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: 13, fontWeight: 500 },
-  tabActive: { background: '#334155', color: '#f1f5f9' },
-  keyDisplay: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  input: { width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '10px 12px', color: '#f1f5f9', fontSize: 14, outline: 'none', marginBottom: 8, boxSizing: 'border-box' },
-  select: { width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '10px 12px', color: '#f1f5f9', fontSize: 14, outline: 'none', marginBottom: 8 },
-  label: { display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 4, fontWeight: 500 },
-  formGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 12 },
-  primaryBtn: { background: '#22c55e', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: 14 },
-  secondaryBtn: { background: 'transparent', color: '#94a3b8', border: '1px solid #334155', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 14 },
-  dangerBtn: { background: '#ef4444', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', fontWeight: 500 },
-  copyBtn: { background: '#334155', color: '#94a3b8', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' },
-  badge: { display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600 },
-  code: { background: '#0f172a', padding: '2px 6px', borderRadius: 4, fontSize: 12, fontFamily: 'monospace', color: '#22d3ee' },
-  codeBlock: { background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '12px 16px', fontSize: 12, fontFamily: 'monospace', color: '#e2e8f0', marginBottom: 8, overflowX: 'auto' },
-  link: { color: '#22d3ee', textDecoration: 'none', fontSize: 14 },
-  subtext: { color: '#94a3b8', fontSize: 13, margin: '4px 0' },
-  hint: { color: '#64748b', fontSize: 12, marginTop: 8 },
-  errorBox: { background: '#ef444422', border: '1px solid #ef4444', borderRadius: 8, padding: '10px 16px', color: '#fca5a5', marginBottom: 16, fontSize: 14 },
-  warningBox: { background: '#f59e0b22', border: '1px solid #f59e0b', borderRadius: 6, padding: '6px 12px', color: '#fcd34d', fontSize: 12, marginTop: 8 },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
-  th: { textAlign: 'left', color: '#64748b', fontWeight: 500, padding: '6px 8px', borderBottom: '1px solid #334155', fontSize: 11, textTransform: 'uppercase' },
-  td: { padding: '10px 8px', borderBottom: '1px solid #1e293b', color: '#cbd5e1', verticalAlign: 'middle' },
-};

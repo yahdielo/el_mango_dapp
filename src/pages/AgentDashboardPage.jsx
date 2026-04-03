@@ -225,10 +225,10 @@ export default function AgentDashboardPage() {
             </button>
             <p className="text-white/30 text-xs text-center">
               No API key?{' '}
-              <a href="mailto:dev@mangoswap.io" className="text-[#3CF902]/70 hover:text-[#3CF902]">
-                Contact us
-              </a>{' '}
-              or use anonymous access (rate-limited).
+              <a href="https://t.me/+gQjCJxFGlDUwMTdh" target="_blank" rel="noreferrer" className="text-[#3CF902]/70 hover:text-[#3CF902]">
+              Join Telegram
+                </a>{' '}
+                or use anonymous access (rate-limited).
             </p>
           </form>
 

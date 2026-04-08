@@ -760,7 +760,6 @@ export default function CrossChainPage() {
   } = useCrossChainEstimate({
     enabled:
       isCrossChain &&
-      effectiveBridgeProvider === 'rango' &&
       isCrossChainViaBackendAvailable() &&
       !!amountIn &&
       parseFloat(amountIn) > 0 &&
@@ -810,9 +809,9 @@ export default function CrossChainPage() {
   );
   const lowerBridgeMsg = rawBridgeMsg.toLowerCase();
   const isRangoRouteUnavailable =
-    effectiveBridgeProvider === 'rango' && /route not available|no route/i.test(lowerBridgeMsg);
+    /route not available|no route/i.test(lowerBridgeMsg);
   const isRangoBelowMinimum =
-    effectiveBridgeProvider === 'rango' && /amount below minimum|below minimum/i.test(lowerBridgeMsg);
+    /amount below minimum|below minimum/i.test(lowerBridgeMsg);
 
   const tokenInIsNative =
     !!tokenIn?.native || (typeof tokenIn?.address === 'string' && tokenIn.address.toLowerCase() === ZERO_ADDRESS);
@@ -820,6 +819,15 @@ export default function CrossChainPage() {
     !!tokenOut?.native || (typeof tokenOut?.address === 'string' && tokenOut.address.toLowerCase() === ZERO_ADDRESS);
 
   // true / null = proceed (null matches "Route check unavailable; you can still slide"). false = explicit unsupported.
+  // Block the slide when the estimate returned no output (route unavailable / amount too small).
+  const crossChainHasNoOutput =
+    isCrossChain &&
+    !crossChainEstimateLoading &&
+    !routeLoading &&
+    !!amountIn &&
+    parseFloat(amountIn) > 0 &&
+    !crossChainAmountOut &&
+    !effectiveQuoteLoading;
   const canConfirmCrossChain =
     isCrossChain &&
     !routeLoading &&
@@ -838,6 +846,7 @@ export default function CrossChainPage() {
     tronSenderValid &&
     !amountTooLow &&
     !amountTooHigh &&
+    !crossChainHasNoOutput &&
     !bridgeLoading;
   const canConfirm = isCrossChain ? canConfirmCrossChain : false;
   const showUnsupportedWarning =
@@ -1362,9 +1371,14 @@ export default function CrossChainPage() {
                   )}
                 </div>
               )}
-              {effectiveBridgeProvider === 'rango' && isRangoRouteUnavailable && (
+              {isRangoRouteUnavailable && (
                 <p className="text-xs text-gray-400 text-center mb-2">
-                  Rango has no route for this chain/token pair right now. Try a different token or chain.
+                  No route found for this pair right now. Try a different token, chain, or a larger amount.
+                </p>
+              )}
+              {!isRangoRouteUnavailable && !isRangoBelowMinimum && crossChainHasNoOutput && (
+                <p className="text-xs text-amber-400 text-center mb-2">
+                  Amount too low or no route available. Try a larger amount.
                 </p>
               )}
             </>

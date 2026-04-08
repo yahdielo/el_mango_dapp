@@ -997,6 +997,8 @@ export default function CrossChainPage() {
           estimated={effectiveQuoteEstimated}
           gasCostFormatted={isCrossChain && !gasCostFormatted ? `~<0.0001 ${sourceChain?.nativeCurrency?.symbol || 'ETH'}` : gasCostFormatted}
           bridgeLabel={bridgeLabelDisplay}
+          tokenInSymbol={tokenIn?.symbol}
+          isEvmSource={!bitcoinSource && !solanaSource && !tronSource}
         />
 
         <div className="mt-6">

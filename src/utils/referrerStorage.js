@@ -30,43 +30,57 @@ export function getStoredReferrer(userAddress) {
 }
 
 /**
- * Persist a referrer for a user. Returns the normalized value that was stored.
- * If referrer is invalid or equals user, stores ZERO_ADDRESS (clears).
+ * Persist a referrer for a user (SET-ONCE — immutable after first valid set).
+ * If the user already has a valid referrer stored, the call is a no-op and the
+ * existing referrer is returned unchanged. This matches the backend behaviour of
+ * `createAccountReferralIfMissing` and prevents re-attribution after first use.
+ *
+ * Returns the referrer that is now active (existing or newly stored).
  */
 export function setStoredReferrer(userAddress, referrerAddress) {
   if (typeof window === 'undefined') return ZERO_ADDRESS;
   if (!isValidReferrerAddress(userAddress)) return ZERO_ADDRESS;
   const user = userAddress.trim();
+
+  // Lock: if a valid referrer is already stored, never overwrite it.
+  const existing = getStoredReferrer(user);
+  if (existing !== ZERO_ADDRESS) return existing;
+
   const ref = (referrerAddress || '').trim();
   const normalized =
     isValidReferrerAddress(ref) && ref.toLowerCase() !== user.toLowerCase() ? ref : ZERO_ADDRESS;
   try {
     const k = keyForUser(user);
-    if (normalized === ZERO_ADDRESS) window.localStorage.removeItem(k);
-    else window.localStorage.setItem(k, normalized);
+    if (normalized !== ZERO_ADDRESS) window.localStorage.setItem(k, normalized);
   } catch {
     // ignore
   }
   return normalized;
 }
 
-export function clearStoredReferrer(userAddress) {
-  return setStoredReferrer(userAddress, ZERO_ADDRESS);
+/** @deprecated Referrals are now immutable. This is intentionally a no-op. */
+export function clearStoredReferrer(_userAddress) {
+  return ZERO_ADDRESS;
 }
 
 /**
  * Resolve the effective referrer for a swap:
- * - URL ref (if valid) wins
- * - then per-user stored referrer
- * - then env default (VITE_REFERRER_ADDRESS via getReferrerAddress)
- * - else ZERO_ADDRESS
+ * - If user already has a locked stored referrer, always use it (immutable).
+ * - Otherwise URL ref (if valid) → env default → ZERO_ADDRESS.
+ *
+ * The URL ref can only win when no referrer has been set yet, preventing
+ * a malicious link from re-attributing an already-locked user.
  */
 export function resolveEffectiveReferrer({ userAddress, chainId, urlRef }) {
+  // Locked referrer always wins — never allow URL or env to override it.
+  const stored = getStoredReferrer(userAddress);
+  if (stored !== ZERO_ADDRESS) return stored;
+
+  // No referrer locked yet — use URL ref if valid and not self-referral.
   if (isValidReferrerAddress(urlRef) && isValidReferrerAddress(userAddress) && urlRef.toLowerCase() !== userAddress.toLowerCase()) {
     return urlRef.trim();
   }
-  const stored = getStoredReferrer(userAddress);
-  if (stored !== ZERO_ADDRESS) return stored;
+
   const envDefault = getReferrerAddress(chainId);
   return envDefault || ZERO_ADDRESS;
 }

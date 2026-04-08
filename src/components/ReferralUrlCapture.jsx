@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import {
   isValidReferrerAddress,
   setStoredReferrer,
+  getStoredReferrer,
   setPendingReferrer,
   getPendingReferrer,
   clearPendingReferrer,
@@ -56,6 +57,13 @@ export default function ReferralUrlCapture() {
     const pending = getPendingReferrer();
     if (!isValidReferrerAddress(pending)) return;
     if (pending.toLowerCase() === address.toLowerCase()) {
+      clearPendingReferrer();
+      return;
+    }
+
+    // If this wallet already has a locked referrer, discard the pending one silently.
+    const alreadyLocked = getStoredReferrer(address);
+    if (alreadyLocked !== ZERO) {
       clearPendingReferrer();
       return;
     }

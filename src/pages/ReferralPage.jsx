@@ -55,6 +55,10 @@ export default function ReferralPage() {
   const [manualStatus, setManualStatus] = useState(null);
   const { signMessageAsync } = useSignMessage();
 
+  // Is this wallet's referrer already locked in localStorage?
+  const lockedReferrer = address ? getStoredReferrer(address) : null;
+  const isReferrerLocked = lockedReferrer && lockedReferrer !== '0x0000000000000000000000000000000000000000';
+
   const { data: chainData, loading: chainLoading, error: chainError, refetch: refetchChain } = useReferralChain(address);
   const { data: treeData, loading: treeLoading, error: treeError } = useReferralTree(address);
   const { data: perfData, loading: perfLoading, error: perfError } = useReferralPerformance(address);
@@ -186,80 +190,76 @@ export default function ReferralPage() {
           </div>
         ) : (
           <>
-            <ReferralSection title="Set my referrer (URL or manual)">
-              <p className="text-gray-400 text-xs mb-2">
-                This sets the referrer your swaps will use automatically. You can set it by visiting a link with <span className="font-mono">?ref=0x...</span> or by entering an address here.
-              </p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={manualRef}
-                  onChange={(e) => setManualRef(e.target.value)}
-                  placeholder="0xReferrerAddress"
-                  className="flex-1 bg-black/30 rounded-lg px-3 py-2 text-white text-xs font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!address) return;
-                    const v = (manualRef || '').trim();
-                    if (!isValidReferrerAddress(v) || v.toLowerCase() === address.toLowerCase()) {
-                      setManualStatus('Invalid referrer address');
-                      setTimeout(() => setManualStatus(null), 2500);
-                      return;
-                    }
-                    // Always save locally so swaps can use it immediately.
-                    setStoredReferrer(address, v);
-                    setManualStatus('Saving (sign message)...');
-                    try {
-                      const { nonce } = await getReferralClaimNonce(address);
-                      const msg = buildReferralClaimMessage({ userAddress: address, referrerAddress: v, nonce });
-                      const signature = await signMessageAsync({ message: msg });
-                      await claimAccountReferrer({
-                        userAddress: address,
-                        referrerAddress: v,
-                        nonce,
-                        signature,
-                        source: 'manual',
-                      });
-                      setManualStatus('Saved (synced to backend)');
-                    } catch (e) {
-                      // Keep local save even if backend sync fails.
-                      setManualStatus(e?.message ? `Saved locally. Backend sync failed: ${e.message}` : 'Saved locally. Backend sync failed.');
-                    } finally {
-                      setTimeout(() => setManualStatus(null), 3500);
-                    }
-                  }}
-                  className="shrink-0 px-3 py-2 rounded-lg bg-[#3CF902] text-black font-medium text-sm hover:opacity-90"
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!address) return;
-                    clearStoredReferrer(address);
-                    setManualRef('');
-                    setManualStatus('Cleared');
-                    setTimeout(() => setManualStatus(null), 2000);
-                  }}
-                  className="shrink-0 px-3 py-2 rounded-lg bg-white/10 text-white font-medium text-sm hover:bg-white/15"
-                >
-                  Reset
-                </button>
-              </div>
-              {manualStatus && <p className="text-gray-400 text-xs mt-2">{manualStatus}</p>}
-            </ReferralSection>
-
             <ReferralSection title="My referrer">
-              {chainLoading && <p className="text-gray-500">Loading...</p>}
-              {chainError && <p className="text-red-400">{chainError}</p>}
-              {!chainLoading && !chainError && (
-                primaryReferrer
-                  ? <p>Your referrer: <span className="font-mono text-[#3CF902]">{formatAddress(primaryReferrer)}</span></p>
-                  : <p>No referrer set. Use someone’s referral link to set one.</p>
+              {isReferrerLocked ? (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#3CF902]/10 border border-[#3CF902]/30 text-[#3CF902] text-xs font-medium">
+                      🔒 Locked
+                    </span>
+                    <span className="text-gray-400 text-xs">Referrer is permanent and cannot be changed.</span>
+                  </div>
+                  <p className="text-white font-mono text-xs break-all">{lockedReferrer}</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-400 text-xs mb-2">
+                    Set once by visiting a referral link <span className="font-mono">?ref=0x...</span> or entering an address below. Once set, it is permanent.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={manualRef}
+                      onChange={(e) => setManualRef(e.target.value)}
+                      placeholder="0xReferrerAddress"
+                      className="flex-1 bg-black/30 rounded-lg px-3 py-2 text-white text-xs font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!address) return;
+                        const v = (manualRef || '').trim();
+                        if (!isValidReferrerAddress(v) || v.toLowerCase() === address.toLowerCase()) {
+                          setManualStatus('Invalid referrer address');
+                          setTimeout(() => setManualStatus(null), 2500);
+                          return;
+                        }
+                        const set = setStoredReferrer(address, v);
+                        if (set === '0x0000000000000000000000000000000000000000') {
+                          setManualStatus('Could not save — referrer may already be locked.');
+                          setTimeout(() => setManualStatus(null), 3000);
+                          return;
+                        }
+                        setManualStatus('Saving (sign message)...');
+                        try {
+                          const { nonce } = await getReferralClaimNonce(address);
+                          const msg = buildReferralClaimMessage({ userAddress: address, referrerAddress: v, nonce });
+                          const signature = await signMessageAsync({ message: msg });
+                          await claimAccountReferrer({
+                            userAddress: address,
+                            referrerAddress: v,
+                            nonce,
+                            signature,
+                            source: 'manual',
+                          });
+                          setManualStatus('Saved and locked permanently.');
+                        } catch (e) {
+                          setManualStatus(e?.message ? `Saved locally. Backend sync failed: ${e.message}` : 'Saved locally. Backend sync failed.');
+                        } finally {
+                          setTimeout(() => setManualStatus(null), 3500);
+                        }
+                      }}
+                      className="shrink-0 px-3 py-2 rounded-lg bg-[#3CF902] text-black font-medium text-sm hover:opacity-90"
+                    >
+                      Save
+                    </button>
+                  </div>
+                  {manualStatus && <p className="text-gray-400 text-xs mt-2">{manualStatus}</p>}
+                </div>
               )}
             </ReferralSection>
+
+
 
             <ReferralSection title="My referral link">
               <p className="text-gray-400 text-xs mb-2">Share this link so others can use you as referrer when they swap.</p>

@@ -153,8 +153,8 @@ export async function initiateCrossChainViaBackend({
     // For BTC empty-address errors, keep message short — the frontend renders a dedicated banner
     const isBtcEmptyAddr = data?.error === 'Empty Bitcoin address' || /no btc found at|0 btc found at/i.test(msg);
     // For amount-limit errors the message already states the minimum; don't append the long suggestion
-    const isAmountLimitError = data?.error === 'Amount outside provider limits' ||
-      /below minimum|provider limit/i.test(msg);
+    const isAmountLimitError = data?.code === 'AMOUNT_TOO_LOW' || data?.code === 'AMOUNT_TOO_HIGH' ||
+      data?.error === 'Amount outside provider limits' || /below minimum|provider limit/i.test(msg);
     if (!isBtcEmptyAddr && !isAmountLimitError && data?.suggestion && msg && !msg.includes(data.suggestion)) {
       msg = `${msg} ${data.suggestion}`;
     }
@@ -166,6 +166,8 @@ export async function initiateCrossChainViaBackend({
       msg = `${msg} Requested route: chain ${src} → chain ${dst}.`;
     }
     const err = new Error(msg);
+    // Attach machine-readable code so errorMapping.js can always show the actual message
+    if (data?.code) err.code = data.code;
     // Attach structured data so the UI can offer a "Use minimum" action and show hints
     if (data?.minAmount != null) err.minAmount = String(data.minAmount);
     if (data?.maxAmount != null) err.maxAmount = String(data.maxAmount);

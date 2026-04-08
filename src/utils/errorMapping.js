@@ -94,7 +94,7 @@ const BTC_EMPTY_ADDRESS_PATTERNS = [
   /btc.*balance.*0/i,
 ];
 
-// Bridge / LayerSwap / Rango
+// Bridge / LayerSwap / Rango / Symbiosis
 const BRIDGE_PATTERNS = [
   /missing required parameters for bridge/i,
   /no swap id returned/i,
@@ -102,12 +102,15 @@ const BRIDGE_PATTERNS = [
   /route not available/i,
   /route not found/i,
   /no routes available/i,
+  /no cross-chain route/i,
+  /cross-chain route.*available/i,
   /rate limit/i,
   /circuit breaker/i,
   /429/i,
   /layerswap.*unavailable/i,
   /bridge temporarily unavailable/i,
   /503/i,
+  /provider.*rejected/i,
 ];
 
 // Amount-limit errors from bridge providers (show first sentence of raw message — it's short and actionable)
@@ -157,14 +160,21 @@ export function mapErrorToUserMessage(err) {
   if (LIQUIDITY_PATTERNS.some((p) => p.test(msg))) return 'Insufficient liquidity';
   if (ROUTER_PATTERNS.some((p) => p.test(msg))) return 'Swap failed: no route or pool';
   if (QUOTE_PATTERNS.some((p) => p.test(msg))) return 'Quote unavailable. Check network and mangoServices.';
-  if (BRIDGE_PATTERNS.some((p) => p.test(msg))) {
+  if (BRIDGE_PATTERNS.some((p) => p.test(msg)) || err?.code === 'NO_ROUTE' || err?.code === 'AMOUNT_TOO_LOW') {
     if (msg.includes('rate limit') || msg.includes('429')) return 'Bridge rate limited. Try again later.';
     if (msg.includes('temporarily unavailable') || msg.includes('503')) return 'Bridge temporarily unavailable. Try again in a minute.';
-    // For route-not-available, show full message so API suggestion (e.g. ETH→TRX workaround) is visible
     const raw = String(err?.message || err || '').trim();
-    if (/route not available|no route|no cross-chain route/i.test(msg) && raw.length > 0 && !/^\s*api error:\s*\d+/i.test(raw)) return raw;
-    if (raw.length > 0 && raw.length <= 120 && !/^\s*api error:\s*\d+/i.test(raw)) return raw;
-    return 'Bridge error. Route may be unavailable.';
+    // Always show the actual bridge message — it contains the minimum amount and actionable guidance.
+    // Only suppress if it looks like a raw HTTP status code string (no real content).
+    if (raw.length > 0 && !/^\s*(api error:\s*)?\d+\s*$/i.test(raw)) {
+      // Truncate very long messages (>240) to first sentence
+      if (raw.length > 240) {
+        const firstSentence = raw.split(/\.\s/)[0];
+        return firstSentence.length > 10 ? firstSentence + '.' : raw.slice(0, 200) + '…';
+      }
+      return raw;
+    }
+    return 'Route not available. Try a different amount or chain pair.';
   }
   if (CONFIG_PATTERNS.some((p) => p.test(msg))) return msg; // keep config messages as-is (short)
   if (NETWORK_PATTERNS.some((p) => p.test(msg))) return 'Network error. Try again.';
@@ -180,8 +190,13 @@ export function mapErrorToUserMessage(err) {
     return 'Quote or contract read failed. Try again or check your network.';
   }
 
-  // Fallback: shorten raw message
+  // Fallback: show raw message if it's concise, otherwise generic
   const raw = err?.shortMessage ?? err?.message ?? (typeof err === 'string' ? err : String(err ?? ''));
+  if (!raw) return 'Transaction failed';
+  // Bridge/API errors (code attached) always show the message
+  if (err?.code && raw.length > 0) {
+    return raw.length > 200 ? raw.slice(0, 200) + '…' : raw;
+  }
   if (raw.length > 80) return 'Transaction failed';
-  return raw || 'Transaction failed';
+  return raw;
 }

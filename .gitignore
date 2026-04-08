@@ -47,6 +47,7 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.production
 
 # Package manager lock files (optional - some teams prefer to commit these)
 # Uncomment if you want to ignore lock files

@@ -1,0 +1,417 @@
+import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+
+const TOS_KEY  = 'mangoswap_tos_accepted_v1';
+const PASS_KEY = 'mangoswap_access_v1';
+
+// Set VITE_ACCESS_PASSPHRASE in your .env file to change the passphrase.
+const ACCESS_PHRASE = (import.meta.env.VITE_ACCESS_PASSPHRASE ?? 'MangoSwap2025').trim();
+
+// ─── Root gate ────────────────────────────────────────────────────────────────
+export default function TermsGate({ children }) {
+  // phase: 'loading' | 'passphrase' | 'terms' | 'granted'
+  const [phase, setPhase]     = useState('loading');
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    try {
+      const passOk = sessionStorage.getItem(PASS_KEY) === 'true';
+      const tosOk  = localStorage.getItem(TOS_KEY)   === 'true';
+      if (!passOk)      setPhase('passphrase');
+      else if (!tosOk)  setPhase('terms');
+      else              setPhase('granted');
+    } catch {
+      setPhase('passphrase');
+    }
+    setTimeout(() => setVisible(true), 60);
+  }, []);
+
+  const advanceTo = (next) => {
+    setVisible(false);
+    setTimeout(() => { setPhase(next); setVisible(true); }, 280);
+  };
+
+  if (phase === 'loading')  return null;
+  if (phase === 'granted')  return children;
+
+  return (
+    <>
+      {/* Dark backdrop */}
+      <div className="fixed inset-0 z-40 bg-black/90 backdrop-blur-md" />
+
+      {/* Centred overlay */}
+      <div
+        className={`fixed inset-0 z-50 flex items-center justify-center p-4
+          transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      >
+        {phase === 'passphrase' && (
+          <PassphraseModal
+            onSuccess={() => {
+              try { sessionStorage.setItem(PASS_KEY, 'true'); } catch {}
+              const tosOk = localStorage.getItem(TOS_KEY) === 'true';
+              advanceTo(tosOk ? 'granted' : 'terms');
+            }}
+          />
+        )}
+
+        {phase === 'terms' && (
+          <TermsModal
+            onAccept={() => {
+              try { localStorage.setItem(TOS_KEY, 'true'); } catch {}
+              advanceTo('granted');
+            }}
+          />
+        )}
+      </div>
+
+      {/* App content sits behind, blurred — pointer-events off */}
+      <div className="pointer-events-none select-none">{children}</div>
+    </>
+  );
+}
+
+// ─── Passphrase modal ─────────────────────────────────────────────────────────
+function PassphraseModal({ onSuccess }) {
+  const [value, setValue]   = useState('');
+  const [error, setError]   = useState(false);
+  const [shake, setShake]   = useState(false);
+  const [show,  setShow]    = useState(false);
+  const inputRef = useRef(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (value.trim().toLowerCase() === ACCESS_PHRASE.toLowerCase()) {
+      onSuccess();
+    } else {
+      setError(true);
+      setShake(true);
+      setValue('');
+      setTimeout(() => setShake(false), 600);
+      setTimeout(() => setError(false), 2500);
+      inputRef.current?.focus();
+    }
+  };
+
+  return (
+    <div className={`bg-[#161616] border border-[#2a2a2a] rounded-2xl w-full max-w-sm p-8 shadow-2xl
+        transition-all duration-300 ${shake ? 'animate-shake' : ''}`}>
+
+      {/* Logo */}
+      <div className="flex flex-col items-center mb-7">
+        <img
+          src="https://api.builder.io/api/v1/image/assets/TEMP/97964aed0ad7eead9b2235fd616501178f4c469a?width=164"
+          alt="MangoSwap"
+          className="w-14 h-14 object-contain mb-3"
+        />
+        <h1 className="text-white font-bold text-xl">MangoSwap</h1>
+        <p className="text-gray-500 text-xs mt-1">Private Access — Enter your passphrase</p>
+      </div>
+
+      <form onSubmit={submit} className="space-y-4">
+        <div className="relative">
+          <input
+            ref={inputRef}
+            type={show ? 'text' : 'password'}
+            value={value}
+            onChange={e => setValue(e.target.value)}
+            placeholder="Enter passphrase"
+            autoComplete="off"
+            className={`w-full bg-[#0e0e0e] border rounded-xl px-4 py-3 text-white text-sm
+              placeholder-gray-600 outline-none pr-10 transition-colors
+              ${error
+                ? 'border-red-500 focus:border-red-500'
+                : 'border-[#2a2a2a] focus:border-[#3CF902]'}`}
+          />
+          {/* Show/hide toggle */}
+          <button
+            type="button"
+            onClick={() => setShow(s => !s)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+          >
+            {show ? (
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            ) : (
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            )}
+          </button>
+        </div>
+
+        {error && (
+          <p className="text-red-400 text-xs text-center animate-pulse">
+            Incorrect passphrase. Please try again.
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={!value.trim()}
+          className={`w-full py-3 rounded-xl font-bold text-sm transition-all
+            ${value.trim()
+              ? 'bg-[#3CF902] text-black hover:bg-[#3CF902]/90 active:scale-[0.98]'
+              : 'bg-[#2a2a2a] text-gray-600 cursor-not-allowed'}`}
+        >
+          Enter
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ─── Terms modal ──────────────────────────────────────────────────────────────
+function TermsModal({ onAccept }) {
+  const [reachedBottom, setReachedBottom] = useState(false);
+  const [checked,       setChecked]       = useState(false);
+
+  const onScroll = (e) => {
+    if (reachedBottom) return;
+    const el = e.currentTarget;
+    if (el.scrollHeight - el.scrollTop <= el.clientHeight + 60) {
+      setReachedBottom(true);
+    }
+  };
+
+  return (
+    <div className="bg-[#161616] border border-[#2a2a2a] rounded-2xl w-full max-w-2xl flex flex-col shadow-2xl"
+      style={{ height: '92vh', maxHeight: '720px' }}>
+
+      {/* ── Header ── */}
+      <div className="px-6 pt-5 pb-4 border-b border-[#2a2a2a] flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <img
+            src="https://api.builder.io/api/v1/image/assets/TEMP/97964aed0ad7eead9b2235fd616501178f4c469a?width=164"
+            alt="MangoSwap"
+            className="w-9 h-9 object-contain"
+          />
+          <div>
+            <h2 className="text-white font-bold text-lg leading-tight">Terms of Service</h2>
+            <p className="text-gray-500 text-xs">Scroll to the bottom, then accept to continue</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Scrollable content ── */}
+      <div
+        className="flex-1 overflow-y-auto px-6 py-5 text-gray-400 text-xs leading-relaxed space-y-5"
+        onScroll={onScroll}
+        style={{ overscrollBehavior: 'contain' }}
+      >
+        <Clause title="1. Agreement to Terms">
+          PLEASE READ THESE TERMS CAREFULLY. BY ACCESSING OR USING MANGOSWAP IN ANY WAY — INCLUDING CONNECTING A WALLET, INITIATING A SWAP, OR INTERACTING WITH ANY PART OF THE INTERFACE — YOU IRREVOCABLY AGREE TO THESE TERMS. IF YOU DO NOT AGREE, YOU MUST IMMEDIATELY STOP USING THE PLATFORM.
+        </Clause>
+
+        <Clause title="2. No Responsibility for Transactions — Complete Disclaimer">
+          <p className="text-red-400 font-semibold mb-2">
+            MANGOSWAP HAS ZERO LIABILITY FOR ANY TRANSACTION EXECUTED ON OR THROUGH THE PLATFORM, INCLUDING:
+          </p>
+          <ul className="list-disc list-inside space-y-1.5">
+            <li>Loss of digital assets due to failed, delayed, stuck, or misdirected transactions;</li>
+            <li>Loss due to incorrect recipient addresses, wrong chain selection, or user error of any kind;</li>
+            <li>Loss caused by smart contract bugs, exploits, hacks, re-entrancy attacks, or protocol failures;</li>
+            <li>Slippage, price impact, or unfavourable exchange rates received;</li>
+            <li>Gas fees paid for failed or unsuccessful transactions (all fees are non-refundable);</li>
+            <li>Loss from market volatility between quote generation and transaction execution;</li>
+            <li>Front-running, MEV attacks, sandwich attacks, or other adversarial on-chain activity;</li>
+            <li>Oracle manipulation, flash loan attacks, or DeFi-specific exploits;</li>
+            <li>Failure of any third-party bridge protocol (Symbiosis, LayerSwap, LiFi, Squid, Rango, Wormhole, THORChain, or any other);</li>
+            <li>Liquidity shortfalls, impermanent loss, or pool imbalances;</li>
+            <li>Regulatory, tax, or legal consequences in your jurisdiction;</li>
+            <li>Wallet compromise, phishing attacks, private key theft, or malware;</li>
+            <li>Network congestion, RPC failures, or blockchain downtime;</li>
+            <li>Cross-chain transactions that fail to finalise on the destination chain for any reason;</li>
+            <li>Funds locked in bridge contracts pending completion of a cross-chain transfer.</li>
+          </ul>
+          <p className="mt-3 font-semibold text-white">
+            ALL BLOCKCHAIN TRANSACTIONS ARE FINAL AND IRREVERSIBLE. MANGOSWAP CANNOT REVERSE, CANCEL, OR REFUND ANY TRANSACTION ONCE SUBMITTED. YOU BEAR SOLE RESPONSIBILITY FOR ALL TRANSACTIONS.
+          </p>
+        </Clause>
+
+        <Clause title="3. Restricted Jurisdictions — You Are PROHIBITED From Using This Service">
+          <p className="mb-2">Access and use of MangoSwap is strictly prohibited if you are a citizen of, resident in, or accessing from any of the following jurisdictions:</p>
+          <div className="grid grid-cols-2 gap-1 bg-[#0e0e0e] rounded-xl p-3">
+            {[
+              ['🇺🇸','United States of America (USA)'],
+              ['🇬🇧','United Kingdom (UK)'],
+              ['🇨🇺','Cuba'],
+              ['🇮🇷','Iran'],
+              ['🇰🇵','North Korea'],
+              ['🇸🇾','Syria'],
+              ['🇷🇺','Russia'],
+              ['🇧🇾','Belarus'],
+              ['🇻🇪','Venezuela'],
+              ['🇲🇲','Myanmar (Burma)'],
+              ['🇨🇳','China'],
+              ['🇭🇰','Hong Kong'],
+              ['🇦🇫','Afghanistan'],
+              ['🇪🇹','Ethiopia'],
+              ['🇮🇶','Iraq'],
+              ['🇱🇧','Lebanon'],
+              ['🇱🇾','Libya'],
+              ['🇲🇱','Mali'],
+              ['🇳🇮','Nicaragua'],
+              ['🇸🇴','Somalia'],
+              ['🇸🇩','Sudan'],
+              ['🇸🇸','South Sudan'],
+              ['🇾🇪','Yemen'],
+              ['🇿🇼','Zimbabwe'],
+              ['🇺🇦','Ukraine (sanctioned regions)'],
+            ].map(([f, n]) => (
+              <div key={n} className="flex items-center gap-1.5 text-[11px] py-0.5">
+                <span>{f}</span>
+                <span className="text-gray-300">{n}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-red-400 font-medium">
+            Use of a VPN, proxy, or any other means to circumvent geographic restrictions is strictly prohibited and constitutes fraud. MangoSwap reserves the right to report such activity to relevant authorities.
+          </p>
+        </Clause>
+
+        <Clause title="4. Eligibility">
+          You must be at least 18 years of age and have full legal capacity to enter into a binding agreement under the laws of your jurisdiction. By using the Platform you represent that you meet these requirements.
+        </Clause>
+
+        <Clause title="5. Non-Custodial Protocol">
+          MangoSwap is a non-custodial, decentralised exchange interface. We never take custody of your digital assets. All transactions are executed autonomously via public blockchain smart contracts. We are an interface only — not a broker, exchange, wallet custodian, or financial services provider.
+        </Clause>
+
+        <Clause title="6. High Risk — Digital Assets">
+          <ul className="list-disc list-inside space-y-1">
+            <li><span className="text-white font-medium">Smart Contract Risk:</span> Contracts may contain bugs or vulnerabilities resulting in total loss of funds.</li>
+            <li><span className="text-white font-medium">Volatility Risk:</span> Digital asset prices are highly volatile. You may lose some or all value.</li>
+            <li><span className="text-white font-medium">Key Management Risk:</span> Loss of your private key or seed phrase results in permanent, irrecoverable loss. MangoSwap cannot assist with recovery.</li>
+            <li><span className="text-white font-medium">Regulatory Risk:</span> Laws governing digital assets are evolving and may adversely affect your assets or transactions.</li>
+            <li><span className="text-white font-medium">Cross-Chain Risk:</span> Bridging involves additional risks including bridge contract failures and finalisation delays.</li>
+            <li><span className="text-white font-medium">Tax Risk:</span> Swaps may constitute taxable events. You are solely responsible for all tax obligations.</li>
+          </ul>
+          <p className="mt-2 font-semibold text-white">DO NOT USE FUNDS YOU CANNOT AFFORD TO LOSE ENTIRELY.</p>
+        </Clause>
+
+        <Clause title="7. Fees">
+          MangoSwap charges a protocol fee on swap and cross-chain transactions. This fee is disclosed prior to execution. By proceeding, you consent to this fee. All fees — including gas fees, bridge fees, and protocol fees — are non-refundable, including for failed transactions.
+        </Clause>
+
+        <Clause title="8. No Financial or Investment Advice">
+          Nothing on the Platform constitutes financial, investment, legal, or tax advice. All information is provided for informational purposes only. You should conduct independent research and consult qualified advisors before making any financial decisions.
+        </Clause>
+
+        <Clause title="9. Anti-Money Laundering (AML) & Sanctions Compliance">
+          By using the Platform, you represent and warrant that: (a) you are not on any government sanctions list (OFAC SDN list, EU consolidated list, UN Security Council list, or HM Treasury list); (b) your funds are not derived from unlawful activity; and (c) you are not using the Platform to evade taxes, sanctions, or legal obligations.
+        </Clause>
+
+        <Clause title="10. Prohibited Uses">
+          You may not use the Platform to launder money, evade taxes, circumvent geographic restrictions, engage in market manipulation, introduce malware, scrape data without consent, or engage in any unlawful activity.
+        </Clause>
+
+        <Clause title="11. Third-Party Services">
+          The Platform integrates with third-party bridge protocols, DEXs, oracles, and wallet providers. MangoSwap does not endorse or assume responsibility for any third-party service. MangoSwap shall not be liable for any loss arising from third-party service failures, exploits, or outages.
+        </Clause>
+
+        <Clause title="12. Limitation of Liability">
+          <p className="text-red-400 font-semibold mb-2">TO THE MAXIMUM EXTENT PERMITTED BY LAW, MANGOSWAP'S TOTAL AGGREGATE LIABILITY TO YOU IS ZERO (USD $0.00). MANGOSWAP IS NOT LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES OF ANY KIND.</p>
+        </Clause>
+
+        <Clause title="13. Disclaimer of Warranties">
+          THE PLATFORM IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND. MANGOSWAP DISCLAIMS ALL EXPRESS AND IMPLIED WARRANTIES, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+        </Clause>
+
+        <Clause title="14. Indemnification">
+          You agree to defend, indemnify, and hold harmless MangoSwap and its affiliates from all claims, liabilities, damages, and expenses (including legal fees) arising from your use of the Platform, violation of these Terms, or violation of any law or third-party rights.
+        </Clause>
+
+        <Clause title="15. Governing Law & Dispute Resolution">
+          These Terms are governed by applicable law. All disputes shall be resolved by binding arbitration. You waive any right to a jury trial or class action participation.
+        </Clause>
+
+        <Clause title="16. Termination">
+          MangoSwap may terminate or restrict your access at any time, without notice, for any reason including suspected fraud, sanctions violations, or any breach of these Terms.
+        </Clause>
+
+        <Clause title="17. Changes to Terms">
+          MangoSwap may modify these Terms at any time without notice. Continued use of the Platform constitutes acceptance of the revised Terms.
+        </Clause>
+
+        {/* Bottom anchor — reached when user gets here */}
+        <div className="text-center pt-3 pb-1">
+          <Link to="/terms" target="_blank" className="text-[#3CF902] underline text-xs hover:opacity-80">
+            View full Terms of Service →
+          </Link>
+        </div>
+
+        {!reachedBottom && (
+          <div className="flex flex-col items-center gap-1 py-3 text-gray-600 text-xs animate-pulse">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12l7 7 7-7"/>
+            </svg>
+            Scroll to the bottom to continue
+          </div>
+        )}
+      </div>
+
+      {/* ── Footer — only slides in after scrolling to bottom ── */}
+      <div
+        className={`border-t border-[#2a2a2a] px-6 flex-shrink-0 overflow-hidden
+          transition-all duration-500 ease-out
+          ${reachedBottom ? 'max-h-48 py-4 opacity-100' : 'max-h-0 py-0 opacity-0 pointer-events-none'}`}
+      >
+        <div className="space-y-3">
+          {/* Checkbox */}
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <button
+              type="button"
+              onClick={() => setChecked(c => !c)}
+              className={`w-5 h-5 mt-0.5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all
+                ${checked
+                  ? 'bg-[#3CF902] border-[#3CF902]'
+                  : 'border-gray-600 bg-transparent group-hover:border-gray-400'}`}
+            >
+              {checked && (
+                <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+                  <path d="M1 4.5L4 7.5L10 1" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </button>
+            <span className="text-gray-400 text-xs leading-relaxed">
+              I confirm I am <span className="text-white font-medium">not</span> a resident, citizen, or national of any Restricted Jurisdiction.
+              I have read, understood, and agree to the{' '}
+              <Link to="/terms" target="_blank" className="text-[#3CF902] underline">Terms of Service</Link>.
+              I understand I bear full responsibility for all transactions and may lose all funds.
+            </span>
+          </label>
+
+          {/* Accept button */}
+          <button
+            onClick={onAccept}
+            disabled={!checked}
+            className={`w-full py-3 rounded-xl font-bold text-sm transition-all
+              ${checked
+                ? 'bg-[#3CF902] text-black hover:bg-[#3CF902]/90 active:scale-[0.98]'
+                : 'bg-[#222] text-gray-600 cursor-not-allowed'}`}
+          >
+            {checked ? 'I Agree — Enter MangoSwap' : 'Check the box above to continue'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Helper ───────────────────────────────────────────────────────────────────
+function Clause({ title, children }) {
+  return (
+    <div>
+      <p className="text-white font-semibold mb-1.5 border-l-2 border-[#3CF902] pl-2">{title}</p>
+      <div className="pl-1">
+        {typeof children === 'string' ? <p>{children}</p> : children}
+      </div>
+    </div>
+  );
+}

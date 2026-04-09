@@ -43,11 +43,11 @@ Thumbs.db
 dist/
 *.zip
 
-# Environment variables
+# Environment variables — NEVER commit real env files
+# Only .env.example (the template with no real values) is safe to commit.
 .env
 .env.*
 !.env.example
-!.env.production
 
 # Package manager lock files (optional - some teams prefer to commit these)
 # Uncomment if you want to ignore lock files

@@ -3,9 +3,15 @@ import { Link } from 'react-router-dom';
 export default function SwapFooter() {
   return (
     <div className="flex flex-col items-center mt-[10px]">
-      <Link to="/whitelist-admin" className="text-[#A3A3A3] text-xs hover:text-[#3CF902] mb-2">
-        Whitelist admin
-      </Link>
+      <div className="flex gap-4 mb-2">
+        <Link to="/whitelist-admin" className="text-[#A3A3A3] text-xs hover:text-[#3CF902]">
+          Whitelist admin
+        </Link>
+        <span className="text-[#A3A3A3] text-xs">·</span>
+        <Link to="/terms" className="text-[#A3A3A3] text-xs hover:text-[#3CF902]">
+          Terms of Service
+        </Link>
+      </div>
       <img
         src="https://api.builder.io/api/v1/image/assets/TEMP/97964aed0ad7eead9b2235fd616501178f4c469a?width=164"
         alt="MangoSwap"

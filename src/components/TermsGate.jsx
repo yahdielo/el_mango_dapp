@@ -95,7 +95,7 @@ function PassphraseModal({ onSuccess }) {
 
   return (
     <div
-      className={`w-full max-w-[440px] bg-[#111111] rounded-2xl p-8 shadow-2xl border border-[#222]
+      className={`w-full max-w-[402px] bg-[#111111] rounded-2xl px-5 py-8 shadow-2xl border border-[#222]
         transition-all duration-300 ${shake ? 'animate-shake' : ''}`}
     >
       {/* Logo + heading */}
@@ -106,7 +106,7 @@ function PassphraseModal({ onSuccess }) {
           className="w-[72px] h-[72px] object-contain mb-4"
         />
         <h1 className="text-white text-[32px] font-medium leading-tight">MangoSwap</h1>
-        <p className="text-[#555555] text-[16px] font-medium mt-1">
+        <p className="text-[#555555] text-[16px] font-medium mt-1 text-center">
           Private Access — Enter your passphrase
         </p>
       </div>
@@ -172,11 +172,11 @@ function TermsModal({ onAccept }) {
 
   return (
     <div
-      className="w-full max-w-[640px] bg-[#111111] rounded-2xl border border-[#222] shadow-2xl flex flex-col"
+      className="w-full max-w-[402px] bg-[#111111] rounded-2xl border border-[#222] shadow-2xl flex flex-col"
       style={{ height: '90vh', maxHeight: '740px' }}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-[#1e1e1e] flex-shrink-0">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-[#1e1e1e] flex-shrink-0">
         <img
           src="https://api.builder.io/api/v1/image/assets/TEMP/97964aed0ad7eead9b2235fd616501178f4c469a?width=164"
           alt="MangoSwap"
@@ -190,7 +190,7 @@ function TermsModal({ onAccept }) {
 
       {/* Scrollable body */}
       <div
-        className="flex-1 overflow-y-auto px-6 py-5 space-y-5 text-[#888] text-sm leading-relaxed"
+        className="flex-1 overflow-y-auto px-5 py-4 space-y-5 text-[#888] text-sm leading-relaxed"
         onScroll={onScroll}
         style={{ overscrollBehavior: 'contain' }}
       >
@@ -361,6 +361,7 @@ function TermsModal({ onAccept }) {
           ${reachedBottom
             ? 'max-h-48 pt-4 pb-5 opacity-100'
             : 'max-h-0 pt-0 pb-0 opacity-0 pointer-events-none'}`}
+        style={{ paddingLeft: '20px', paddingRight: '20px' }}
       >
         {/* Checkbox row */}
         <label className="flex items-start gap-3 cursor-pointer group mb-3">

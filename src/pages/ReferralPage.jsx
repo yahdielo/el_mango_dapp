@@ -193,12 +193,6 @@ export default function ReferralPage() {
             <ReferralSection title="My referrer">
               {isReferrerLocked ? (
                 <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#3CF902]/10 border border-[#3CF902]/30 text-[#3CF902] text-xs font-medium">
-                      🔒 Locked
-                    </span>
-                    <span className="text-gray-400 text-xs">Referrer is permanent and cannot be changed.</span>
-                  </div>
                   <p className="text-white font-mono text-xs break-all">{lockedReferrer}</p>
                 </div>
               ) : (

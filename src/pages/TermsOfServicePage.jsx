@@ -1,6 +1,6 @@
 export default function TermsOfServicePage() {
   return (
-    <div className="min-h-screen bg-[#111111] text-gray-300 px-4 py-10">
+    <div className="min-h-screen bg-[#111111] text-gray-300 px-4 py-10" style={{ fontFamily: "'Afacad', sans-serif" }}>
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-10">
@@ -336,8 +336,11 @@ export default function TermsOfServicePage() {
 function Section({ title, children }) {
   return (
     <div>
-      <h3 className="text-base font-bold text-white mb-3 border-l-2 border-[#3CF902] pl-3">{title}</h3>
-      <div className="text-gray-400 pl-1">{children}</div>
+      <h3 className="text-base font-medium text-white mb-3 flex items-center gap-2">
+        <span className="inline-block w-0.5 h-4 rounded-full bg-[#3CF902] flex-shrink-0" />
+        {title}
+      </h3>
+      <div className="text-[#888] pl-3">{children}</div>
     </div>
   );
 }

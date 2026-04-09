@@ -2,6 +2,19 @@
 // For non-EVM sources (Solana, Bitcoin, Tron) fees are collected by the bridge provider.
 const MANGO_FEE_BPS = 300; // 3%
 
+/** Format a token fee amount with enough decimal places to show the real value. */
+function formatFeeAmount(amount) {
+  if (!amount || amount === 0) return '0';
+  let decimals;
+  if (amount >= 1)       decimals = 4;
+  else if (amount >= 0.01)  decimals = 5;
+  else if (amount >= 0.001) decimals = 6;
+  else if (amount >= 0.0001) decimals = 7;
+  else                   decimals = 8;
+  // Remove trailing zeros after decimal point
+  return amount.toFixed(decimals).replace(/(\.\d*[1-9])0+$/, '$1').replace(/\.0+$/, '');
+}
+
 export default function CrossChainTransactionDetails({
   amountIn,
   amountOut,
@@ -24,7 +37,8 @@ export default function CrossChainTransactionDetails({
     : '—';
 
   // MangoSwap fee (3% on EVM source chains via relay, 0% for non-EVM)
-  const mangoFeeAmt = isEvmSource ? ((amountInNum * MANGO_FEE_BPS) / 10000).toFixed(4) : null;
+  const mangoFeeRaw = isEvmSource ? (amountInNum * MANGO_FEE_BPS) / 10000 : null;
+  const mangoFeeAmt = mangoFeeRaw != null ? formatFeeAmount(mangoFeeRaw) : null;
   const mangoFeeLabel = isEvmSource
     ? `${(MANGO_FEE_BPS / 100).toFixed(1)}% MangoSwap fee`
     : null;
@@ -45,7 +59,7 @@ export default function CrossChainTransactionDetails({
             <span className="text-white">1 ≈ {rate}</span>
           </div>
         )}
-        {mangoFeeAmt && (
+        {mangoFeeRaw != null && mangoFeeRaw > 0 && (
           <div className="flex justify-between text-gray-400">
             <span>{mangoFeeLabel}</span>
             <span className="text-amber-400">

@@ -4,6 +4,7 @@
  */
 
 import { resolveMangoServicesBaseUrl } from '../utils/mangoServicesBaseUrl';
+import { fetchWithRetry } from '../utils/fetchWithRetry';
 
 const RAW_BASE = (import.meta.env.VITE_MANGO_SERVICES_URL || '').replace(/\/$/, '');
 const BASE = resolveMangoServicesBaseUrl(RAW_BASE);
@@ -107,12 +108,12 @@ export async function initiateCrossChainViaBackend({
   }
   if (referrer && typeof referrer === 'string') body.referrer = toRawAddress(referrer) || referrer;
 
-  const res = await fetch(`${BASE}/api/v1/swap/cross-chain`, {
+  const res = await fetchWithRetry(`${BASE}/api/v1/swap/cross-chain`, {
     method: 'POST',
     headers: headers(userToken),
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(30000),
-  });
+  }, { retries: 2, baseDelayMs: 1500 });
   const data = await res.json().catch(() => ({}));
   if (res.status === 401) {
     const hint = data?.message || data?.error;
@@ -199,11 +200,11 @@ export async function initiateCrossChainViaBackend({
  */
 export async function getSwapStatusFromBackend(swapId, userToken) {
   if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
-  const res = await fetch(`${BASE}/api/v1/swap/${encodeURIComponent(swapId)}/status`, {
+  const res = await fetchWithRetry(`${BASE}/api/v1/swap/${encodeURIComponent(swapId)}/status`, {
     method: 'GET',
     headers: headers(userToken),
     signal: AbortSignal.timeout(15000),
-  });
+  }, { retries: 2, baseDelayMs: 1000 });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error || `Status ${res.status}`);
   return {
@@ -221,11 +222,11 @@ export async function getSwapStatusFromBackend(swapId, userToken) {
  */
 export async function getDepositFromBackend(swapId, userToken) {
   if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
-  const res = await fetch(`${BASE}/api/v1/swap/${encodeURIComponent(swapId)}/deposit`, {
+  const res = await fetchWithRetry(`${BASE}/api/v1/swap/${encodeURIComponent(swapId)}/deposit`, {
     method: 'GET',
     headers: headers(userToken),
     signal: AbortSignal.timeout(10000),
-  });
+  }, { retries: 2, baseDelayMs: 1000 });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error || `Deposit ${res.status}`);
   return {
@@ -245,14 +246,15 @@ export async function notifySourceTxHash(swapId, txHash, userToken) {
   if (!swapId) throw new Error('swapId required');
   if (!txHash) throw new Error('txHash required');
 
-  const res = await fetch(
+  const res = await fetchWithRetry(
     `${BASE}/api/v1/swap/${encodeURIComponent(swapId)}/source-tx`,
     {
       method: 'POST',
       headers: headers(userToken),
       body: JSON.stringify({ txHash }),
       signal: AbortSignal.timeout(15000),
-    }
+    },
+    { retries: 2, baseDelayMs: 1000 }
   );
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -276,11 +278,11 @@ export function isCrossChainViaBackendAvailable() {
  */
 export async function getBridgeMeta() {
   if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
-  const res = await fetch(`${BASE}/api/v1/bridge/meta`, {
+  const res = await fetchWithRetry(`${BASE}/api/v1/bridge/meta`, {
     method: 'GET',
     headers: headers(),
     signal: AbortSignal.timeout(15000),
-  });
+  }, { retries: 3, baseDelayMs: 1200 });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data?.error || `Failed to load bridge meta (${res.status})`);
@@ -309,11 +311,11 @@ export async function getRoutesFromBackend(sourceChainId, destChainId, tokenIn, 
   };
   if (amountIn && parseFloat(amountIn) > 0) paramObj.amountIn = String(amountIn);
   const params = new URLSearchParams(paramObj);
-  const res = await fetch(`${BASE}/api/v1/swap/routes?${params}`, {
+  const res = await fetchWithRetry(`${BASE}/api/v1/swap/routes?${params}`, {
     method: 'GET',
     headers: headers(),
     signal: AbortSignal.timeout(15000),
-  });
+  }, { retries: 2, baseDelayMs: 1200 });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) return { routes: [], error: data?.error };
   const amountOut = data.amountOut ?? data.routes?.[0]?.amountOut ?? null;
@@ -338,11 +340,11 @@ export async function isRouteSupportedViaBackend(sourceChainId, destChainId, tok
  */
 export async function getRangoSupportMatrix() {
   if (!RAW_BASE) throw new Error('VITE_MANGO_SERVICES_URL not set');
-  const res = await fetch(`${BASE}/api/v1/swap/rango/meta`, {
+  const res = await fetchWithRetry(`${BASE}/api/v1/swap/rango/meta`, {
     method: 'GET',
     headers: headers(),
     signal: AbortSignal.timeout(15000),
-  });
+  }, { retries: 2, baseDelayMs: 1200 });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data?.error || `Failed to load Rango support matrix (${res.status})`);

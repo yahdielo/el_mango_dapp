@@ -6,6 +6,7 @@
 
 import { parseUnits, formatUnits } from 'viem';
 import { ZERO_ADDRESS } from '../utils/chainConfig';
+import { fetchWithRetry } from '../utils/fetchWithRetry';
 // Inline to avoid importing from a hook file (would pull wagmi into the service graph → TDZ)
 function isNativeToken(token) {
   if (!token) return false;
@@ -32,10 +33,10 @@ function getBaseUrl() {
 
 async function fetchJson(url) {
   try {
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       headers: { Accept: 'application/json' },
       signal: AbortSignal.timeout(15000),
-    });
+    }, { retries: 2, baseDelayMs: 1000 });
     if (!res.ok) {
       const text = await res.text();
       throw new Error(text || `API error: ${res.status}`);

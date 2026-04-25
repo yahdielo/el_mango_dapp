@@ -71,7 +71,7 @@ export default function SwapPage() {
   });
   const { data: whitelist } = useWhitelist(address, effectiveChainId);
 
-  const { amountOut: quoteAmountOut, loading: quoteLoading, error: quoteError, estimated: quoteEstimated, priceIn, priceOut } = useQuote({
+  const { amountOut: quoteAmountOut, loading: quoteLoading, error: quoteError, estimated: quoteEstimated, priceIn, priceOut, routerFeePct, l1ReferralPct } = useQuote({
     chainId: effectiveChainId,
     tokenIn: token1,
     tokenOut: token2,
@@ -215,8 +215,21 @@ export default function SwapPage() {
     setAmount2('');
   };
 
-  const usdValue1 = amount1 && priceIn > 0 ? (parseFloat(amount1) * priceIn).toFixed(2) : amount1 && (token1?.symbol === 'USDC' || token1?.symbol === 'USDT') ? amount1 : null;
-  const usdValue2 = amount2 && priceOut > 0 ? (parseFloat(amount2) * priceOut).toFixed(2) : amount2 && (token2?.symbol === 'USDC' || token2?.symbol === 'USDT') ? amount2 : null;
+  const STABLES = new Set(['USDC', 'USDT', 'DAI', 'BUSD', 'FRAX', 'LUSD', 'SUSD', 'USDP']);
+  const sym1 = (token1?.symbol ?? '').toUpperCase();
+  const sym2 = (token2?.symbol ?? '').toUpperCase();
+  const rawUsd1 = amount1 && parseFloat(amount1) > 0
+    ? priceIn > 0
+      ? parseFloat(amount1) * priceIn
+      : STABLES.has(sym1) ? parseFloat(amount1) : null
+    : null;
+  const rawUsd2 = amount2 && parseFloat(amount2) > 0
+    ? priceOut > 0
+      ? parseFloat(amount2) * priceOut
+      : STABLES.has(sym2) ? parseFloat(amount2) : null
+    : null;
+  const usdValue1 = rawUsd1 != null ? rawUsd1.toFixed(2) : null;
+  const usdValue2 = rawUsd2 != null ? rawUsd2.toFixed(2) : null;
 
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center" style={{ fontFamily: "'Afacad', sans-serif" }}>
@@ -310,6 +323,9 @@ export default function SwapPage() {
           gasCostFormatted={gasCostFormatted}
           route={token1?.symbol && token2?.symbol ? `${token1.symbol} → ${token2.symbol}` : null}
           estimated={!!quoteEstimated}
+          routerFeePct={routerFeePct}
+          l1ReferralPct={l1ReferralPct}
+          referrer={referrer && referrer !== ZERO_ADDRESS ? referrer : null}
         />
 
         <div className="mt-16">
@@ -333,6 +349,24 @@ export default function SwapPage() {
               >
                 Swap again
               </button>
+            </div>
+          )}
+          {/* Ethereum mainnet warning */}
+          {effectiveChainId === 1 && !swapSuccess && (
+            <div className="mb-4 rounded-lg bg-yellow-900/30 border border-yellow-600/40 px-3 py-2.5">
+              <p className="text-yellow-300 text-sm font-semibold mb-1">⚠ Ethereum Mainnet</p>
+              <p className="text-yellow-200/80 text-xs mb-2">Gas fees can be very high ($20–$100+). Consider using Base or Arbitrum for lower fees.</p>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => switchChain?.({ chainId: 8453 })} className="text-[#3CF902] text-xs font-semibold hover:underline">→ Switch to Base</button>
+                <button type="button" onClick={() => switchChain?.({ chainId: 42161 })} className="text-[#3CF902] text-xs font-semibold hover:underline">→ Switch to Arbitrum</button>
+              </div>
+            </div>
+          )}
+          {/* Zero-output warning */}
+          {!swapSuccess && !quoteLoading && amount1 && parseFloat(amount1) > 0 && (!amount2 || parseFloat(amount2) <= 0) && !quoteError && (
+            <div className="mb-4 rounded-lg bg-red-900/30 border border-red-600/40 px-3 py-2.5">
+              <p className="text-red-300 text-sm font-semibold">No route found</p>
+              <p className="text-red-200/80 text-xs mt-1">This pair has no liquidity on this network. Try Base or Arbitrum, or choose different tokens.</p>
             </div>
           )}
           {polygonBridgedWethError && !swapSuccess && (
@@ -382,8 +416,17 @@ export default function SwapPage() {
             disabled={
               (address &&
                 isChainSupportedForSwap(chainId) &&
-                (!canSwap || swapSuccess || swapPending || !routerConfigured || !!polygonBridgedWethError)) ||
+                (!canSwap || swapSuccess || swapPending || !routerConfigured || !!polygonBridgedWethError ||
+                  quoteLoading ||
+                  (!!amount1 && parseFloat(amount1) > 0 && (!amount2 || parseFloat(amount2) <= 0)))) ||
               (address && !isChainSupportedForSwap(chainId) && !switchChain)
+            }
+            swapLabel={
+              quoteLoading
+                ? 'Getting quote...'
+                : (!!amount1 && parseFloat(amount1) > 0 && (!amount2 || parseFloat(amount2) <= 0))
+                  ? 'No route — cannot swap'
+                  : undefined
             }
             isPending={swapPending}
           />

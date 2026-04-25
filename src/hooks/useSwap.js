@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { parseUnits } from 'viem';
+import { parseUnits, parseAbiItem, decodeEventLog } from 'viem';
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract, usePublicClient } from 'wagmi';
 import { ERC20_ABI, ROUTER_ABI, MANGO_REFERRAL_ABI } from '../config/abis';
 import { ZERO_ADDRESS, getRouterAddress, getExplorerUrl, getGasSettings, getMangoReferralContractAddress } from '../utils/chainConfig';
@@ -19,6 +19,10 @@ import { isPolygonBridgedWethSwap, POLYGON_USE_WMATIC_MESSAGE } from '../utils/m
  * @param {string} [params.referrer] - Referrer address (default ZERO)
  * @returns {{ executeSwap: () => Promise<void>, isPending: boolean, error: string|null, txHash: string|null, reset: () => void, isSuccess: boolean, explorerUrl: string|null }}
  */
+const SWAP_EVENT_ABI = parseAbiItem(
+  'event Swap(address indexed swapper, address indexed token0, address indexed token1, uint256 amountIn, uint256 amountOut, uint256 chainId, uint256 blockTimestamp, uint256 gasPrice, uint256 blockNumber)'
+);
+
 export function useSwap({
   tokenIn,
   tokenOut,
@@ -76,6 +80,13 @@ export function useSwap({
 
     if (isPolygonBridgedWethSwap(chainId, tokenIn, tokenOut)) {
       setError(POLYGON_USE_WMATIC_MESSAGE);
+      return;
+    }
+
+    // Hard guard: block if the quote returned zero output (no liquidity / unsupported pair).
+    const expectedOut = parseFloat(amountOut);
+    if (!amountOut || Number.isNaN(expectedOut) || expectedOut <= 0) {
+      setError('Cannot swap — no valid quote (output is 0). There may be no liquidity for this pair on this network. Try switching to Base or Arbitrum.');
       return;
     }
 
@@ -169,6 +180,26 @@ export function useSwap({
       });
 
       setTxHash(hash);
+
+      // Post-transaction check: parse the Swap event to verify amountOut > 0.
+      if (publicClient?.waitForTransactionReceipt) {
+        try {
+          const receipt = await publicClient.waitForTransactionReceipt({ hash });
+          let swapAmountOut = null;
+          for (const log of receipt.logs ?? []) {
+            try {
+              const decoded = decodeEventLog({ abi: [SWAP_EVENT_ABI], data: log.data, topics: log.topics });
+              if (decoded?.eventName === 'Swap') {
+                swapAmountOut = decoded.args.amountOut;
+                break;
+              }
+            } catch { /* not our event */ }
+          }
+          if (swapAmountOut !== null && swapAmountOut === 0n) {
+            setError('Swap succeeded on-chain but you received 0 tokens. The pool may have no liquidity for this pair. Check your wallet and contact support if funds are missing.');
+          }
+        } catch { /* receipt parsing is best-effort */ }
+      }
     } catch (err) {
       setError(mapErrorToUserMessage(err));
     }

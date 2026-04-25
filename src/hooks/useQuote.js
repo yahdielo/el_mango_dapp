@@ -5,7 +5,7 @@ const DEBOUNCE_MS = 300;
 
 /**
  * @param {{ chainId: number, tokenIn: object, tokenOut: object, amountIn: string, skip?: boolean }}
- * @returns {{ amountOut: string, loading: boolean, error: string|null, estimated?: boolean, priceIn?: number, priceOut?: number }}
+ * @returns {{ amountOut: string, loading: boolean, error: string|null, estimated?: boolean, priceIn?: number, priceOut?: number, routerFeePct?: number, l1ReferralPct?: number }}
  */
 export function useQuote({ chainId, tokenIn, tokenOut, amountIn, skip }) {
   const [amountOut, setAmountOut] = useState('');
@@ -14,6 +14,8 @@ export function useQuote({ chainId, tokenIn, tokenOut, amountIn, skip }) {
   const [estimated, setEstimated] = useState(false);
   const [priceIn, setPriceIn] = useState(0);
   const [priceOut, setPriceOut] = useState(0);
+  const [routerFeePct, setRouterFeePct] = useState(3);
+  const [l1ReferralPct, setL1ReferralPct] = useState(0.4);
   const requestIdRef = useRef(0);
   const timeoutRef = useRef(null);
 
@@ -25,6 +27,8 @@ export function useQuote({ chainId, tokenIn, tokenOut, amountIn, skip }) {
       setError(null);
       setPriceIn(0);
       setPriceOut(0);
+      setRouterFeePct(3);
+      setL1ReferralPct(0.4);
       return;
     }
 
@@ -48,6 +52,8 @@ export function useQuote({ chainId, tokenIn, tokenOut, amountIn, skip }) {
           setEstimated(result.estimated ?? false);
           setPriceIn(result.priceIn ?? 0);
           setPriceOut(result.priceOut ?? 0);
+          setRouterFeePct(result.routerFeePct ?? 3);
+          setL1ReferralPct(result.l1ReferralPct ?? 0.4);
         }
       } catch (err) {
         if (id === requestIdRef.current) {
@@ -64,5 +70,5 @@ export function useQuote({ chainId, tokenIn, tokenOut, amountIn, skip }) {
     };
   }, [chainId, tokenIn, tokenOut, amountIn, skip]);
 
-  return { amountOut, loading, error, estimated, priceIn, priceOut };
+  return { amountOut, loading, error, estimated, priceIn, priceOut, routerFeePct, l1ReferralPct };
 }

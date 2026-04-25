@@ -124,17 +124,41 @@ export async function getQuote({ chainId, tokenIn, tokenOut, amountIn }) {
   const amountOutFormatted = formatUnits(amountOutWei, decimalsOut);
   const amountOut = parseFloat(amountOutFormatted).toFixed(Math.min(decimalsOut, 8)).replace(/\.?0+$/, '') || '0';
 
-  const price = amt > 0 ? parseFloat(amountOut) / amt : 0;
-  const priceIn = amt > 0 ? 1 : 0;
-  const priceOut = parseFloat(amountOut) > 0 ? amt / parseFloat(amountOut) : 0;
+  // Exchange rate: how many tokenOut per 1 tokenIn
+  const exchangeRate = amt > 0 ? parseFloat(amountOut) / amt : 0;
+
+  // USD prices per token unit.
+  // Derive from whichever side is a known stablecoin ($1), then back-calculate the other.
+  const STABLECOINS = new Set(['USDC', 'USDT', 'DAI', 'BUSD', 'FRAX', 'LUSD', 'SUSD', 'USDP']);
+  const outIsStable = STABLECOINS.has((tokenOut?.symbol ?? '').toUpperCase());
+  const inIsStable  = STABLECOINS.has((tokenIn?.symbol  ?? '').toUpperCase());
+
+  let usdPerTokenOut = 0;
+  let usdPerTokenIn  = 0;
+
+  if (outIsStable) {
+    usdPerTokenOut = 1;
+    usdPerTokenIn  = exchangeRate > 0 ? exchangeRate : 0;
+  } else if (inIsStable) {
+    usdPerTokenIn  = 1;
+    usdPerTokenOut = exchangeRate > 0 ? 1 / exchangeRate : 0;
+  }
+
+  // Protocol fee: 3% (300 BPS) is already deducted from amountOut by the backend.
+  const routerFeeBps = Number(data.routerFeeBps ?? 300);
+  const routerFeePct = routerFeeBps / 100;
+  const referralBucketPct = routerFeePct / 3;
+  const l1ReferralPct = referralBucketPct * 0.40;
 
   return {
     amountOut,
-    price,
-    priceIn,
-    priceOut,
+    price: exchangeRate,
+    priceIn:  usdPerTokenIn,
+    priceOut: usdPerTokenOut,
     priceImpact: 0,
-    estimated: false, // from DEX, not estimated
+    estimated: false,
+    routerFeePct,
+    l1ReferralPct,
   };
 }
 

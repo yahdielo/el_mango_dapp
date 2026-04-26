@@ -351,17 +351,6 @@ export default function SwapPage() {
               </button>
             </div>
           )}
-          {/* Ethereum mainnet warning */}
-          {effectiveChainId === 1 && !swapSuccess && (
-            <div className="mb-4 rounded-lg bg-yellow-900/30 border border-yellow-600/40 px-3 py-2.5">
-              <p className="text-yellow-300 text-sm font-semibold mb-1">⚠ Ethereum Mainnet</p>
-              <p className="text-yellow-200/80 text-xs mb-2">Gas fees can be very high ($20–$100+). Consider using Base or Arbitrum for lower fees.</p>
-              <div className="flex gap-3">
-                <button type="button" onClick={() => switchChain?.({ chainId: 8453 })} className="text-[#3CF902] text-xs font-semibold hover:underline">→ Switch to Base</button>
-                <button type="button" onClick={() => switchChain?.({ chainId: 42161 })} className="text-[#3CF902] text-xs font-semibold hover:underline">→ Switch to Arbitrum</button>
-              </div>
-            </div>
-          )}
           {/* Zero-output warning */}
           {!swapSuccess && !quoteLoading && amount1 && parseFloat(amount1) > 0 && (!amount2 || parseFloat(amount2) <= 0) && !quoteError && (
             <div className="mb-4 rounded-lg bg-red-900/30 border border-red-600/40 px-3 py-2.5">

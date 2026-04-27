@@ -1253,7 +1253,9 @@ export default function CrossChainPage() {
               loopringWithdrawalInfo={loopringWithdrawalInfo}
               sourceChainId={sourceChainId}
               sourceChain={sourceChain}
+              destChainId={destChainId}
               tokenIn={tokenIn}
+              tokenOut={tokenOut}
               amountIn={amountIn}
               provider={activeProvider}
               onRefetchDeposit={refetchDeposit}

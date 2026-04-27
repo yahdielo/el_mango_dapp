@@ -245,6 +245,8 @@ function BtcDepositCard({ depositAction }) {
   );
 }
 
+const TRON_CHAIN_ID = 728126428;
+
 export default function CrossChainSwapStatusBanner({
   status,
   swapId,
@@ -253,7 +255,9 @@ export default function CrossChainSwapStatusBanner({
   symbiosisSolana,
   sourceChainId,
   sourceChain,
+  destChainId,
   tokenIn,
+  tokenOut,
   amountIn,
   onDismiss,
   onRefetchDeposit,
@@ -324,7 +328,10 @@ export default function CrossChainSwapStatusBanner({
   } else if (isFailed) {
     bgClass = 'bg-red-500/20 border-red-500/50';
     textClass = 'text-red-300';
-    label = status === 'expired' ? 'Swap expired' : status === 'refunded' ? 'Refunded' : 'Swap failed';
+    label = status === 'expired'
+      ? (Number(destChainId) === TRON_CHAIN_ID ? 'Tron swap expired — start a new swap' : 'Swap expired')
+      : status === 'refunded' ? 'Refunded'
+      : 'Swap failed';
   } else if (status === 'user_transfer_pending') {
     if (txConfirmed) {
       label = 'Transaction sent – bridging in progress';
@@ -611,6 +618,26 @@ export default function CrossChainSwapStatusBanner({
             : `Powered by ${provider === 'layerswap' ? 'LayerSwap' : provider === 'rango' ? 'Rango' : provider === 'lifi' ? 'LiFi' : provider === 'squid' ? 'Squid' : provider === 'bungee' ? 'Bungee' : provider === 'wormhole' ? 'Wormhole' : provider === 'symbiosis' ? 'Symbiosis' : provider === 'inbridge' ? 'Inbridge' : provider}`}
         </p>
       )}
+      {status === 'expired' && Number(destChainId) === TRON_CHAIN_ID && (
+        <div className="mt-2 p-2 rounded-lg bg-red-500/10 border border-red-500/30">
+          <p className="text-red-300 text-xs leading-relaxed">
+            The Tron bridge order timed out because the transaction was not signed within the allowed window.
+            Your funds were <strong>not sent</strong> — no tokens left your wallet.
+          </p>
+          <p className="text-red-200/70 text-xs mt-1">
+            To retry, click &quot;New Swap&quot; below and approve the transaction promptly.
+          </p>
+          {onDismiss && (
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="mt-2 px-3 py-1 rounded-lg bg-[#3CF902]/20 border border-[#3CF902]/40 text-[#3CF902] text-xs hover:bg-[#3CF902]/30"
+            >
+              Start new swap
+            </button>
+          )}
+        </div>
+      )}
       {(status === 'processing' || status === 'ls_transfer_pending') && processingElapsedMin >= 30 && (
         <div className="mt-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
           <p className="text-amber-400 text-xs font-medium">
@@ -631,11 +658,27 @@ export default function CrossChainSwapStatusBanner({
         </div>
       )}
       {status === 'user_transfer_pending' && !txConfirmed && canSignRangoTx && (
-        <p className="text-gray-300 text-xs mt-2">
-          {!approvalTxDone && ((rangoTx?.approveTo && rangoTx?.approveData) || (isERC20Token(tokenIn) && amountIn && parseFloat(amountIn) > 0))
-            ? 'Step 1: Approve the token for the bridge. Then click the button again to send the swap.'
-            : 'Sign the transaction to execute the cross-chain swap.'}
-        </p>
+        <div className="mt-2">
+          <p className="text-gray-300 text-xs">
+            {!approvalTxDone && ((rangoTx?.approveTo && rangoTx?.approveData) || (isERC20Token(tokenIn) && amountIn && parseFloat(amountIn) > 0))
+              ? 'Step 1: Approve the token for the bridge. Then click the button again to send the swap.'
+              : 'Sign the transaction to execute the cross-chain swap.'}
+          </p>
+          {Number(destChainId) === TRON_CHAIN_ID && (
+            <div className="mt-2 rounded-lg border border-amber-500/40 bg-amber-950/30 px-3 py-2">
+              <p className="text-amber-300 text-xs font-semibold mb-1">⚡ Tron destination — act within 30 minutes</p>
+              <p className="text-amber-200/80 text-xs leading-relaxed">
+                Sign the transaction above on <strong>{sourceChain?.name || 'your source chain'}</strong>.
+                Once confirmed, Rango will automatically bridge your{' '}
+                <strong>{tokenIn?.symbol || 'tokens'}</strong> and deliver{' '}
+                <strong>{tokenOut?.symbol || 'USDT'}</strong> to your Tron wallet.
+              </p>
+              <p className="text-amber-400 text-xs mt-1 font-medium">
+                Make sure your TronLink wallet is connected and unlocked to receive funds.
+              </p>
+            </div>
+          )}
+        </div>
       )}
       {status === 'user_transfer_pending' &&
         !txConfirmed &&

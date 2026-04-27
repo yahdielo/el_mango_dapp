@@ -149,22 +149,38 @@ export function useSwap({
         }
       }
 
-      if (!isNativeToken(tokenIn) && (allowance == null || allowance < amountWei)) {
-        const approveHash = await writeContractAsync({
-          address: tokenIn.address,
-          abi: ERC20_ABI,
-          functionName: 'approve',
-          args: [routerAddress, amountWei],
-          chainId,
-        });
-        // Ensure allowance is updated before sending the swap tx.
-        // Otherwise the swap may revert during MetaMask simulation (allowance still 0).
-        if (!publicClient?.waitForTransactionReceipt) {
-          throw new Error('Approval transaction sent but receipt polling is unavailable; try again in a moment.');
+      if (!isNativeToken(tokenIn)) {
+        // Always do a fresh on-chain allowance read — the React hook cache can be
+        // stale after a previous swap consumed the allowance, causing the approval
+        // step to be silently skipped and the swap tx to revert.
+        let liveAllowance = allowance;
+        try {
+          liveAllowance = await publicClient.readContract({
+            address: tokenIn.address,
+            abi: ERC20_ABI,
+            functionName: 'allowance',
+            args: [address, routerAddress],
+          });
+        } catch {
+          // Fall back to cached value if the live read fails.
         }
-        const approvalReceipt = await publicClient.waitForTransactionReceipt({ hash: approveHash });
-        if (approvalReceipt?.status != null && approvalReceipt.status !== 'success' && approvalReceipt.status !== 1) {
-          throw new Error('Approval transaction failed; cannot perform swap.');
+
+        if (liveAllowance == null || liveAllowance < amountWei) {
+          const approveHash = await writeContractAsync({
+            address: tokenIn.address,
+            abi: ERC20_ABI,
+            functionName: 'approve',
+            args: [routerAddress, amountWei],
+            chainId,
+          });
+          // Wait for approval confirmation before submitting the swap.
+          if (!publicClient?.waitForTransactionReceipt) {
+            throw new Error('Approval transaction sent but receipt polling is unavailable; try again in a moment.');
+          }
+          const approvalReceipt = await publicClient.waitForTransactionReceipt({ hash: approveHash });
+          if (approvalReceipt?.status != null && approvalReceipt.status !== 'success' && approvalReceipt.status !== 1) {
+            throw new Error('Approval transaction failed; cannot perform swap.');
+          }
         }
       }
 
@@ -185,10 +201,14 @@ export function useSwap({
 
       setTxHash(hash);
 
-      // Post-transaction check: parse the Swap event to verify amountOut > 0.
+      // Post-transaction check: verify the tx succeeded and parse the Swap event.
       if (publicClient?.waitForTransactionReceipt) {
         try {
           const receipt = await publicClient.waitForTransactionReceipt({ hash });
+          if (receipt?.status === 'reverted' || receipt?.status === 0) {
+            setError('Swap transaction failed on-chain (reverted). The pool may have insufficient liquidity or the slippage tolerance was exceeded. Please try again.');
+            return;
+          }
           let swapAmountOut = null;
           for (const log of receipt.logs ?? []) {
             try {

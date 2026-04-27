@@ -57,8 +57,9 @@ export default function SwapPage() {
   const SWAP_TOKENS = useMemo(() => getTokensForChain(effectiveChainId), [effectiveChainId]);
   const [amount1, setAmount1] = useState('');
   const [amount2, setAmount2] = useState('');
-  const [token1, setToken1] = useState(SWAP_TOKENS[1] || SWAP_TOKENS[0]);
-  const [token2, setToken2] = useState(SWAP_TOKENS[2] || SWAP_TOKENS[0]);
+  // Default to native token (ETH/BNB/MATIC…) for "You Pay" so users spend native, not wrapped
+  const [token1, setToken1] = useState(SWAP_TOKENS[0]);
+  const [token2, setToken2] = useState(SWAP_TOKENS[2] || SWAP_TOKENS[1] || SWAP_TOKENS[0]);
   const [slippage, setSlippage] = useState(() => {
     const stored = loadSlippageFromStorage(effectiveChainId, getSlippage);
     return stored ?? getSlippage(effectiveChainId)?.default ?? 0.5;
@@ -165,8 +166,8 @@ export default function SwapPage() {
   }, [balance1, token1]);
 
   useEffect(() => {
-    setToken1(SWAP_TOKENS[1] || SWAP_TOKENS[0]);
-    setToken2(SWAP_TOKENS[2] || SWAP_TOKENS[0]);
+    setToken1(SWAP_TOKENS[0]);
+    setToken2(SWAP_TOKENS[2] || SWAP_TOKENS[1] || SWAP_TOKENS[0]);
   }, [chainId, SWAP_TOKENS]);
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [selectingFor, setSelectingFor] = useState(1);

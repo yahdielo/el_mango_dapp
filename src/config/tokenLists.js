@@ -27,11 +27,7 @@ const CAKE_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/b
 const DOGE_LOGO = 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png';
 
 /** Chain IDs that have token lists (supported for swap) */
-// NOTE: Ethereum mainnet (1) is intentionally excluded — the deployed router at
-// 0x1d84E8080231EF3316F9A831D389384fdC05a357 is misconfigured on ETH mainnet and
-// causes swaps to succeed on-chain but return 0 tokens (user loses ETH).
-// Re-enable only after deploying and verifying a correct Ethereum mainnet router.
-export const SUPPORTED_SWAP_CHAINS = [8453, 42161, 56, 137, 10, 43114];
+export const SUPPORTED_SWAP_CHAINS = [8453, 42161, 56, 137, 10, 43114, 1];
 
 export function isChainSupportedForSwap(chainId) {
   if (chainId == null) return false;

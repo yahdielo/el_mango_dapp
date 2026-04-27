@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { parseUnits, parseAbiItem, decodeEventLog } from 'viem';
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract, usePublicClient } from 'wagmi';
 import { ERC20_ABI, ROUTER_ABI, MANGO_REFERRAL_ABI } from '../config/abis';
@@ -40,7 +40,11 @@ export function useSwap({
   const gasSettings = getGasSettings(chainId);
   // MetaMask may still preflight-simulate with provided `gas`.
   // Use a larger limit to reduce "likely to fail" due to underestimation.
-  const gasConfig = { gas: BigInt(gasSettings?.gasLimit ?? 500000) * 2n };
+  // useMemo keeps the object reference stable so it doesn't break useCallback deps.
+  const gasConfig = useMemo(
+    () => ({ gas: BigInt(gasSettings?.gasLimit ?? 500000) * 2n }),
+    [gasSettings?.gasLimit],
+  );
   const publicClient = usePublicClient({ chainId });
 
   const amountWeiForAllowance = amountIn && !isNativeToken(tokenIn) && tokenIn?.decimals != null
@@ -208,9 +212,11 @@ export function useSwap({
     tokenIn,
     tokenOut,
     amountIn,
+    amountOut,
     chainId,
     referrer,
     routerAddress,
+    publicClient,
     writeContractAsync,
     allowance,
   ]);

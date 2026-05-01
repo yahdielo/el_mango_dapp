@@ -46,9 +46,8 @@ export const ERC20_ABI = [
 ];
 
 /**
- * MangoRouter002 swap function (mangoRouter001.sol)
- * 4 params: swap(address token0, address token1, uint256 amount, address referrer)
- * No slippage param — contract uses internal slippage handling
+ * MangoRouter legacy ABI (4 params) — used by Base (8453) and BSC (56)
+ * swap(address token0, address token1, uint256 amount, address referrer)
  */
 export const ROUTER_ABI = [
   {
@@ -57,6 +56,28 @@ export const ROUTER_ABI = [
       { name: 'token1', type: 'address' },
       { name: 'amount', type: 'uint256' },
       { name: 'referrer', type: 'address' },
+    ],
+    name: 'swap',
+    outputs: [{ name: 'amountOut', type: 'uint256' }],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+];
+
+/**
+ * MangoRouterSecure ABI (5 params) — used by Ethereum (1), Polygon (137),
+ * Optimism (10), Avalanche (43114), and Arbitrum (42161).
+ * swap(address token0, address token1, uint256 amount, address referrer, uint256 slippageTolerance)
+ * Pass slippageTolerance=0 to use contract default (200 bps = 2%).
+ */
+export const ROUTER_ABI_SECURE = [
+  {
+    inputs: [
+      { name: 'token0', type: 'address' },
+      { name: 'token1', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+      { name: 'referrer', type: 'address' },
+      { name: 'slippageTolerance', type: 'uint256' },
     ],
     name: 'swap',
     outputs: [{ name: 'amountOut', type: 'uint256' }],

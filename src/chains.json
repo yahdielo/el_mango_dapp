@@ -21,7 +21,7 @@
             }
         ],
         "contracts": {
-            "router": "0xF6872B49DbDEF24f6155bEDFE514a36d12E7bb52",
+            "router": "0xfCD385df4A99894C0ee0d9e671E937ac4598A87A",
             "referral": "0x5eE0FeA6e43064d995f29ef1F81c0f737E9b77e6",
             "token": "0x1dC5726C54791c18eA68C26428bef5c278007627",
             "manager": null,
@@ -88,8 +88,8 @@
             }
         ],
         "contracts": {
-            "router": "0xC8a6B050f618B613135ba70aC1e6674d7FF9242f",
-            "referral": "0x5eE0FeA6e43064d995f29ef1F81c0f737E9b77e6",
+            "router": "0x66Ab7506fE69a541ea60F900403336E27DFfFd68",
+            "referral": "0xD2db337B0aE7CeDd373B3563f45C7c8B50142655",
             "token": "0x1dC5726C54791c18eA68C26428bef5c278007627",
             "manager": null,
             "whitelist": null
@@ -221,8 +221,8 @@
             }
         ],
         "contracts": {
-            "router": "0x49172ff4D657D109D250BE7a644C3358F0Baf321",
-            "referral": "0x5eE0FeA6e43064d995f29ef1F81c0f737E9b77e6",
+            "router": "0x2dEd17420883F22D0120192405F0806460776DEA",
+            "referral": "0xCCe2299558fe7C274BF168A0bB66E0c5254f9d8C",
             "token": "0x1dC5726C54791c18eA68C26428bef5c278007627",
             "manager": null,
             "whitelist": null
@@ -422,16 +422,15 @@
             }
         ],
         "contracts": {
-            "router": "0x49172ff4D657D109D250BE7a644C3358F0Baf321",
-            "referral": "0x5eE0FeA6e43064d995f29ef1F81c0f737E9b77e6",
+            "router": "0x66Ab7506fE69a541ea60F900403336E27DFfFd68",
+            "referral": "0xCCe2299558fe7C274BF168A0bB66E0c5254f9d8C",
             "token": "0x1dC5726C54791c18eA68C26428bef5c278007627",
             "manager": null,
             "whitelist": null
         },
         "dexes": [
-            "Trader Joe V2",
-            "Trader Joe V3",
-            "Pangolin"
+            "SushiSwap V2",
+            "Uniswap V3"
         ],
         "bridge": null,
         "status": "active",

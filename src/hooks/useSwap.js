@@ -6,7 +6,11 @@ import { useWriteContract, useWaitForTransactionReceipt, useReadContract, usePub
 // user is never stuck forever. The tx may still confirm later — they can track
 // it via the explorer link shown on timeout.
 const CONFIRMATION_TIMEOUT_MS = 30_000;
-import { ERC20_ABI, ROUTER_ABI, MANGO_REFERRAL_ABI } from '../config/abis';
+import { ERC20_ABI, ROUTER_ABI, ROUTER_ABI_SECURE, MANGO_REFERRAL_ABI } from '../config/abis';
+
+// Chains using MangoRouterSecure (5-param swap with slippageTolerance)
+// All other chains use the legacy 4-param ROUTER_ABI
+const SECURE_ROUTER_CHAIN_IDS = new Set([1, 10, 137, 43114, 42161]);
 import { ZERO_ADDRESS, getRouterAddress, getExplorerUrl, getGasSettings, getMangoReferralContractAddress } from '../utils/chainConfig';
 import { mapErrorToUserMessage } from '../utils/errorMapping';
 import { isNativeToken } from './useTokenBalance';
@@ -225,14 +229,20 @@ export function useSwap({
         }
       }
 
-      // MangoRouter002: 4 params (token0, token1, amount, referrer) — no slippage param
-      const finalArgs = isNativeToken(tokenIn)
+      // Pick ABI based on which router version is deployed on the chain
+      const useSecureAbi = SECURE_ROUTER_CHAIN_IDS.has(chainId);
+      const activeAbi = useSecureAbi ? ROUTER_ABI_SECURE : ROUTER_ABI;
+
+      // 4-param (legacy): swap(token0, token1, amount, referrer)
+      // 5-param (secure): swap(token0, token1, amount, referrer, slippageTolerance=0 → use default)
+      const baseArgs = isNativeToken(tokenIn)
         ? [token0, token1, 0n, effectiveReferrer || ZERO_ADDRESS]
         : [token0, token1, amountWei, effectiveReferrer || ZERO_ADDRESS];
+      const finalArgs = useSecureAbi ? [...baseArgs, 0n] : baseArgs;
 
       const hash = await writeContractAsync({
         address: routerAddress,
-        abi: ROUTER_ABI,
+        abi: activeAbi,
         functionName: 'swap',
         args: finalArgs,
         chainId,

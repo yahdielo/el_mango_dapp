@@ -7,7 +7,10 @@ import chainsData from '../chains.json';
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-// Static references for Vite env replacement
+// Canonical router addresses — these are the deployed MangoRouter contracts.
+// chains.json is the source of truth; env vars below are kept only as an
+// emergency override mechanism (rarely needed). chains.json wins when both
+// are set, preventing stale Vercel env vars from pointing at old contracts.
 const ENV_ROUTERS = {
   1: import.meta.env.VITE_ETHEREUM_ROUTER,
   10: import.meta.env.VITE_OPTIMISM_ROUTER,
@@ -63,10 +66,15 @@ export function getReferrerAddress(chainId) {
  * @returns {string|null}
  */
 export function getRouterAddress(chainId) {
+  // chains.json is authoritative — prevents stale Vercel env vars from
+  // overriding freshly deployed contracts.
+  const chain = getChain(chainId);
+  const jsonAddr = chain?.contracts?.router;
+  if (jsonAddr && typeof jsonAddr === 'string') return jsonAddr;
+  // Fall back to env var only when chains.json has no entry for this chain.
   const addr = ENV_ROUTERS[chainId];
   if (addr && typeof addr === 'string') return addr;
-  const chain = getChain(chainId);
-  return chain?.contracts?.router || null;
+  return null;
 }
 
 /**

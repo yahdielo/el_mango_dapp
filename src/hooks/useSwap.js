@@ -1,6 +1,11 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { parseUnits, parseAbiItem, decodeEventLog } from 'viem';
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract, usePublicClient } from 'wagmi';
+
+// After this many ms of waiting for a receipt the spinner is released so the
+// user is never stuck forever. The tx may still confirm later — they can track
+// it via the explorer link shown on timeout.
+const CONFIRMATION_TIMEOUT_MS = 30_000;
 import { ERC20_ABI, ROUTER_ABI, MANGO_REFERRAL_ABI } from '../config/abis';
 import { ZERO_ADDRESS, getRouterAddress, getExplorerUrl, getGasSettings, getMangoReferralContractAddress } from '../utils/chainConfig';
 import { mapErrorToUserMessage } from '../utils/errorMapping';
@@ -38,13 +43,32 @@ export function useSwap({
 
   const routerAddress = getRouterAddress(chainId);
   const gasSettings = getGasSettings(chainId);
-  // MetaMask may still preflight-simulate with provided `gas`.
-  // Use a larger limit to reduce "likely to fail" due to underestimation.
-  // useMemo keeps the object reference stable so it doesn't break useCallback deps.
-  const gasConfig = useMemo(
-    () => ({ gas: BigInt(gasSettings?.gasLimit ?? 500000) * 2n }),
-    [gasSettings?.gasLimit],
-  );
+  // Minimum priority fee floors per chain (in Gwei) to prevent wagmi submitting
+  // with near-zero fees when the RPC estimate is stale (seen on Ethereum mainnet).
+  // Values are conservative minimums — MetaMask/wallet can always suggest higher.
+  const MIN_PRIORITY_FEE_GWEI = {
+    1:     1.5,   // Ethereum mainnet
+    10:    0.002, // Optimism
+    56:    1.0,   // BSC
+    137:   30,    // Polygon
+    8453:  0.002, // Base
+    42161: 0.01,  // Arbitrum
+    43114: 2.0,   // Avalanche
+  };
+  const gasConfig = useMemo(() => {
+    const limit = BigInt(gasSettings?.gasLimit ?? 500000) * 2n;
+    const minGwei = MIN_PRIORITY_FEE_GWEI[chainId];
+    if (minGwei) {
+      // 1 Gwei = 1_000_000_000n wei
+      const minPriorityFee = BigInt(Math.ceil(minGwei * 1e9));
+      return {
+        gas: limit,
+        maxPriorityFeePerGas: minPriorityFee,
+      };
+    }
+    return { gas: limit };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gasSettings?.gasLimit, chainId]);
   const publicClient = usePublicClient({ chainId });
 
   const amountWeiForAllowance = amountIn && !isNativeToken(tokenIn) && tokenIn?.decimals != null
@@ -63,11 +87,28 @@ export function useSwap({
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
-  const isPending = isWritePending || isConfirming;
+  // Confirmation timeout — releases the "Confirming…" spinner after 30 s so
+  // the user is never stuck. The tx may still land; they can track via explorer.
+  const [confirmTimedOut, setConfirmTimedOut] = useState(false);
+  const confirmTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (isConfirming && txHash) {
+      setConfirmTimedOut(false);
+      confirmTimerRef.current = setTimeout(() => setConfirmTimedOut(true), CONFIRMATION_TIMEOUT_MS);
+    } else {
+      clearTimeout(confirmTimerRef.current);
+      if (!isConfirming) setConfirmTimedOut(false);
+    }
+    return () => clearTimeout(confirmTimerRef.current);
+  }, [isConfirming, txHash]);
+
+  const isPending = isWritePending || (isConfirming && !confirmTimedOut);
 
   const reset = useCallback(() => {
     setTxHash(null);
     setError(null);
+    setConfirmTimedOut(false);
   }, []);
 
   const executeSwap = useCallback(async () => {
@@ -248,6 +289,7 @@ export function useSwap({
     txHash,
     reset,
     isSuccess,
+    confirmTimedOut,
     explorerUrl: txHash && chainId ? getExplorerUrl(chainId, txHash) : null,
   };
 }

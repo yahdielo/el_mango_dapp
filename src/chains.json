@@ -88,7 +88,7 @@
             }
         ],
         "contracts": {
-            "router": "0x1d84E8080231EF3316F9A831D389384fdC05a357",
+            "router": "0xC8a6B050f618B613135ba70aC1e6674d7FF9242f",
             "referral": "0x5eE0FeA6e43064d995f29ef1F81c0f737E9b77e6",
             "token": "0x1dC5726C54791c18eA68C26428bef5c278007627",
             "manager": null,
@@ -155,7 +155,7 @@
             }
         ],
         "contracts": {
-            "router": "0x1d84E8080231EF3316F9A831D389384fdC05a357",
+            "router": "0x71978719Fe4103B49bD3d7711eB22421f0410030",
             "referral": "0x5eE0FeA6e43064d995f29ef1F81c0f737E9b77e6",
             "token": "0x1dC5726C54791c18eA68C26428bef5c278007627",
             "manager": null,
@@ -221,7 +221,7 @@
             }
         ],
         "contracts": {
-            "router": "0x1d84E8080231EF3316F9A831D389384fdC05a357",
+            "router": "0x49172ff4D657D109D250BE7a644C3358F0Baf321",
             "referral": "0x5eE0FeA6e43064d995f29ef1F81c0f737E9b77e6",
             "token": "0x1dC5726C54791c18eA68C26428bef5c278007627",
             "manager": null,
@@ -355,7 +355,7 @@
             }
         ],
         "contracts": {
-            "router": "0x1d84E8080231EF3316F9A831D389384fdC05a357",
+            "router": "0x9a05abf0040827b6ada42d526ebb5cd28fd2da6e",
             "referral": "0x5eE0FeA6e43064d995f29ef1F81c0f737E9b77e6",
             "token": "0x1dC5726C54791c18eA68C26428bef5c278007627",
             "manager": null,
@@ -422,7 +422,7 @@
             }
         ],
         "contracts": {
-            "router": "0x1d84E8080231EF3316F9A831D389384fdC05a357",
+            "router": "0x49172ff4D657D109D250BE7a644C3358F0Baf321",
             "referral": "0x5eE0FeA6e43064d995f29ef1F81c0f737E9b77e6",
             "token": "0x1dC5726C54791c18eA68C26428bef5c278007627",
             "manager": null,

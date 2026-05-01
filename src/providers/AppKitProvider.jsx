@@ -13,6 +13,7 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { SolanaAdapter } from '@reown/appkit-adapter-solana/react';
+import { http, fallback } from 'wagmi';
 
 const queryClient = new QueryClient();
 // Reown project ID. In Reown Dashboard you must add Allowed Origins (e.g. https://el-mango-dapp.vercel.app)
@@ -75,6 +76,31 @@ const CUSTOM_WALLETS = [
   },
 ];
 
+// Per-chain fallback transports. Multiple public RPCs + Alchemy (via VITE_ALCHEMY_KEY)
+// prevent rate-limit hangs in Telegram WebView where a single RPC is quickly throttled.
+function buildTransports() {
+  const alchemyKey = import.meta.env.VITE_ALCHEMY_KEY;
+  const alchemy = (path) => alchemyKey ? http(`${path}/${alchemyKey}`) : null;
+
+  const make = (alchemyPath, ...publicUrls) => {
+    const sources = [
+      alchemy(alchemyPath),
+      ...publicUrls.map((u) => http(u)),
+    ].filter(Boolean);
+    return fallback(sources, { rank: false });
+  };
+
+  return {
+    [base.id]:    make('https://base-mainnet.g.alchemy.com/v2', 'https://mainnet.base.org', 'https://base.llamarpc.com'),
+    [mainnet.id]: make('https://eth-mainnet.g.alchemy.com/v2', 'https://eth.llamarpc.com', 'https://rpc.ankr.com/eth'),
+    [arbitrum.id]:make('https://arb-mainnet.g.alchemy.com/v2', 'https://arb1.arbitrum.io/rpc', 'https://rpc.ankr.com/arbitrum'),
+    [optimism.id]:make('https://opt-mainnet.g.alchemy.com/v2', 'https://mainnet.optimism.io', 'https://rpc.ankr.com/optimism'),
+    [polygon.id]: make('https://polygon-mainnet.g.alchemy.com/v2', 'https://polygon-rpc.com', 'https://rpc.ankr.com/polygon'),
+    [bsc.id]:     make('https://bnb-mainnet.g.alchemy.com/v2', 'https://bsc-dataseed.binance.org', 'https://rpc.ankr.com/bsc'),
+    [avalanche.id]:make('https://avax-mainnet.g.alchemy.com/v2', 'https://api.avax.network/ext/bc/C/rpc', 'https://rpc.ankr.com/avalanche'),
+  };
+}
+
 // Lazy singleton — deferred until first render so all vendor modules are fully
 // initialized before WagmiAdapter / createAppKit access their exports.
 // Running these at module-scope causes TDZ crashes on Vercel due to Rollup chunk ordering.
@@ -87,6 +113,7 @@ function getAdapter() {
     networks: evmChains,   // Wagmi only manages EVM chains; Solana is handled by SolanaAdapter
     projectId,
     ssr: false,
+    transports: buildTransports(),
   });
 
   const solanaAdapter = new SolanaAdapter();
@@ -102,7 +129,9 @@ function getAdapter() {
     featuredWalletIds: FEATURED_WALLET_IDS,
     customWallets: CUSTOM_WALLETS,
     enableWallets: true,
-    features: { analytics: true },
+    // Disable analytics to prevent pulse.walletconnect.org telemetry pings
+    // which are blocked by Telegram's WebView CSP and generate console noise.
+    features: { analytics: false },
   });
 
   return _wagmiAdapter;

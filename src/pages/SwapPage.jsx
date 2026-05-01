@@ -106,7 +106,7 @@ export default function SwapPage() {
     setStoredReferrer(address, refParam);
   }, [address, isValidRef, refParam]);
 
-  const { executeSwap, isPending: swapPending, error: swapError, txHash, reset: resetSwap, isSuccess: swapSuccess, explorerUrl } = useSwap({
+  const { executeSwap, isPending: swapPending, error: swapError, txHash, reset: resetSwap, isSuccess: swapSuccess, explorerUrl, confirmTimedOut } = useSwap({
     tokenIn: token1,
     tokenOut: token2,
     amountIn: amount1,
@@ -330,6 +330,31 @@ export default function SwapPage() {
         />
 
         <div className="mt-16">
+          {confirmTimedOut && !swapSuccess && (
+            <div className="mb-4 p-4 rounded-xl bg-yellow-900/30 border border-yellow-500/50">
+              <p className="text-yellow-300 font-medium mb-1">Transaction submitted — taking longer than usual</p>
+              <p className="text-yellow-200/80 text-sm mb-3">
+                Your transaction was sent to the network. It may still confirm — check the explorer to see its status.
+              </p>
+              {explorerUrl && (
+                <a
+                  href={explorerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-yellow-300 text-sm underline block mb-2"
+                >
+                  Track on explorer →
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={handleSuccessDismiss}
+                className="text-white/70 text-sm hover:underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
           {swapSuccess && (
             <div className="mb-4 p-4 rounded-xl bg-[#3CF902]/20 border border-[#3CF902]/50">
               <p className="text-[#3CF902] font-medium mb-2">Swap successful!</p>

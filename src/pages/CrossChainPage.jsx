@@ -851,7 +851,10 @@ export default function CrossChainPage() {
   const canConfirm = isCrossChain ? canConfirmCrossChain : false;
   const showUnsupportedWarning =
     isCrossChain && routeSupported === false && !routeLoading && amountIn && parseFloat(amountIn) > 0;
-  const showRouteUnknownMessage = isCrossChain && routeSupported === null && !routeLoading && amountIn && parseFloat(amountIn) > 0;
+  // Suppress "Route check unavailable" when we already have a valid quote showing —
+  // having an amountOut proves the route exists even if the background check timed out.
+  const hasValidQuote = !!(effectiveAmountOut && parseFloat(effectiveAmountOut) > 0);
+  const showRouteUnknownMessage = isCrossChain && routeSupported === null && !routeLoading && !hasValidQuote && amountIn && parseFloat(amountIn) > 0;
 
   const isLayerSwapNativeRouteMissing =
     isCrossChain &&

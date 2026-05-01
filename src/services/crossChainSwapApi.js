@@ -314,7 +314,7 @@ export async function getRoutesFromBackend(sourceChainId, destChainId, tokenIn, 
   const res = await fetchWithRetry(`${BASE}/api/v1/swap/routes?${params}`, {
     method: 'GET',
     headers: headers(),
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(25000),
   }, { retries: 2, baseDelayMs: 1200 });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) return { routes: [], error: data?.error };

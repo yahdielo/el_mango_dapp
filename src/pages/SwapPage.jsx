@@ -26,6 +26,7 @@ import SlippageSelector, { loadSlippageFromStorage } from '../components/Slippag
 import { useWhitelist } from '../hooks/useWhitelist';
 import { useAccountReferrer } from '../hooks/useAccountReferrer';
 import { resolveEffectiveReferrer, setStoredReferrer } from '../utils/referrerStorage';
+import { autoRegisterReferrer } from '../services/referralAccountApi';
 import { isPolygonBridgedWethSwap, POLYGON_USE_WMATIC_MESSAGE } from '../utils/mangoRouterPolygonSupport';
 
 const DEFAULT_CHAIN = 8453;
@@ -98,13 +99,17 @@ export default function SwapPage() {
     });
   }, [address, effectiveChainId, isValidRef, refParam, backendReferrer]);
 
-  // If user arrives via ?ref=..., persist it for account-based behavior.
+  // If user arrives via ?ref=..., persist referrer locally AND in the backend DB
+  // so the referrer shows on all devices (mobile, Trust Wallet, etc.).
   useEffect(() => {
     if (!address) return;
     if (!isValidRef) return;
     if (!refParam) return;
     setStoredReferrer(address, refParam);
-  }, [address, isValidRef, refParam]);
+    // Skip backend registration if the backend already has a referrer for this user
+    if (backendReferrer && backendReferrer !== ZERO_ADDRESS) return;
+    autoRegisterReferrer(address, refParam, 'url').catch(() => {});
+  }, [address, isValidRef, refParam, backendReferrer]);
 
   const { executeSwap, isPending: swapPending, error: swapError, txHash, reset: resetSwap, isSuccess: swapSuccess, explorerUrl, confirmTimedOut } = useSwap({
     tokenIn: token1,
@@ -125,6 +130,16 @@ export default function SwapPage() {
     slippageBps,
     referrer,
   });
+
+  // After a successful same-chain swap with a referrer, persist the referrer in the
+  // backend DB so it shows on all devices (e.g., Trust Wallet on mobile).
+  useEffect(() => {
+    if (!swapSuccess) return;
+    if (!address) return;
+    if (!referrer || referrer === ZERO_ADDRESS) return;
+    if (backendReferrer && backendReferrer !== ZERO_ADDRESS) return;
+    autoRegisterReferrer(address, referrer, 'swap').catch(() => {});
+  }, [swapSuccess, address, referrer, backendReferrer]);
 
   const routerConfigured = useMemo(() => Boolean(getRouterAddress(effectiveChainId)), [effectiveChainId]);
   const routerError = useMemo(() => {

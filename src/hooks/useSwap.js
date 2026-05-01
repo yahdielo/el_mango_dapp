@@ -8,9 +8,9 @@ import { useWriteContract, useWaitForTransactionReceipt, useReadContract, usePub
 const CONFIRMATION_TIMEOUT_MS = 30_000;
 import { ERC20_ABI, ROUTER_ABI, ROUTER_ABI_SECURE, MANGO_REFERRAL_ABI } from '../config/abis';
 
-// Chains using MangoRouterSecure (5-param swap with slippageTolerance)
+// Chains using MangoRouterSecure (5-param swap with slippageTolerance + direct ETH referral payout)
 // All other chains use the legacy 4-param ROUTER_ABI
-const SECURE_ROUTER_CHAIN_IDS = new Set([1, 10, 137, 43114, 42161]);
+const SECURE_ROUTER_CHAIN_IDS = new Set([1, 10, 56, 137, 8453, 42161, 43114]);
 import { ZERO_ADDRESS, getRouterAddress, getExplorerUrl, getGasSettings, getMangoReferralContractAddress } from '../utils/chainConfig';
 import { mapErrorToUserMessage } from '../utils/errorMapping';
 import { isNativeToken } from './useTokenBalance';

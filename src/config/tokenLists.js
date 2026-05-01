@@ -124,13 +124,11 @@ export const tokenLists = {
   },
   43114: {
     default: [
-      { symbol: 'MANGO', name: 'Mango DeFi Token', decimals: 18, address: MANGO_TOKEN_ADDRESS, logoURI: MANGO_LOGO },
       { symbol: 'WAVAX', name: 'Wrapped AVAX', decimals: 18, address: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7', logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/avalanchec/assets/0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7/logo.png' },
       { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', logoURI: USDC_LOGO },
       { symbol: 'USDT', name: 'Tether USD', decimals: 6, address: '0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7', logoURI: USDT_LOGO },
     ],
     popular: [
-      { symbol: 'MANGO', name: 'Mango DeFi Token', decimals: 18, address: MANGO_TOKEN_ADDRESS, logoURI: MANGO_LOGO },
       { symbol: 'WAVAX', name: 'Wrapped AVAX', decimals: 18, address: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7', logoURI: WAVAX_LOGO },
       { symbol: 'USDC', name: 'USD Coin', decimals: 6, address: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', logoURI: USDC_LOGO },
       { symbol: 'USDT', name: 'Tether USD', decimals: 6, address: '0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7', logoURI: USDT_LOGO },

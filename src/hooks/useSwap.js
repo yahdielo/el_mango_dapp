@@ -8,8 +8,8 @@ import { useWriteContract, useWaitForTransactionReceipt, useReadContract, usePub
 const CONFIRMATION_TIMEOUT_MS = 30_000;
 import { ERC20_ABI, ROUTER_ABI, ROUTER_ABI_SECURE, MANGO_REFERRAL_ABI } from '../config/abis';
 
-// Chains using MangoRouterSecure (5-param swap with slippageTolerance + direct ETH referral payout)
-// All other chains use the legacy 4-param ROUTER_ABI
+// All 7 live chains use the 4-param MangoRouter001 swap as of 2026-05-03.
+// After running redeploy-audit-fixed.sh update ROUTER_ABI to 6-param and add minAmountOut/deadline below.
 const SECURE_ROUTER_CHAIN_IDS = new Set([1, 10, 56, 137, 8453, 42161, 43114]);
 import { ZERO_ADDRESS, getRouterAddress, getExplorerUrl, getGasSettings, getMangoReferralContractAddress } from '../utils/chainConfig';
 import { mapErrorToUserMessage } from '../utils/errorMapping';
@@ -229,16 +229,13 @@ export function useSwap({
         }
       }
 
-      // Pick ABI based on which router version is deployed on the chain
-      const useSecureAbi = SECURE_ROUTER_CHAIN_IDS.has(chainId);
-      const activeAbi = useSecureAbi ? ROUTER_ABI_SECURE : ROUTER_ABI;
-
-      // 4-param (legacy): swap(token0, token1, amount, referrer)
-      // 5-param (secure): swap(token0, token1, amount, referrer, slippageTolerance=0 → use default)
-      const baseArgs = isNativeToken(tokenIn)
+      // 4-param swap: swap(token0, token1, amount, referrer)
+      // All 7 deployed routers use this signature as of 2026-05-03.
+      const finalArgs = isNativeToken(tokenIn)
         ? [token0, token1, 0n, effectiveReferrer || ZERO_ADDRESS]
         : [token0, token1, amountWei, effectiveReferrer || ZERO_ADDRESS];
-      const finalArgs = useSecureAbi ? [...baseArgs, 0n] : baseArgs;
+
+      const activeAbi = ROUTER_ABI;
 
       const hash = await writeContractAsync({
         address: routerAddress,

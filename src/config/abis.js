@@ -46,15 +46,19 @@ export const ERC20_ABI = [
 ];
 
 /**
- * MangoRouter legacy ABI (4 params) — used by Base (8453) and BSC (56)
+ * MangoRouter ABI — 4-param swap (all 7 deployed chains as of 2026-05-03).
  * swap(address token0, address token1, uint256 amount, address referrer)
+ *
+ * NOTE: After running redeploy-audit-fixed.sh this becomes 6-param:
+ * swap(token0, token1, amount, referrer, minAmountOut, deadline)
+ * Update this ABI and useSwap.js finalArgs at that time.
  */
 export const ROUTER_ABI = [
   {
     inputs: [
-      { name: 'token0', type: 'address' },
-      { name: 'token1', type: 'address' },
-      { name: 'amount', type: 'uint256' },
+      { name: 'token0',   type: 'address' },
+      { name: 'token1',   type: 'address' },
+      { name: 'amount',   type: 'uint256' },
       { name: 'referrer', type: 'address' },
     ],
     name: 'swap',
@@ -64,27 +68,8 @@ export const ROUTER_ABI = [
   },
 ];
 
-/**
- * MangoRouterSecure ABI (5 params) — used by Ethereum (1), Polygon (137),
- * Optimism (10), Avalanche (43114), and Arbitrum (42161).
- * swap(address token0, address token1, uint256 amount, address referrer, uint256 slippageTolerance)
- * Pass slippageTolerance=0 to use contract default (200 bps = 2%).
- */
-export const ROUTER_ABI_SECURE = [
-  {
-    inputs: [
-      { name: 'token0', type: 'address' },
-      { name: 'token1', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-      { name: 'referrer', type: 'address' },
-      { name: 'slippageTolerance', type: 'uint256' },
-    ],
-    name: 'swap',
-    outputs: [{ name: 'amountOut', type: 'uint256' }],
-    stateMutability: 'payable',
-    type: 'function',
-  },
-];
+// Alias — all chains now use the same 4-param ROUTER_ABI.
+export const ROUTER_ABI_SECURE = ROUTER_ABI;
 
 /**
  * MangoReferral minimal ABI (used for preflight safety checks).

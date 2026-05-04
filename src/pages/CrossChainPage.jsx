@@ -265,7 +265,8 @@ export default function CrossChainPage() {
       return activeProvider;
     }
     // Pre-swap: derive label from the pair corridor.
-    if (bitcoinSource) return 'Rango'; // Rango is primary for BTC (deposit-address, no memo)
+    if (bitcoinSource) return 'Rango'; // Rango is primary for BTC source (deposit-address, no memo)
+    if (bitcoinDest) return 'Rango';   // Rango handles EVM → BTC (e.g. Base ETH → Bitcoin BTC)
     if (isSymbiosisOnlyPair(sourceChainId, destChainId)) return 'Symbiosis';
     if (isSquidOnlyPair(sourceChainId, destChainId)) return 'Squid';
     // LiFi corridors: backend tries LiFi first, then falls back to Rango/LayerSwap
@@ -774,13 +775,17 @@ export default function CrossChainPage() {
     tokenOut,
     amountIn,
     recipient: recipientForEstimate,
+    // For non-EVM sources pass their native sender address so the bridge provider
+    // (Rango) can use it as fromAddress.  For EVM sources pass the connected EVM
+    // wallet so Rango doesn't fall back to the BTC/non-EVM recipient address as
+    // fromAddress (which causes "Invalid wallet" errors and wrong quote amounts).
     userAddress: bitcoinSourceRequired
       ? bitcoinSenderTrimmed
       : solanaSource
-        ? solanaSenderTrimmed || undefined
+        ? solanaSenderTrimmed || address || undefined
         : tronSource
-          ? tronSenderTrimmed || undefined
-          : undefined,
+          ? tronSenderTrimmed || address || undefined
+          : address || undefined,
   });
   // NOTE: crossChainAmountOut and effectiveAmountOut are declared here (after useCrossChainEstimate)
   // to avoid a TDZ — they reference crossChainEstimatedAmountOut which is only available from the hook above.

@@ -422,7 +422,7 @@
             }
         ],
         "contracts": {
-            "router": "0x49172ff4D657D109D250BE7a644C3358F0Baf321",
+            "router": "0x5943aC1ce6A605E64550806e4a9DF57c1B0E123c",
             "referral": "0xCCe2299558fe7C274BF168A0bB66E0c5254f9d8C",
             "token": "0x1dC5726C54791c18eA68C26428bef5c278007627",
             "manager": null,

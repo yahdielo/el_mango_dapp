@@ -8,9 +8,9 @@ import { useWriteContract, useWaitForTransactionReceipt, useReadContract, usePub
 const CONFIRMATION_TIMEOUT_MS = 30_000;
 import { ERC20_ABI, ROUTER_ABI, ROUTER_ABI_SECURE, MANGO_REFERRAL_ABI } from '../config/abis';
 
-// All 7 live chains use the 4-param MangoRouter001 swap as of 2026-05-03.
-// After running redeploy-audit-fixed.sh update ROUTER_ABI to 6-param and add minAmountOut/deadline below.
-const SECURE_ROUTER_CHAIN_IDS = new Set([1, 10, 56, 137, 8453, 42161, 43114]);
+// Chains with new 6-param audit-fixed contracts deployed 2026-05-03.
+// Base (8453) and BSC (56) still use old 4-param contracts.
+const SECURE_ROUTER_CHAIN_IDS = new Set([1, 10, 137, 42161, 43114]);
 import { ZERO_ADDRESS, getRouterAddress, getExplorerUrl, getGasSettings, getMangoReferralContractAddress } from '../utils/chainConfig';
 import { mapErrorToUserMessage } from '../utils/errorMapping';
 import { isNativeToken } from './useTokenBalance';
@@ -229,13 +229,28 @@ export function useSwap({
         }
       }
 
-      // 4-param swap: swap(token0, token1, amount, referrer)
-      // All 7 deployed routers use this signature as of 2026-05-03.
-      const finalArgs = isNativeToken(tokenIn)
-        ? [token0, token1, 0n, effectiveReferrer || ZERO_ADDRESS]
-        : [token0, token1, amountWei, effectiveReferrer || ZERO_ADDRESS];
+      // Select ABI and args based on contract version:
+      // - 6-param (ROUTER_ABI_SECURE): ETH, Arbitrum, Optimism, Polygon, Avalanche (new audit-fixed)
+      // - 4-param (ROUTER_ABI): Base, BSC (old deployed contracts)
+      const useSecureRouter = SECURE_ROUTER_CHAIN_IDS.has(chainId);
+      const activeAbi = useSecureRouter ? ROUTER_ABI_SECURE : ROUTER_ABI;
 
-      const activeAbi = ROUTER_ABI;
+      let finalArgs;
+      if (useSecureRouter) {
+        // 6-param: swap(token0, token1, amount, referrer, minAmountOut, deadline)
+        const minAmountOutBig = amountOut
+          ? (parseUnits(amountOut, tokenOut?.decimals ?? 18) * BigInt(10000 - (slippageBps ?? 50))) / 10000n
+          : 1n;
+        const deadline = BigInt(Math.floor(Date.now() / 1000) + 300); // 5 min
+        finalArgs = isNativeToken(tokenIn)
+          ? [token0, token1, 0n, effectiveReferrer || ZERO_ADDRESS, minAmountOutBig, deadline]
+          : [token0, token1, amountWei, effectiveReferrer || ZERO_ADDRESS, minAmountOutBig, deadline];
+      } else {
+        // 4-param: swap(token0, token1, amount, referrer)
+        finalArgs = isNativeToken(tokenIn)
+          ? [token0, token1, 0n, effectiveReferrer || ZERO_ADDRESS]
+          : [token0, token1, amountWei, effectiveReferrer || ZERO_ADDRESS];
+      }
 
       const hash = await writeContractAsync({
         address: routerAddress,

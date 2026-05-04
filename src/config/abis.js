@@ -46,12 +46,8 @@ export const ERC20_ABI = [
 ];
 
 /**
- * MangoRouter ABI — 4-param swap (all 7 deployed chains as of 2026-05-03).
- * swap(address token0, address token1, uint256 amount, address referrer)
- *
- * NOTE: After running redeploy-audit-fixed.sh this becomes 6-param:
- * swap(token0, token1, amount, referrer, minAmountOut, deadline)
- * Update this ABI and useSwap.js finalArgs at that time.
+ * MangoRouter ABI — 4-param swap.
+ * Used by: Base (8453), BSC (56) — old deployed contracts.
  */
 export const ROUTER_ABI = [
   {
@@ -68,8 +64,27 @@ export const ROUTER_ABI = [
   },
 ];
 
-// Alias — all chains now use the same 4-param ROUTER_ABI.
-export const ROUTER_ABI_SECURE = ROUTER_ABI;
+/**
+ * MangoRouter ABI — 6-param swap (audit-fixed contracts).
+ * Used by: Ethereum (1), Arbitrum (42161), Optimism (10), Polygon (137), Avalanche (43114).
+ * swap(token0, token1, amount, referrer, minAmountOut, deadline)
+ */
+export const ROUTER_ABI_SECURE = [
+  {
+    inputs: [
+      { name: 'token0',        type: 'address' },
+      { name: 'token1',        type: 'address' },
+      { name: 'amount',        type: 'uint256' },
+      { name: 'referrer',      type: 'address' },
+      { name: 'minAmountOut',  type: 'uint256' },
+      { name: 'deadline',      type: 'uint256' },
+    ],
+    name: 'swap',
+    outputs: [{ name: 'amountOut', type: 'uint256' }],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+];
 
 /**
  * MangoReferral minimal ABI (used for preflight safety checks).

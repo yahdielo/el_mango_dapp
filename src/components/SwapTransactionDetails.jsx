@@ -10,6 +10,7 @@ export default function SwapTransactionDetails({
   routerFeePct,
   l1ReferralPct,
   referrer,
+  quoteAge,
 }) {
   if (!amountIn || parseFloat(amountIn) <= 0) return null;
 
@@ -96,6 +97,14 @@ export default function SwapTransactionDetails({
           <div className="flex justify-between text-gray-400">
             <span>Estimated gas</span>
             <span className="text-white">{gasCostFormatted}</span>
+          </div>
+        )}
+        {quoteAge != null && quoteAge > 0 && (
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>Quote updated</span>
+            <span className={quoteAge >= 12 ? 'text-yellow-400' : 'text-gray-500'}>
+              {quoteAge}s ago {quoteAge >= 12 ? '↻' : ''}
+            </span>
           </div>
         )}
       </div>

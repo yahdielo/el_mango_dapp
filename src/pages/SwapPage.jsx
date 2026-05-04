@@ -73,7 +73,7 @@ export default function SwapPage() {
   });
   const { data: whitelist } = useWhitelist(address, effectiveChainId);
 
-  const { amountOut: quoteAmountOut, loading: quoteLoading, error: quoteError, estimated: quoteEstimated, priceIn, priceOut, routerFeePct, l1ReferralPct } = useQuote({
+  const { amountOut: quoteAmountOut, loading: quoteLoading, error: quoteError, estimated: quoteEstimated, priceIn, priceOut, routerFeePct, l1ReferralPct, quoteAge } = useQuote({
     chainId: effectiveChainId,
     tokenIn: token1,
     tokenOut: token2,
@@ -342,6 +342,7 @@ export default function SwapPage() {
           routerFeePct={routerFeePct}
           l1ReferralPct={l1ReferralPct}
           referrer={referrer && referrer !== ZERO_ADDRESS ? referrer : null}
+          quoteAge={quoteAge}
         />
 
         <div className="mt-16">

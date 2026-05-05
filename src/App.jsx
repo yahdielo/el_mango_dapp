@@ -12,7 +12,9 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import AgentDashboardPage from './pages/AgentDashboardPage';
 import TelegramPage from './pages/TelegramPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
+import HistoryPage from './pages/HistoryPage';
 import NotFoundPage from './pages/NotFoundPage';
+import GlobalNav from './components/GlobalNav';
 
 export default function App() {
   useTelegramWebApp();
@@ -21,6 +23,7 @@ export default function App() {
       <ReownSetupBanner />
       <BrowserRouter>
         <ReferralUrlCapture />
+        <GlobalNav />
         <TermsGate>
           <Routes>
             <Route path="/" element={<SwapPage />} />
@@ -30,6 +33,7 @@ export default function App() {
             <Route path="/admin" element={<AdminDashboardPage />} />
             <Route path="/agent" element={<AgentDashboardPage />} />
             <Route path="/telegram" element={<TelegramPage />} />
+            <Route path="/history" element={<HistoryPage />} />
             <Route path="/terms" element={<TermsOfServicePage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

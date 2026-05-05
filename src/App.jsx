@@ -23,7 +23,7 @@ export default function App() {
       <ReownSetupBanner />
       <BrowserRouter>
         <ReferralUrlCapture />
-        <GlobalNav />
+        {/* <GlobalNav /> */}
         <TermsGate>
           <Routes>
             <Route path="/" element={<SwapPage />} />

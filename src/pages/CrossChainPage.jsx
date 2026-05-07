@@ -3,7 +3,7 @@ import { useAccount, useSignMessage } from 'wagmi';
 import { useConnectWallet } from '../hooks/useConnectWallet';
 import { useSolanaWallet } from '../hooks/useSolanaWallet';
 import { useTronWallet } from '../hooks/useTronWallet';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import SwapHeader from '../components/SwapHeader';
 import CrossChainSwapCard from '../components/CrossChainSwapCard';
 import ChainSelectionModal from '../components/ChainSelectionModal';
@@ -40,7 +40,9 @@ import { formatBalance } from '../utils/formatBalance';
 import { mapErrorToUserMessage } from '../utils/errorMapping';
 import SlippageSelector, { loadSlippageFromStorage } from '../components/SlippageSelector';
 import { useWhitelist } from '../hooks/useWhitelist';
-import { getStoredReferrer } from '../utils/referrerStorage';
+import { getStoredReferrer, setStoredReferrer, resolveEffectiveReferrer } from '../utils/referrerStorage';
+import { useAccountReferrer } from '../hooks/useAccountReferrer';
+import { autoRegisterReferrer } from '../services/referralAccountApi';
 import { getAuthSessionNonce, buildAuthSessionMessage, createAuthSessionToken } from '../services/authSessionApi';
 
 const GAS_BUFFER_NATIVE = 1000000000000000n; // 0.001 ETH
@@ -194,6 +196,13 @@ export default function CrossChainPage() {
   const { solanaAddress, isConnected: isSolanaConnected, connect: connectSolana, disconnect: disconnectSolana } = useSolanaWallet();
   const { tronAddress: tronWalletAddress, isConnected: isTronConnected, isAvailable: isTronAvailable, connect: connectTronLink, disconnect: disconnectTronLink } = useTronWallet();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refParam = searchParams.get('ref');
+  const isValidRef = useMemo(
+    () => !!(refParam && /^0x[a-fA-F0-9]{40}$/.test(refParam)),
+    [refParam],
+  );
+  const { referrer: backendReferrer } = useAccountReferrer(address);
   const allChains = useMemo(() => getAllChains(), []);
   const [chains, setChains] = useState(
     () => allChains.filter((c) => LAYERSWAP_CHAIN_IDS.includes(parseInt(c.chainId, 10)))
@@ -261,6 +270,7 @@ export default function CrossChainPage() {
       if (activeProvider === 'squid') return 'Squid';
       if (activeProvider === 'bungee') return 'Bungee';
       if (activeProvider === 'inbridge') return 'Inbridge';
+      if (activeProvider === 'meson') return 'Meson';
       if (activeProvider === 'loopring') return 'Loopring';
       return activeProvider;
     }
@@ -424,12 +434,25 @@ export default function CrossChainPage() {
 
   const isCrossChain = sourceChainId !== destChainId;
 
-  // Active referrer for badge display — read from local storage (updated on render)
-  const activeReferrer = useMemo(() => {
+  // EVM referrer for API + UI: URL → backend account (same on all devices) → local storage / env default
+  const crossChainEffectiveReferrer = useMemo(() => {
     if (!address) return null;
-    const r = getStoredReferrer(address);
-    return r && r !== '0x0000000000000000000000000000000000000000' ? r : null;
-  }, [address]);
+    if (isValidRef && refParam && refParam.toLowerCase() !== address.toLowerCase()) return refParam.trim();
+    if (backendReferrer && backendReferrer !== ZERO_ADDRESS) return backendReferrer;
+    const r = resolveEffectiveReferrer({ userAddress: address, chainId: sourceChainId, urlRef: null });
+    return r && r !== ZERO_ADDRESS ? r : null;
+  }, [address, isValidRef, refParam, backendReferrer, sourceChainId]);
+
+  useEffect(() => {
+    if (!address || !isValidRef || !refParam) return;
+    if (refParam.toLowerCase() === address.toLowerCase()) return;
+    setStoredReferrer(address, refParam);
+    if (!backendReferrer || backendReferrer === ZERO_ADDRESS) {
+      autoRegisterReferrer(address, refParam, 'url').catch(() => {});
+    }
+  }, [address, isValidRef, refParam, backendReferrer]);
+
+  const activeReferrer = crossChainEffectiveReferrer;
 
   const { amountOut: quoteAmountOut, loading: quoteLoading, error: quoteError, estimated: quoteEstimated, priceIn, priceOut } = useQuote({
     chainId: sourceChainId,
@@ -634,10 +657,11 @@ export default function CrossChainPage() {
     if (!isCrossChain) return;
     if (routeSupported === false) return;
     try {
-        // Current referral selection for cross-chain:
-        // Prefer local stored referrer (URL-captured or manually set in Referral page).
-        // Backend referral-chain API may be protected; when unavailable we still support account-based referral.
-        const sourceReferrer = getStoredReferrer(address);
+        // Prefer URL → backend account referrer (works on phone) → local storage fallback
+        const sourceReferrer =
+          crossChainEffectiveReferrer && crossChainEffectiveReferrer !== ZERO_ADDRESS
+            ? crossChainEffectiveReferrer
+            : getStoredReferrer(address);
 
         const recipient = isNonEvmDest(destChainId)
           ? (destinationAddress || '').trim()
@@ -730,6 +754,7 @@ export default function CrossChainPage() {
     tronSenderAddress,
     tronSource,
     tronWalletAddress,
+    crossChainEffectiveReferrer,
   ]);
 
   const destAddrRequired = isNonEvmDest(destChainId);
@@ -925,6 +950,8 @@ export default function CrossChainPage() {
                   ? 'Symbiosis'
                   : activeProvider === 'inbridge'
                   ? 'Inbridge'
+                  : activeProvider === 'meson'
+                  ? 'Meson'
                   : activeProvider}
               </p>
             )}

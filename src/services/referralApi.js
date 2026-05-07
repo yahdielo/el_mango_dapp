@@ -30,8 +30,8 @@ async function fetchOk(url, options = {}) {
 export async function getReferralChain(address, opts = {}) {
   if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) return null;
   if (!RAW_BASE) return null;
-  // If backend is protected and no API key is present, avoid calling to prevent noisy 401s.
-  if (!API_KEY) return null;
+  // GET /referral-chain/:addr is allowlisted for trusted browser origins without x-api-key.
+  // Do not block the call when NEXT_PUBLIC / VITE keys are unset — mobile / phone users need on-chain rows.
   const params = new URLSearchParams();
   if (opts?.allChains) params.set('allChains', 'true');
   const qs = params.toString();

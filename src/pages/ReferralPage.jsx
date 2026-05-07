@@ -8,8 +8,8 @@ import { useReferralChain } from '../hooks/useReferralChain';
 import { useReferralTree, useReferralPerformance, useReferralInsights, useTopReferrers } from '../hooks/useReferralAnalytics';
 import { syncReferral } from '../services/referralApi';
 import { LAYERSWAP_CHAIN_IDS } from '../services/bridgeApi';
-import { getAllChains } from '../utils/chainConfig';
-import { getStoredReferrer, isValidReferrerAddress, setStoredReferrer, clearStoredReferrer } from '../utils/referrerStorage';
+import { getAllChains, ZERO_ADDRESS } from '../utils/chainConfig';
+import { useAccountReferrer } from '../hooks/useAccountReferrer';
 import { getReferralClaimNonce, buildReferralClaimMessage, claimAccountReferrer, getCrossChainReferralStats } from '../services/referralAccountApi';
 import { getWalletLinkNonce, buildWalletLinkMessage, linkWallet, getLinkedWallets } from '../services/walletLinkApi';
 
@@ -55,9 +55,7 @@ export default function ReferralPage() {
   const [manualStatus, setManualStatus] = useState(null);
   const { signMessageAsync } = useSignMessage();
 
-  // Is this wallet's referrer already locked in localStorage?
-  const lockedReferrer = address ? getStoredReferrer(address) : null;
-  const isReferrerLocked = lockedReferrer && lockedReferrer !== '0x0000000000000000000000000000000000000000';
+  const { referrer: backendReferrer, refresh: refreshBackendReferrer } = useAccountReferrer(address);
 
   const { data: chainData, loading: chainLoading, error: chainError, refetch: refetchChain } = useReferralChain(address);
   const { data: treeData, loading: treeLoading, error: treeError } = useReferralTree(address);
@@ -118,6 +116,45 @@ export default function ReferralPage() {
   const primaryReferrer = raw?.primaryReferrer ?? raw?.referral?.referrer ?? null;
   const referralsList = raw?.referrals ?? [];
   const storedReferrer = useMemo(() => (address ? getStoredReferrer(address) : null), [address]);
+
+  /**
+   * Prefer server / on-chain so the Referral tab matches Swap (same referrer on desktop + mobile).
+   * Local storage alone is unreliable on a new device or fresh browser profile.
+   */
+  const effectiveMyReferrer = useMemo(() => {
+    const nz = (a) =>
+      typeof a === 'string' &&
+      /^0x[a-fA-F0-9]{40}$/i.test(a) &&
+      a.toLowerCase() !== ZERO_ADDRESS
+        ? a.toLowerCase()
+        : null;
+
+    const fromBackend = nz(backendReferrer);
+    const fromChain = nz(primaryReferrer);
+    const fromStored = nz(storedReferrer);
+    return fromBackend ?? fromChain ?? fromStored ?? null;
+  }, [backendReferrer, primaryReferrer, storedReferrer]);
+
+  const referrerSourceNote = useMemo(() => {
+    if (!effectiveMyReferrer) return '';
+    const e = effectiveMyReferrer;
+    if (backendReferrer && backendReferrer.toLowerCase() === e) {
+      return 'Synced from your MangoSwap account — visible on desktop, phone, and any browser where you connect this wallet.';
+    }
+    if (primaryReferrer && typeof primaryReferrer === 'string' && primaryReferrer.toLowerCase() === e) {
+      return 'Registered on-chain — we show the same referrer anywhere you load this wallet.';
+    }
+    return 'Saved only in this browser. Open your referral link again or swap once with attribution so MangoSwap saves your referrer to your account (then it follows you everywhere).';
+  }, [effectiveMyReferrer, backendReferrer, primaryReferrer]);
+
+  /** Copy server/on-chain referrer into local storage so Swap + URL capture stay aligned on this device. */
+  useEffect(() => {
+    if (!address || !effectiveMyReferrer) return;
+    if (getStoredReferrer(address) === ZERO_ADDRESS) {
+      setStoredReferrer(address, effectiveMyReferrer);
+    }
+  }, [address, effectiveMyReferrer]);
+
   const referralLink = typeof window !== 'undefined' && address
     ? `${window.location.origin}/?ref=${address}`
     : '';
@@ -127,12 +164,9 @@ export default function ReferralPage() {
       setManualRef('');
       return;
     }
-    if (storedReferrer && storedReferrer !== '0x0000000000000000000000000000000000000000') {
-      setManualRef(storedReferrer);
-    } else {
-      setManualRef('');
-    }
-  }, [address, storedReferrer]);
+    const ref = effectiveMyReferrer ?? (storedReferrer !== ZERO_ADDRESS ? storedReferrer : '');
+    setManualRef(ref || '');
+  }, [address, effectiveMyReferrer, storedReferrer]);
 
   const handleCopyLink = useCallback(() => {
     if (!referralLink) return;
@@ -191,14 +225,15 @@ export default function ReferralPage() {
         ) : (
           <>
             <ReferralSection title="My referrer">
-              {isReferrerLocked ? (
+              {effectiveMyReferrer ? (
                 <div>
-                  <p className="text-white font-mono text-xs break-all">{lockedReferrer}</p>
+                  <p className="text-white font-mono text-xs break-all">{effectiveMyReferrer}</p>
+                  <p className="text-gray-500 text-[11px] mt-2 leading-snug">{referrerSourceNote}</p>
                 </div>
               ) : (
                 <div>
                   <p className="text-gray-400 text-xs mb-2">
-                    Set once by visiting a referral link <span className="font-mono">?ref=0x...</span> or entering an address below. Once set, it is permanent.
+                    Set once by visiting a referral link <span className="font-mono">?ref=0x...</span>, by swapping with attribution, or by entering an address below. Once set, it is permanent and will show here on mobile too.
                   </p>
                   <div className="flex items-center gap-2">
                     <input
@@ -237,6 +272,7 @@ export default function ReferralPage() {
                             source: 'manual',
                           });
                           setManualStatus('Saved and locked permanently.');
+                          refreshBackendReferrer?.();
                         } catch (e) {
                           setManualStatus(e?.message ? `Saved locally. Backend sync failed: ${e.message}` : 'Saved locally. Backend sync failed.');
                         } finally {

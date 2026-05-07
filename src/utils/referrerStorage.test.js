@@ -43,11 +43,11 @@ describe('referrerStorage', () => {
     expect(getStoredReferrer(USER)).toBe(ZERO_ADDRESS);
   });
 
-  it('URL ref takes precedence over stored', () => {
+  it('locked stored referrer wins over URL ref (immutable)', () => {
     setStoredReferrer(USER, REF);
     const urlRef = '0x3333333333333333333333333333333333333333';
     const eff = resolveEffectiveReferrer({ userAddress: USER, chainId: 8453, urlRef });
-    expect(eff).toBe(urlRef);
+    expect(eff).toBe(REF);
   });
 
   it('stores and reads pending referrer', () => {

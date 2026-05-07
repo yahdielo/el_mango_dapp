@@ -615,7 +615,7 @@ export default function CrossChainSwapStatusBanner({
         <p className="text-gray-400 text-xs mt-1">
           {status === 'user_transfer_pending' && txConfirmed
             ? 'It may take a couple of minutes to see your deposit.'
-            : `Powered by ${provider === 'layerswap' ? 'LayerSwap' : provider === 'rango' ? 'Rango' : provider === 'lifi' ? 'LiFi' : provider === 'squid' ? 'Squid' : provider === 'bungee' ? 'Bungee' : provider === 'wormhole' ? 'Wormhole' : provider === 'symbiosis' ? 'Symbiosis' : provider === 'inbridge' ? 'Inbridge' : provider}`}
+            : `Powered by ${provider === 'layerswap' ? 'LayerSwap' : provider === 'rango' ? 'Rango' : provider === 'lifi' ? 'LiFi' : provider === 'squid' ? 'Squid' : provider === 'bungee' ? 'Bungee' : provider === 'wormhole' ? 'Wormhole' : provider === 'symbiosis' ? 'Symbiosis' : provider === 'inbridge' ? 'Inbridge' : provider === 'meson' ? 'Meson' : provider}`}
         </p>
       )}
       {status === 'expired' && Number(destChainId) === TRON_CHAIN_ID && (

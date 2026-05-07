@@ -9,6 +9,7 @@ import { useReferralTree, useReferralPerformance, useReferralInsights, useTopRef
 import { syncReferral } from '../services/referralApi';
 import { LAYERSWAP_CHAIN_IDS } from '../services/bridgeApi';
 import { getAllChains, ZERO_ADDRESS } from '../utils/chainConfig';
+import { getStoredReferrer, setStoredReferrer, isValidReferrerAddress } from '../utils/referrerStorage';
 import { useAccountReferrer } from '../hooks/useAccountReferrer';
 import { getReferralClaimNonce, buildReferralClaimMessage, claimAccountReferrer, getCrossChainReferralStats } from '../services/referralAccountApi';
 import { getWalletLinkNonce, buildWalletLinkMessage, linkWallet, getLinkedWallets } from '../services/walletLinkApi';

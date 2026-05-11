@@ -6,12 +6,13 @@ import { useWriteContract, useWaitForTransactionReceipt, useReadContract, usePub
 // user is never stuck forever. The tx may still confirm later — they can track
 // it via the explorer link shown on timeout.
 const CONFIRMATION_TIMEOUT_MS = 30_000;
-import { ERC20_ABI, ROUTER_ABI, ROUTER_ABI_SECURE, MANGO_REFERRAL_ABI } from '../config/abis';
+import { ERC20_ABI, ROUTER_ABI, ROUTER_ABI_SECURE, ROUTER_ABI_BASE, MANGO_REFERRAL_ABI } from '../config/abis';
 
 // Chains with 6-param audit-fixed contracts (swap with minAmountOut + deadline).
-// Base (8453) updated 2026-05-11 — new MangoRouterSecure with Uniswap V3 support.
 // BSC (56) still uses old 4-param contract.
-const SECURE_ROUTER_CHAIN_IDS = new Set([1, 10, 137, 8453, 42161, 43114]);
+const SECURE_ROUTER_CHAIN_IDS = new Set([1, 10, 137, 42161, 43114]);
+// Base uses a 5-param secure contract (slippageTolerance; contract computes minAmountOut via QuoterV2).
+const BASE_ROUTER_CHAIN_IDS = new Set([8453]);
 import { ZERO_ADDRESS, getRouterAddress, getExplorerUrl, getGasSettings, getMangoReferralContractAddress } from '../utils/chainConfig';
 import { mapErrorToUserMessage } from '../utils/errorMapping';
 import { isNativeToken } from './useTokenBalance';
@@ -231,13 +232,22 @@ export function useSwap({
       }
 
       // Select ABI and args based on contract version:
-      // - 6-param (ROUTER_ABI_SECURE): ETH, Arbitrum, Optimism, Polygon, Avalanche (new audit-fixed)
-      // - 4-param (ROUTER_ABI): Base, BSC (old deployed contracts)
+      // - 5-param (ROUTER_ABI_BASE): Base (8453) — MangoRouterSecure with QuoterV2 slippage
+      // - 6-param (ROUTER_ABI_SECURE): ETH, Arbitrum, Optimism, Polygon, Avalanche
+      // - 4-param (ROUTER_ABI): BSC (old deployed contract)
+      const useBaseRouter = BASE_ROUTER_CHAIN_IDS.has(chainId);
       const useSecureRouter = SECURE_ROUTER_CHAIN_IDS.has(chainId);
-      const activeAbi = useSecureRouter ? ROUTER_ABI_SECURE : ROUTER_ABI;
+      const activeAbi = useBaseRouter ? ROUTER_ABI_BASE : useSecureRouter ? ROUTER_ABI_SECURE : ROUTER_ABI;
 
       let finalArgs;
-      if (useSecureRouter) {
+      if (useBaseRouter) {
+        // 5-param: swap(token0, token1, amount, referrer, slippageTolerance)
+        // Contract computes minAmountOut internally via QuoterV2.
+        const slippageTol = BigInt(slippageBps ?? 50);
+        finalArgs = isNativeToken(tokenIn)
+          ? [token0, token1, 0n, effectiveReferrer || ZERO_ADDRESS, slippageTol]
+          : [token0, token1, amountWei, effectiveReferrer || ZERO_ADDRESS, slippageTol];
+      } else if (useSecureRouter) {
         // 6-param: swap(token0, token1, amount, referrer, minAmountOut, deadline)
         const minAmountOutBig = amountOut
           ? (parseUnits(amountOut, tokenOut?.decimals ?? 18) * BigInt(10000 - (slippageBps ?? 50))) / 10000n

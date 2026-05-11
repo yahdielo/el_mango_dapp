@@ -87,6 +87,28 @@ export const ROUTER_ABI_SECURE = [
 ];
 
 /**
+ * MangoRouterSecure ABI — 5-param swap (Base deployed 2026-05-11).
+ * swap(token0, token1, amount, referrer, slippageTolerance)
+ * Contract computes minAmountOut internally via QuoterV2.
+ * slippageTolerance is in basis points (e.g. 50 = 0.5%).
+ */
+export const ROUTER_ABI_BASE = [
+  {
+    inputs: [
+      { name: 'token0',            type: 'address' },
+      { name: 'token1',            type: 'address' },
+      { name: 'amount',            type: 'uint256' },
+      { name: 'referrer',          type: 'address' },
+      { name: 'slippageTolerance', type: 'uint256' },
+    ],
+    name: 'swap',
+    outputs: [{ name: 'amountOut', type: 'uint256' }],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+];
+
+/**
  * MangoReferral minimal ABI (used for preflight safety checks).
  */
 export const MANGO_REFERRAL_ABI = [

@@ -10,9 +10,9 @@ import { ERC20_ABI, ROUTER_ABI, ROUTER_ABI_SECURE, ROUTER_ABI_BASE, MANGO_REFERR
 
 // Chains with 6-param audit-fixed contracts (swap with minAmountOut + deadline).
 // BSC (56) still uses old 4-param contract.
-const SECURE_ROUTER_CHAIN_IDS = new Set([1, 10, 137, 42161, 43114]);
-// Base uses a 5-param secure contract (slippageTolerance; contract computes minAmountOut via QuoterV2).
-const BASE_ROUTER_CHAIN_IDS = new Set([8453]);
+const SECURE_ROUTER_CHAIN_IDS = new Set([1, 10, 137, 42161]);
+// Base and Avalanche use a 5-param secure contract (slippageTolerance; contract computes minAmountOut via QuoterV2).
+const BASE_ROUTER_CHAIN_IDS = new Set([8453, 43114]);
 import { ZERO_ADDRESS, getRouterAddress, getExplorerUrl, getGasSettings, getMangoReferralContractAddress } from '../utils/chainConfig';
 import { mapErrorToUserMessage } from '../utils/errorMapping';
 import { isNativeToken } from './useTokenBalance';

@@ -422,7 +422,7 @@
             }
         ],
         "contracts": {
-            "router": "0x8165dB5a13332a2505A3b65FB27811bF3F167b35",
+            "router": "0xCEfa50646340EF37142700AF2234335b2921C99D",
             "referral": "0xCCe2299558fe7C274BF168A0bB66E0c5254f9d8C",
             "token": "0x1dC5726C54791c18eA68C26428bef5c278007627",
             "manager": null,
@@ -435,7 +435,7 @@
         "bridge": null,
         "status": "active",
         "gasSettings": {
-            "gasLimit": 500000,
+            "gasLimit": 600000,
             "maxFeePerGas": null,
             "maxPriorityFeePerGas": null,
             "gasPrice": null

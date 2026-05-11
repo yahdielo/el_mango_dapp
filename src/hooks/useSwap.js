@@ -8,9 +8,10 @@ import { useWriteContract, useWaitForTransactionReceipt, useReadContract, usePub
 const CONFIRMATION_TIMEOUT_MS = 30_000;
 import { ERC20_ABI, ROUTER_ABI, ROUTER_ABI_SECURE, MANGO_REFERRAL_ABI } from '../config/abis';
 
-// Chains with new 6-param audit-fixed contracts deployed 2026-05-03.
-// Base (8453) and BSC (56) still use old 4-param contracts.
-const SECURE_ROUTER_CHAIN_IDS = new Set([1, 10, 137, 42161, 43114]);
+// Chains with 6-param audit-fixed contracts (swap with minAmountOut + deadline).
+// Base (8453) updated 2026-05-11 — new MangoRouterSecure with Uniswap V3 support.
+// BSC (56) still uses old 4-param contract.
+const SECURE_ROUTER_CHAIN_IDS = new Set([1, 10, 137, 8453, 42161, 43114]);
 import { ZERO_ADDRESS, getRouterAddress, getExplorerUrl, getGasSettings, getMangoReferralContractAddress } from '../utils/chainConfig';
 import { mapErrorToUserMessage } from '../utils/errorMapping';
 import { isNativeToken } from './useTokenBalance';

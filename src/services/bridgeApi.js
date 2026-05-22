@@ -52,8 +52,9 @@ function getNetworkName(chainId) {
  * Removed: 143 (Monad — now LiFi/AcrossV4), 122 (Fuse — no active routes), 1890 (LightLink — no active routes).
  */
 export const LAYERSWAP_ONLY_CHAIN_IDS = new Set([
-  34443, 5000, 167000, 1329, 480, 7000, 48900,
+  34443, 167000, 1329, 480, 7000, 48900,
   81457, 59144, 911001, 911002, 911003,
+  // removed: 5000 (Mantle) — Bridgers now handles MNT↔ETH/BSC natively
   // removed: 80094 (Berachain), 42220 (Celo), 252 (Fraxtal), 122 (Fuse), 1890 (LightLink), 911004 (Loopring) — no active routes
 ]);
 

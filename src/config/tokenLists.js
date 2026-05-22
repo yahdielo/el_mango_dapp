@@ -25,6 +25,7 @@ const WMATIC_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master
 const WAVAX_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/avalanchec/assets/0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7/logo.png';
 const CAKE_LOGO = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82/logo.png';
 const DOGE_LOGO = 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png';
+const MNT_LOGO = 'https://assets.coingecko.com/coins/images/30980/large/token-logo.png';
 
 /** Chain IDs that have token lists (supported for swap) */
 export const SUPPORTED_SWAP_CHAINS = [8453, 42161, 56, 137, 10, 43114, 1];
@@ -156,6 +157,19 @@ export const tokenLists = {
       { symbol: 'LINK', name: 'Chainlink', decimals: 18, address: '0x514910771AF9Ca656af840dff83E8264EcF986CA', logoURI: LINK_LOGO },
     ],
   },
+  // Mantle (5000) – native MNT + stables; Bridgers handles MNT→ETH/BSC
+  5000: {
+    default: [
+      { symbol: 'MNT',  name: 'Mantle',     decimals: 18, address: '0x0000000000000000000000000000000000000000', logoURI: MNT_LOGO },
+      { symbol: 'USDT', name: 'Tether USD', decimals: 6,  address: '0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE', logoURI: USDT_LOGO },
+      { symbol: 'USDC', name: 'USD Coin',   decimals: 6,  address: '0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9', logoURI: USDC_LOGO },
+    ],
+    popular: [
+      { symbol: 'MNT',  name: 'Mantle',     decimals: 18, address: '0x0000000000000000000000000000000000000000', logoURI: MNT_LOGO },
+      { symbol: 'USDT', name: 'Tether USD', decimals: 6,  address: '0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE', logoURI: USDT_LOGO },
+      { symbol: 'USDC', name: 'USD Coin',   decimals: 6,  address: '0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9', logoURI: USDC_LOGO },
+    ],
+  },
   // Solana (501111) – native SOL + stables for cross-chain
   501111: {
     default: [
@@ -191,6 +205,7 @@ const NATIVE_TOKENS = {
   43114: { symbol: 'AVAX', name: 'Avalanche', decimals: 18, address: ZERO, native: true, logoURI: WAVAX_LOGO },
   137: { symbol: 'MATIC', name: 'Polygon', decimals: 18, address: ZERO, native: true, logoURI: WMATIC_LOGO },
   56: { symbol: 'BNB', name: 'BNB', decimals: 18, address: ZERO, native: true, logoURI: WBNB_LOGO },
+  5000: { symbol: 'MNT', name: 'Mantle', decimals: 18, address: ZERO, native: true, logoURI: MNT_LOGO },
   501111: { symbol: 'SOL', name: 'Solana', decimals: 9, address: 'SOL', logoURI: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' },
   728126428: { symbol: 'TRX', name: 'Tron', decimals: 6, address: 'TRX', logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/tron/info/logo.png' },
   101: { symbol: 'SUI', name: 'Sui', decimals: 9, address: 'SUI', logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/sui/info/logo.png' },

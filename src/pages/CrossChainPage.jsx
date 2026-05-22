@@ -34,6 +34,7 @@ import { isLayerSwapVerifiedCrossAssetCorridor } from '../config/layerswapVerifi
 import { isSymbiosisOnlyPair } from '../config/symbiosisOnlyPairs';
 import { isSquidOnlyPair } from '../config/squidOnlyPairs';
 import { isLifiOnlyPair } from '../config/lifiOnlyPairs';
+import { isBridgersPair } from '../config/bridgersVerifiedPairs';
 import { getReferralChain, syncReferral } from '../services/referralApi';
 import { isCrossChainViaBackendAvailable } from '../services/crossChainSwapApi';
 import { formatBalance } from '../utils/formatBalance';
@@ -272,6 +273,7 @@ export default function CrossChainPage() {
       if (activeProvider === 'inbridge') return 'Inbridge';
       if (activeProvider === 'meson') return 'Meson';
       if (activeProvider === 'loopring') return 'Loopring';
+      if (activeProvider === 'bridgers') return 'Bridgers';
       return activeProvider;
     }
     // Pre-swap: derive label from the pair corridor.
@@ -288,6 +290,9 @@ export default function CrossChainPage() {
       normalizeSymbolForTokenCompare(tokenIn.symbol) !== normalizeSymbolForTokenCompare(tokenOut.symbol) &&
       !isLayerSwapVerifiedCrossAssetCorridor(sourceChainId, destChainId, tokenIn?.symbol, tokenOut?.symbol)
     ) return 'Auto';
+    // Bridgers corridors: LiFi may 404 and Bridgers kicks in as fallback.
+    // Show "Auto" pre-swap since we don't know which provider will quote successfully.
+    if (isBridgersPair(sourceChainId, destChainId)) return 'Auto';
     if (bridgeProvider === 'auto') return 'Auto';
     if (bridgeProvider === 'layerswap') return 'LayerSwap';
     if (bridgeProvider === 'rango') return 'Rango';

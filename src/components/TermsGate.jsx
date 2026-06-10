@@ -5,6 +5,7 @@ const TOS_KEY  = 'mangoswap_tos_accepted_v1';
 const PASS_KEY = 'mangoswap_access_v1';
 const FONT     = { fontFamily: "'Afacad', sans-serif" };
 
+const ACCESS_GATE_ENABLED = import.meta.env.VITE_ACCESS_GATE_ENABLED === 'true';
 const ACCESS_PHRASE = (import.meta.env.VITE_ACCESS_PASSPHRASE ?? 'MangoSwap2025').trim();
 
 // ─── Root gate ────────────────────────────────────────────────────────────────
@@ -14,13 +15,13 @@ export default function TermsGate({ children }) {
 
   useEffect(() => {
     try {
-      const passOk = sessionStorage.getItem(PASS_KEY) === 'true';
+      const passOk = !ACCESS_GATE_ENABLED || sessionStorage.getItem(PASS_KEY) === 'true';
       const tosOk  = localStorage.getItem(TOS_KEY)   === 'true';
       if (!passOk)      setPhase('passphrase');
       else if (!tosOk)  setPhase('terms');
       else              setPhase('granted');
     } catch {
-      setPhase('passphrase');
+      setPhase(ACCESS_GATE_ENABLED ? 'passphrase' : 'terms');
     }
     setTimeout(() => setVisible(true), 60);
   }, []);

@@ -3,7 +3,7 @@ import TokenLogo from './TokenLogo';
 const CHAIN_COLORS = {
   1: '#627EEA', 10: '#FF0420', 56: '#F3BA2F', 137: '#8247E5', 8453: '#0052FF',
   42161: '#28A0F0', 43114: '#E84142', 728126428: '#FF0019', 501111: '#9945FF',
-  0: '#F7931A', 101: '#4DA2FF', 144: '#23292F',
+  0: '#F7931A', 101: '#4DA2FF', 144: '#23292F', 4663: '#00C805',
 };
 
 export default function CrossChainSwapCard({

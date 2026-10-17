@@ -14,6 +14,20 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { SolanaAdapter } from '@reown/appkit-adapter-solana/react';
 import { http, fallback } from 'wagmi';
+import { defineChain } from 'viem';
+
+/** Robinhood Chain mainnet (Arbitrum Orbit). Gas is ETH. */
+const robinhood = defineChain({
+  id: 4663,
+  name: 'Robinhood Chain',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://rpc.mainnet.chain.robinhood.com'] },
+  },
+  blockExplorers: {
+    default: { name: 'Blockscout', url: 'https://robinhoodchain.blockscout.com' },
+  },
+});
 
 const queryClient = new QueryClient();
 // Reown project ID. In Reown Dashboard you must add Allowed Origins (e.g. https://el-mango-dapp.vercel.app)
@@ -37,7 +51,7 @@ const metadata = {
 // EVM chains stay at the top of the "Choose Network" list.
 // Tron is intentionally excluded: it is NOT EVM and has no AppKit adapter installed.
 // Tron wallet connections are handled via the TronLink browser extension (useTronWallet hook).
-const evmChains = [base, mainnet, arbitrum, optimism, polygon, bsc, avalanche];
+const evmChains = [base, mainnet, arbitrum, optimism, polygon, bsc, avalanche, robinhood];
 const networks = [...evmChains, solana];
 
 // Known wallet IDs from Reown WalletGuide so the "All Wallets" list is never empty
@@ -98,6 +112,7 @@ function buildTransports() {
     [polygon.id]: make('https://polygon-mainnet.g.alchemy.com/v2', 'https://polygon-rpc.com', 'https://rpc.ankr.com/polygon'),
     [bsc.id]:     make('https://bnb-mainnet.g.alchemy.com/v2', 'https://bsc-dataseed.binance.org', 'https://rpc.ankr.com/bsc'),
     [avalanche.id]:make('https://avax-mainnet.g.alchemy.com/v2', 'https://api.avax.network/ext/bc/C/rpc', 'https://rpc.ankr.com/avalanche'),
+    [robinhood.id]: make('https://robinhood-mainnet.g.alchemy.com/v2', 'https://rpc.mainnet.chain.robinhood.com'),
   };
 }
 

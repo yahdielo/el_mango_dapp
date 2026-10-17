@@ -78,7 +78,7 @@ function normalizeSymbolForTokenCompare(symbol) {
 function getCanonicalLayerSwapNativeSymbol(chainId) {
   const id = Number(chainId);
   // Ethereum-like EVM chains
-  if ([1, 8453, 42161, 10, 43114, 167000, 480, 48900, 34443, 81457, 1890, 59144, 911003, 911004].includes(id))
+  if ([1, 8453, 42161, 10, 43114, 167000, 480, 48900, 34443, 81457, 1890, 59144, 4663, 911003, 911004].includes(id))
     return 'ETH';
   // Polygon uses POL on LayerSwap
   if (id === 137) return 'POL';

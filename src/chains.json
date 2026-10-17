@@ -1819,6 +1819,70 @@
         }
     },
     {
+        "chainName": "Robinhood Chain",
+        "chainId": "4663",
+        "img": "/assets/robinhood-chain.svg",
+        "type": "EVM",
+        "nativeCurrency": {
+            "name": "Ether",
+            "symbol": "ETH",
+            "decimals": 18
+        },
+        "rpcUrls": [
+            "https://rpc.mainnet.chain.robinhood.com"
+        ],
+        "blockExplorers": [
+            {
+                "name": "Blockscout",
+                "url": "https://robinhoodchain.blockscout.com"
+            }
+        ],
+        "contracts": {
+            "router": null,
+            "referral": null,
+            "token": null,
+            "manager": null,
+            "whitelist": null
+        },
+        "dexes": [
+            "LayerSwap"
+        ],
+        "bridge": "LayerSwap",
+        "status": "active",
+        "gasSettings": {
+            "gasLimit": 500000,
+            "maxFeePerGas": null,
+            "maxPriorityFeePerGas": null,
+            "gasPrice": null
+        },
+        "slippage": {
+            "default": 0.5,
+            "min": 0.1,
+            "max": 5.0
+        },
+        "timeouts": {
+            "transactionTimeout": 300000,
+            "rpcTimeout": 10000,
+            "retryAttempts": 3,
+            "retryDelay": 1000
+        },
+        "minimums": {
+            "swap": "0.001",
+            "referral": "0.0001"
+        },
+        "blockTime": 1,
+        "confirmationsRequired": 1,
+        "featureFlags": {
+            "directSwap": false,
+            "layerSwap": true,
+            "referralSystem": false,
+            "whitelist": false,
+            "tokenTax": false,
+            "crossChainSync": true,
+            "batchOperations": false
+        }
+    },
+    {
         "chainName": "Loopring",
         "chainId": "911004",
         "img": "/assets/cmc/chain-911004.png",

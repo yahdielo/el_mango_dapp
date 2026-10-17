@@ -23,6 +23,7 @@ const FALLBACK_LOGO_BY_SYMBOL = {
 
 const NATIVE_LOGO_BY_CHAIN_ID = {
   34443: '/assets/mode.png',
+  4663: '/assets/robinhood-chain.svg',
   5000: '/assets/cmc/chain-5000.png',
   80094: '/assets/cmc/chain-80094.png',
   42220: '/assets/cmc/chain-42220.png',

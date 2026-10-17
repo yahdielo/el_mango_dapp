@@ -16,6 +16,7 @@ const CHAIN_ID_TO_NETWORK = {
   43114: 'AVAX_MAINNET',
   34443: 'MODE_MAINNET',
   5000: 'MANTLE_MAINNET',
+  4663: 'ROBINHOOD_MAINNET',
   // 80094: BERACHAIN — ROUTE_NOT_FOUND on all pairs, removed from UI
   // 42220: CELO — ROUTE_NOT_FOUND on all pairs, removed from UI
   // 252: FRAXTAL — no active routes, removed from UI

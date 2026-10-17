@@ -157,6 +157,15 @@ export const tokenLists = {
       { symbol: 'LINK', name: 'Chainlink', decimals: 18, address: '0x514910771AF9Ca656af840dff83E8264EcF986CA', logoURI: LINK_LOGO },
     ],
   },
+  // Robinhood Chain (4663) – Arbitrum Orbit L2, gas in ETH. Cross-chain via LayerSwap / LI.FI.
+  4663: {
+    default: [
+      { symbol: 'WETH', name: 'Wrapped Ether', decimals: 18, address: '0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73', logoURI: ETH_LOGO },
+    ],
+    popular: [
+      { symbol: 'WETH', name: 'Wrapped Ether', decimals: 18, address: '0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73', logoURI: ETH_LOGO },
+    ],
+  },
   // Mantle (5000) – native MNT + stables; Bridgers handles MNT→ETH/BSC
   5000: {
     default: [
@@ -205,6 +214,7 @@ const NATIVE_TOKENS = {
   43114: { symbol: 'AVAX', name: 'Avalanche', decimals: 18, address: ZERO, native: true, logoURI: WAVAX_LOGO },
   137: { symbol: 'MATIC', name: 'Polygon', decimals: 18, address: ZERO, native: true, logoURI: WMATIC_LOGO },
   56: { symbol: 'BNB', name: 'BNB', decimals: 18, address: ZERO, native: true, logoURI: WBNB_LOGO },
+  4663: { symbol: 'ETH', name: 'Ether', decimals: 18, address: ZERO, native: true, logoURI: ETH_LOGO },
   5000: { symbol: 'MNT', name: 'Mantle', decimals: 18, address: ZERO, native: true, logoURI: MNT_LOGO },
   501111: { symbol: 'SOL', name: 'Solana', decimals: 9, address: 'SOL', logoURI: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' },
   728126428: { symbol: 'TRX', name: 'Tron', decimals: 6, address: 'TRX', logoURI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/tron/info/logo.png' },

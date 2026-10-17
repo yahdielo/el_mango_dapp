@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { parseUnits, formatUnits } from 'viem';
 import { getCrossChainEstimate } from '../services/crossChainEstimateApi';
+import { errorText } from '../utils/errorMapping';
 
 /**
  * Cross-chain estimate hook for backend bridge providers (e.g. Rango).
@@ -84,7 +85,7 @@ export function useCrossChainEstimate({
           userAddress,
         });
 
-        const backendError = data?.error || null;
+        const backendError = errorText(data?.error) || null;
         const rawMin = data?.minAmount ?? data?.route?.minAmount ?? null;
         const rawMax = data?.maxAmount ?? data?.route?.maxAmount ?? null;
         const rawAmountOut = data?.amountOut ?? null;
@@ -149,7 +150,7 @@ export function useCrossChainEstimate({
         }
       } catch (e) {
         if (!cancelled) {
-          setError(e?.message || 'Failed to get cross-chain estimate');
+          setError(errorText(e) || 'Failed to get cross-chain estimate');
           setMinAmount(null);
           setMaxAmount(null);
           setAmountTooLow(false);

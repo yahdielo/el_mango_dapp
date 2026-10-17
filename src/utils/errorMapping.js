@@ -130,6 +130,42 @@ const CONFIG_PATTERNS = [
 ];
 
 /**
+ * Pull a readable string out of API / wallet errors.
+ * Axios and bridge responses sometimes set `error` or `message` to an object,
+ * and `String(that)` is the literal "[object Object]".
+ * @param {unknown} value
+ * @param {number} [depth]
+ * @returns {string}
+ */
+export function errorText(value, depth = 0) {
+  if (value == null || depth > 4) return '';
+  if (typeof value === 'string') {
+    const text = value.trim();
+    return text === '[object Object]' ? '' : text;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const text = errorText(item, depth + 1);
+      if (text) return text;
+    }
+    return '';
+  }
+  if (typeof value === 'object') {
+    const nested =
+      value.message ??
+      value.shortMessage ??
+      value.error ??
+      value.reason ??
+      value.detail ??
+      value.msg ??
+      value.description;
+    return errorText(nested, depth + 1);
+  }
+  return '';
+}
+
+/**
  * Map raw error to user-friendly message
  * @param {Error|{ message?: string, shortMessage?: string }|string} err
  * @returns {string}
@@ -137,12 +173,12 @@ const CONFIG_PATTERNS = [
 export function mapErrorToUserMessage(err) {
   if (err != null && typeof err !== 'object' && typeof err !== 'string') return 'Transaction failed';
   // Parentheses required: mixing nullish coalescing `??` with `||` without grouping breaks parsing in some bundlers.
-  const msg = String((err?.message ?? err?.shortMessage ?? (typeof err === 'string' ? err : '')) || '').toLowerCase();
+  const msg = (errorText(err) || '').toLowerCase();
 
   if (REJECT_PATTERNS.some((p) => p.test(msg))) return 'Transaction rejected';
   // Amount-limit errors: show the first sentence of the raw message (short, actionable, already includes the minimum)
   if (AMOUNT_LIMIT_PATTERNS.some((p) => p.test(msg))) {
-    const raw = String(err?.message ?? err?.shortMessage ?? (typeof err === 'string' ? err : '')).trim();
+    const raw = errorText(err);
     // Return up to the first sentence break so the minimum value is visible
     const firstDot = raw.search(/\.\s/);
     return firstDot > 0 ? raw.slice(0, firstDot + 1) : raw.slice(0, 160) || 'Amount below bridge minimum.';
@@ -150,7 +186,7 @@ export function mapErrorToUserMessage(err) {
   if (SLIPPAGE_PATTERNS.some((p) => p.test(msg))) return 'Slippage exceeded';
   // BTC empty address — return up to the first sentence of the original message so the address is visible
   if (BTC_EMPTY_ADDRESS_PATTERNS.some((p) => p.test(msg))) {
-    const raw = String(err?.message ?? err?.shortMessage ?? (typeof err === 'string' ? err : ''));
+    const raw = errorText(err);
     const firstSentence = raw.split(/\. /)[0];
     return firstSentence.length > 0 ? firstSentence + '.' : raw.slice(0, 120);
   }
@@ -163,7 +199,7 @@ export function mapErrorToUserMessage(err) {
   if (BRIDGE_PATTERNS.some((p) => p.test(msg)) || err?.code === 'NO_ROUTE' || err?.code === 'AMOUNT_TOO_LOW') {
     if (msg.includes('rate limit') || msg.includes('429')) return 'Bridge rate limited. Try again later.';
     if (msg.includes('temporarily unavailable') || msg.includes('503')) return 'Bridge temporarily unavailable. Try again in a minute.';
-    const raw = String(err?.message || err || '').trim();
+    const raw = errorText(err);
     // Always show the actual bridge message — it contains the minimum amount and actionable guidance.
     // Only suppress if it looks like a raw HTTP status code string (no real content).
     if (raw.length > 0 && !/^\s*(api error:\s*)?\d+\s*$/i.test(raw)) {
@@ -185,14 +221,15 @@ export function mapErrorToUserMessage(err) {
   }
 
   // RPC/viem decoding: "y is not an Object (evaluating 'data' in y)" when contract result shape is unexpected
-  const errStr = String(err?.message ?? err?.shortMessage ?? err ?? '');
+  const errStr = errorText(err);
   if (/is not an object.*evaluating.*data.*in/i.test(errStr) || /evaluating\s*['"]data['"]\s*in/i.test(errStr)) {
     return 'Quote or contract read failed. Try again or check your network.';
   }
 
-  // Fallback: show raw message if it's concise, otherwise generic
-  const raw = err?.shortMessage ?? err?.message ?? (typeof err === 'string' ? err : String(err ?? ''));
-  if (!raw) return 'Transaction failed';
+  // Fallback: show raw message if it's concise, otherwise generic.
+  // Never return an object or the string "[object Object]" — React prints that literally.
+  const raw = errorText(err);
+  if (!raw) return 'Could not load the bridge quote. Try again.';
   // Bridge/API errors (code attached) always show the message
   if (err?.code && raw.length > 0) {
     return raw.length > 200 ? raw.slice(0, 200) + '…' : raw;

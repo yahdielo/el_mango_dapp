@@ -203,6 +203,11 @@ export async function getTokenPriceUsd({ chainId, token }) {
 
   let tokenAddr = toTokenAddress(token, cid);
   if (tokenAddr === usdcAddr) return 1;
+  // Native ETH/BNB/etc. is 0x0. DEX quotes need the wrapped token.
+  if (tokenAddr === ZERO_ADDRESS || token?.native) {
+    const wrapped = WRAPPED_NATIVE_BY_CHAIN[cid];
+    if (wrapped) tokenAddr = wrapped;
+  }
 
   try {
     const decimals = token?.decimals ?? 18;

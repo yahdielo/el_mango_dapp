@@ -1,4 +1,5 @@
 import { ZERO_ADDRESS } from '../utils/chainConfig';
+import { errorText } from '../utils/errorMapping';
 
 function isNativeToken(token) {
   if (!token) return false;
@@ -87,7 +88,8 @@ export async function getCrossChainEstimate({
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    throw new Error(data?.error || data?.message || `Failed to get cross-chain estimate (${res.status})`);
+    const detail = errorText(data?.error) || errorText(data?.message) || errorText(data);
+    throw new Error(detail || `Failed to get cross-chain estimate (${res.status})`);
   }
 
   return data;

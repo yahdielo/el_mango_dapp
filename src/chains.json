@@ -1821,7 +1821,7 @@
     {
         "chainName": "Robinhood Chain",
         "chainId": "4663",
-        "img": "/assets/robinhood-chain.svg",
+        "img": "/assets/robinhood-chain.jpg",
         "type": "EVM",
         "nativeCurrency": {
             "name": "Ether",

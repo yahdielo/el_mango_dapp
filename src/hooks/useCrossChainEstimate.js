@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { estimateAmountOutToHuman } from '../utils/estimateAmount';
 import { parseUnits, formatUnits } from 'viem';
 import { getCrossChainEstimate } from '../services/crossChainEstimateApi';
 import { errorText } from '../utils/errorMapping';
@@ -95,28 +96,14 @@ export function useCrossChainEstimate({
         let tooLow = false;
         let tooHigh = false;
 
-        // Convert raw amountOut (Rango returns in token's smallest unit) to human-readable.
+        // amountOut units depend on the provider (LayerSwap: human-readable; Rango/LiFi: smallest unit).
         let humanAmountOut = null;
         if (rawAmountOut && !backendError) {
           const outDecimals =
             tokenOut?.decimals != null && tokenOut.decimals !== ''
               ? Number(tokenOut.decimals)
               : 18;
-          try {
-            const raw = BigInt(rawAmountOut);
-            const divisor = BigInt(10) ** BigInt(outDecimals);
-            const whole = raw / divisor;
-            const remainder = raw % divisor;
-            if (remainder === 0n) {
-              humanAmountOut = whole.toString();
-            } else {
-              const fracStr = remainder.toString().padStart(outDecimals, '0').replace(/0+$/, '');
-              humanAmountOut = `${whole}.${fracStr}`;
-            }
-          } catch {
-            // rawAmountOut is already human-readable (LayerSwap returns it that way)
-            humanAmountOut = String(rawAmountOut);
-          }
+          humanAmountOut = estimateAmountOutToHuman(rawAmountOut, data?.provider, outDecimals);
         }
 
         // rawMin/rawMax from the estimate endpoint are human-readable amounts

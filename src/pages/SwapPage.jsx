@@ -25,6 +25,7 @@ import { getSlippageToleranceInBasisPoints } from '../utils/slippageUtils';
 import SlippageSelector, { loadSlippageFromStorage } from '../components/SlippageSelector';
 import { useWhitelist } from '../hooks/useWhitelist';
 import { useAccountReferrer } from '../hooks/useAccountReferrer';
+import { useReferralPayout } from '../hooks/useReferralPayout';
 import { resolveEffectiveReferrer, setStoredReferrer } from '../utils/referrerStorage';
 import { autoRegisterReferrer } from '../services/referralAccountApi';
 import { isPolygonBridgedWethSwap, POLYGON_USE_WMATIC_MESSAGE } from '../utils/mangoRouterPolygonSupport';
@@ -98,6 +99,12 @@ export default function SwapPage() {
       urlRef: null,
     });
   }, [address, effectiveChainId, isValidRef, refParam, backendReferrer]);
+
+  const referralPayout = useReferralPayout({
+    chainId: effectiveChainId,
+    routerAddress: getRouterAddress(effectiveChainId),
+    referrer: referrer && referrer !== ZERO_ADDRESS ? referrer : null,
+  });
 
   // If user arrives via ?ref=..., persist referrer locally AND in the backend DB
   // so the referrer shows on all devices (mobile, Trust Wallet, etc.).
@@ -342,6 +349,7 @@ export default function SwapPage() {
           routerFeePct={routerFeePct}
           l1ReferralPct={l1ReferralPct}
           referrer={referrer && referrer !== ZERO_ADDRESS ? referrer : null}
+          referralPayout={referralPayout}
           quoteAge={quoteAge}
         />
 

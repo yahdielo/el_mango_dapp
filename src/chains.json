@@ -289,7 +289,7 @@
         ],
         "contracts": {
             "router": "0x43De398c1b472A4452A29A44be60A988D709485C",
-            "referral": "0xDBe52cA974cF2593E7E05868dCC15385BD9ef35C",
+            "referral": "0x1dC5726C54791c18eA68C26428bef5c278007627",
             "token": "0xCba86eEB0e00d1165981805623684904b3cbAC59",
             "manager": null,
             "whitelist": null

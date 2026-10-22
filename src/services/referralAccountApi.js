@@ -77,15 +77,21 @@ export async function claimAccountReferrer({ userAddress, referrerAddress, nonce
  * Called when user connects via ?ref= link or after a successful same-chain swap.
  * Fire-and-forget — never throws; returns null on failure.
  */
+const autoRegisterAttempted = new Set();
+
 export async function autoRegisterReferrer(userAddress, referrerAddress, source = 'url') {
   if (!RAW_BASE) return null;
   if (!userAddress || !/^0x[a-fA-F0-9]{40}$/.test(userAddress)) return null;
   if (!referrerAddress || !/^0x[a-fA-F0-9]{40}$/.test(referrerAddress)) return null;
   if (userAddress.toLowerCase() === referrerAddress.toLowerCase()) return null;
+  // One attempt per user/referrer pair per page session (callers re-run on every render cycle).
+  const key = `${userAddress.toLowerCase()}:${referrerAddress.toLowerCase()}`;
+  if (autoRegisterAttempted.has(key)) return null;
+  autoRegisterAttempted.add(key);
   try {
     const res = await fetch(`${BASE}/api/v1/referral/auto-register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...headers(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ userAddress, referrerAddress, source }),
       signal: AbortSignal.timeout(8000),
     });

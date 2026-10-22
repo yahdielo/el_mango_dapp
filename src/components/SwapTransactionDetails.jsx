@@ -10,6 +10,7 @@ export default function SwapTransactionDetails({
   routerFeePct,
   l1ReferralPct,
   referrer,
+  referralPayout = null,
   quoteAge,
 }) {
   if (!amountIn || parseFloat(amountIn) <= 0) return null;
@@ -74,11 +75,20 @@ export default function SwapTransactionDetails({
           <span className="text-gray-500 pl-2">↳ Treasury</span>
           <span className="text-gray-400">1% → dev treasury</span>
         </div>
-        {shortRef ? (
+        {shortRef && referralPayout?.status === 'active' ? (
           <div className="flex justify-between text-xs">
             <span className="text-gray-500 pl-2">↳ Your referrer (L1)</span>
             <span className="text-[#3CF902]">
               {shortRef} gets {l1ReferralPct != null ? `~${Number(l1ReferralPct).toFixed(2)}%` : '~0.40%'}
+            </span>
+          </div>
+        ) : shortRef ? (
+          <div className="flex justify-between gap-3 text-xs">
+            <span className="text-gray-500 pl-2 whitespace-nowrap">↳ Your referrer (L1)</span>
+            <span className="text-gray-400 text-right">
+              {referralPayout?.status === 'checking'
+                ? `${shortRef} · checking rewards…`
+                : `${shortRef} · referral rewards not active on this chain`}
             </span>
           </div>
         ) : (

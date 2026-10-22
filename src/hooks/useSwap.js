@@ -6,14 +6,15 @@ import { useWriteContract, useWaitForTransactionReceipt, useReadContract, usePub
 // user is never stuck forever. The tx may still confirm later — they can track
 // it via the explorer link shown on timeout.
 const CONFIRMATION_TIMEOUT_MS = 30_000;
-import { ERC20_ABI, ROUTER_ABI, ROUTER_ABI_SECURE, ROUTER_ABI_BASE, MANGO_REFERRAL_ABI } from '../config/abis';
+import { ERC20_ABI, ROUTER_ABI, ROUTER_ABI_SECURE, ROUTER_ABI_BASE } from '../config/abis';
 
 // Chains with 6-param audit-fixed contracts (swap with minAmountOut + deadline).
 // BSC (56) still uses old 4-param contract.
 const SECURE_ROUTER_CHAIN_IDS = new Set([1, 10, 137, 42161]);
 // Base and Avalanche use a 5-param secure contract (slippageTolerance; contract computes minAmountOut via QuoterV2).
 const BASE_ROUTER_CHAIN_IDS = new Set([8453, 43114]);
-import { ZERO_ADDRESS, getRouterAddress, getExplorerUrl, getGasSettings, getMangoReferralContractAddress } from '../utils/chainConfig';
+import { ZERO_ADDRESS, getRouterAddress, getExplorerUrl, getGasSettings } from '../utils/chainConfig';
+import { checkReferralPayout } from '../utils/referralPayout';
 import { mapErrorToUserMessage } from '../utils/errorMapping';
 import { isNativeToken } from './useTokenBalance';
 import { isPolygonBridgedWethSwap, POLYGON_USE_WMATIC_MESSAGE } from '../utils/mangoRouterPolygonSupport';
@@ -148,52 +149,12 @@ export function useSwap({
     const amountWei = parseUnits(amountIn, dec);
 
     try {
-      // Referral payouts can revert the whole swap if the chain's MangoReferral
-      // contract isn't properly configured (whitelist/funded/paused).
-      // We keep the referrer for tracking, but disable payout for this tx if unsafe.
+      // Only pass the referrer when the router will actually pay it (see checkReferralPayout);
+      // otherwise send the zero address so a misconfigured referral contract cannot revert the swap.
       let effectiveReferrer = referrer || ZERO_ADDRESS;
       if (effectiveReferrer && effectiveReferrer !== ZERO_ADDRESS) {
-        const referralContract = getMangoReferralContractAddress(chainId);
-        if (!referralContract) {
-          effectiveReferrer = ZERO_ADDRESS;
-        } else {
-          try {
-            const [isPaused, isRouterWhitelisted, mangoTokenAddr] = await Promise.all([
-              publicClient.readContract({
-                address: referralContract,
-                abi: MANGO_REFERRAL_ABI,
-                functionName: 'chainPaused',
-                args: [BigInt(chainId)],
-              }),
-              publicClient.readContract({
-                address: referralContract,
-                abi: MANGO_REFERRAL_ABI,
-                functionName: 'whiteListed',
-                args: [routerAddress],
-              }),
-              publicClient.readContract({
-                address: referralContract,
-                abi: MANGO_REFERRAL_ABI,
-                functionName: 'mangoToken',
-              }),
-            ]);
-
-            if (isPaused || !isRouterWhitelisted || !mangoTokenAddr || mangoTokenAddr === ZERO_ADDRESS) {
-              effectiveReferrer = ZERO_ADDRESS;
-            } else {
-              const referralTokenBal = await publicClient.readContract({
-                address: mangoTokenAddr,
-                abi: ERC20_ABI,
-                functionName: 'balanceOf',
-                args: [referralContract],
-              });
-              if (referralTokenBal == null || referralTokenBal === 0n) effectiveReferrer = ZERO_ADDRESS;
-            }
-          } catch {
-            // Fail-safe: if any read fails, don't risk swapping with referral payout.
-            effectiveReferrer = ZERO_ADDRESS;
-          }
-        }
+        const payout = await checkReferralPayout({ publicClient, chainId, routerAddress });
+        if (!payout.active) effectiveReferrer = ZERO_ADDRESS;
       }
 
       if (!isNativeToken(tokenIn)) {
